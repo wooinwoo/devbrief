@@ -1,0 +1,33 @@
+/* Pretendard (한국어 자연) — Tailwind 앞에 와야 @import 순서 규칙 통과 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+@import 'tailwindcss';
+
+:root {
+  --background: #0a0a0a;
+  --foreground: oklch(94% 0.005 250);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Pretendard Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  word-break: keep-all;
+  text-wrap: pretty;
+}
+
+/* 절제된 글로우 (잭 톤) */
+.glow {
+  background: radial-gradient(
+    circle at 50% 0%,
+    oklch(80% 0.15 250 / 0.08),
+    transparent 60%
+  );
+}

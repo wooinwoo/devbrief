@@ -1,0 +1,33 @@
+const KEY = 'pulse.read.v1';
+
+function load(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+function persist(set: Set<string>) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(KEY, JSON.stringify([...set]));
+  } catch {
+    // quota / storage 에러 무시
+  }
+}
+
+export const readTracking = {
+  load,
+  add(id: string) {
+    const set = load();
+    set.add(id);
+    persist(set);
+  },
+  has(id: string, set?: Set<string>) {
+    return (set ?? load()).has(id);
+  },
+};

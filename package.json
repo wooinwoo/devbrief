@@ -1,0 +1,20 @@
+{
+  "name": "pulse",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.16.1",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "pnpm -r run typecheck",
+    "db:generate": "pnpm --filter @pulse/db run generate",
+    "db:migrate": "pnpm --filter @pulse/db run migrate",
+    "db:studio": "pnpm --filter @pulse/db run studio"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "^5.8.3"
+  }
+}

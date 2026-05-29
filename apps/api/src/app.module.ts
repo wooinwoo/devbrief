@@ -1,0 +1,57 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { BullModule } from '@nestjs/bullmq';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { PrismaModule } from './prisma/prisma.module';
+import { AnthropicModule } from './ai/anthropic.module';
+import { IngestionModule } from './ingestion/ingestion.module';
+import { SummarizationModule } from './summarization/summarization.module';
+import { ArticlesModule } from './articles/articles.module';
+import { EmbeddingModule } from './embedding/embedding.module';
+import { ChatModule } from './chat/chat.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const url = config.get<string>('REDIS_URL');
+        if (url) {
+          const parsed = new URL(url);
+          return {
+            connection: {
+              host: parsed.hostname,
+              port: Number(parsed.port) || 6379,
+              username: parsed.username || undefined,
+              password: parsed.password || undefined,
+              tls: parsed.protocol === 'rediss:' ? {} : undefined,
+              maxRetriesPerRequest: null,
+            },
+          };
+        }
+        return {
+          connection: {
+            host: 'localhost',
+            port: 6379,
+            maxRetriesPerRequest: null,
+            lazyConnect: true,
+          },
+        };
+      },
+    }),
+    PrismaModule,
+    AnthropicModule,
+    IngestionModule,
+    SummarizationModule,
+    EmbeddingModule,
+    ArticlesModule,
+    ChatModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
