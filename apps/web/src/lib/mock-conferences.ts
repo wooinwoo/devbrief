@@ -1,0 +1,63 @@
+export interface ConferenceDto {
+  id: string;
+  name: string;
+  url: string;
+  startDate: string;
+  endDate?: string;
+  location: string;
+  topics: string[];
+  description?: string;
+}
+
+// 한국 주요 개발자 컨퍼런스 mock (V1.5에서 자동 수집으로 교체)
+export const MOCK_CONFERENCES: ConferenceDto[] = [
+  {
+    id: 'c1',
+    name: 'FECONF 2026',
+    url: 'https://feconf.kr',
+    startDate: '2026-06-21',
+    endDate: '2026-06-21',
+    location: '서울 양재 aT센터',
+    topics: ['Frontend', 'React', 'Vue'],
+    description: '국내 최대 프론트엔드 컨퍼런스',
+  },
+  {
+    id: 'c2',
+    name: 'if(kakao)dev 2026',
+    url: 'https://if.kakao.com',
+    startDate: '2026-07-09',
+    endDate: '2026-07-10',
+    location: '온라인',
+    topics: ['AI', '플랫폼', '인프라'],
+    description: '카카오 개발자 컨퍼런스',
+  },
+  {
+    id: 'c3',
+    name: 'SLASH 26',
+    url: 'https://toss.tech/slash',
+    startDate: '2026-08-12',
+    endDate: '2026-08-13',
+    location: '서울 코엑스',
+    topics: ['핀테크', '백엔드', 'iOS'],
+    description: '토스 개발자 컨퍼런스',
+  },
+  {
+    id: 'c4',
+    name: 'DEVIEW 2026',
+    url: 'https://deview.kr',
+    startDate: '2026-10-22',
+    location: '코엑스',
+    topics: ['AI', '검색', '클라우드'],
+    description: '네이버 개발자 컨퍼런스',
+  },
+  {
+    id: 'c5',
+    name: 'PyCon Korea 2026',
+    url: 'https://pycon.kr',
+    startDate: '2026-09-05',
+    endDate: '2026-09-07',
+    location: '서울대학교',
+    topics: ['Python', 'Data', 'ML'],
+    description: '한국 파이썬 컨퍼런스',
+  },
+];

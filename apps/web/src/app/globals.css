@@ -3,31 +3,78 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #0a0a0a;
-  --foreground: oklch(94% 0.005 250);
+  /* 사용처 토큰 (oklch 톤다운) */
+  --bg-base: oklch(13% 0.005 250);
+  --bg-elevated: oklch(16% 0.006 250);
+  --fg-strong: oklch(96% 0.003 250);
+  --fg-default: oklch(82% 0.005 250);
+  --fg-muted: oklch(58% 0.008 250);
+  --fg-subtle: oklch(40% 0.008 250);
+  --line: oklch(22% 0.006 250);
+  --line-strong: oklch(32% 0.008 250);
+  --accent: oklch(78% 0.13 195);
+  --accent-glow: oklch(78% 0.13 195 / 0.16);
+  --warm: oklch(82% 0.12 70);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg-base);
+  --color-foreground: var(--fg-default);
+  --color-fg-strong: var(--fg-strong);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-warm: var(--warm);
   --font-sans: 'Pretendard Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html,
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-base);
+  color: var(--fg-default);
   font-family: var(--font-sans);
   word-break: keep-all;
   text-wrap: pretty;
+  font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv11';
 }
 
-/* 절제된 글로우 (잭 톤) */
-.glow {
-  background: radial-gradient(
-    circle at 50% 0%,
-    oklch(80% 0.15 250 / 0.08),
-    transparent 60%
-  );
+/* 미세한 noise 배경 (잭 시그니처 톤) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% 0%, oklch(70% 0.12 200 / 0.06), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 100% 100%, oklch(75% 0.1 280 / 0.04), transparent 60%);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -9;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* shimmer 인라인 라인 (Top story 좌측) */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.pulse-bar {
+  animation: pulse-glow 3.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-bar {
+    animation: none;
+  }
 }

@@ -14,15 +14,15 @@ export interface ArticleDto {
   source: { name: string; provider: string };
 }
 
-const SOURCE_TONE: Record<string, string> = {
-  geeknews: 'text-emerald-300',
-  hackernews: 'text-orange-300',
-  devto: 'text-violet-300',
-  techcrunch: 'text-rose-300',
-  anthropic: 'text-amber-300',
-  openai: 'text-sky-300',
-  producthunt: 'text-pink-300',
-  rss_generic: 'text-zinc-400',
+const SOURCE_BAR: Record<string, string> = {
+  geeknews: 'oklch(75% 0.15 160)',
+  hackernews: 'oklch(75% 0.16 50)',
+  devto: 'oklch(72% 0.16 290)',
+  techcrunch: 'oklch(72% 0.18 15)',
+  anthropic: 'oklch(80% 0.14 70)',
+  openai: 'oklch(75% 0.13 220)',
+  producthunt: 'oklch(74% 0.17 340)',
+  rss_generic: 'oklch(60% 0.01 250)',
 };
 
 interface Props {
@@ -33,20 +33,31 @@ interface Props {
 }
 
 export function ArticleCard({ article, read = false, onOpen, onTagClick }: Props) {
-  const tone = SOURCE_TONE[article.source.provider] ?? 'text-zinc-400';
+  const bar = SOURCE_BAR[article.source.provider] ?? SOURCE_BAR.rss_generic;
   const summary = article.summaryOneLine;
   const askUrl = `/chat?q=${encodeURIComponent(`${article.title} 에 대해 설명해줘`)}`;
 
   return (
     <article
-      className={`group relative pl-4 -ml-4 pb-8 border-b border-zinc-900 transition-all
-        hover:border-zinc-700
+      className={`group relative pl-5 -ml-5 pb-7 transition-all
         ${read ? 'opacity-50 hover:opacity-80' : ''}
       `}
     >
+      {/* 좌측 라인 (기본 zinc → hover 시 source 색) */}
       <span
         aria-hidden
-        className="absolute left-0 top-0 bottom-8 w-px bg-transparent group-hover:bg-zinc-500 transition-colors"
+        className="absolute left-0 top-1 bottom-7 w-px transition-all duration-300"
+        style={{
+          background: 'var(--color-line)',
+        }}
+      />
+      <span
+        aria-hidden
+        className="absolute left-0 top-1 bottom-7 w-px transition-opacity duration-300 opacity-0 group-hover:opacity-100"
+        style={{
+          background: `linear-gradient(to bottom, ${bar} 0%, transparent 100%)`,
+          boxShadow: `0 0 8px ${bar}`,
+        }}
       />
 
       <a
@@ -54,39 +65,63 @@ export function ArticleCard({ article, read = false, onOpen, onTagClick }: Props
         target="_blank"
         rel="noopener noreferrer"
         onClick={onOpen}
-        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:rounded-md"
+        className="block focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--color-line-strong) focus-visible:rounded"
       >
-        <div className="flex items-center gap-2 mb-2 text-xs tracking-wide">
-          <span className={tone}>{article.source.name}</span>
-          <span className="text-zinc-700">·</span>
-          <span className="text-zinc-500">{relativeTime(article.publishedAt)}</span>
+        <div className="flex items-center gap-2 mb-2.5 text-[12px]">
+          <span style={{ color: bar }} className="tracking-wide">
+            {article.source.name}
+          </span>
+          <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
+          <span style={{ color: 'var(--color-fg-muted)' }}>{relativeTime(article.publishedAt)}</span>
           {!read && (
-            <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" aria-label="안 본 글" />
+            <span
+              aria-label="안 본 글"
+              className="ml-1 inline-block h-1.5 w-1.5 rounded-full"
+              style={{ background: bar, boxShadow: `0 0 6px ${bar}` }}
+            />
           )}
         </div>
-        <h2 className="text-xl sm:text-2xl font-semibold leading-snug tracking-tight transition-colors group-hover:text-zinc-50">
-          {article.title}
+        <h2
+          className="text-[1.1875rem] sm:text-[1.3125rem] leading-[1.35] tracking-[-0.005em] transition-colors"
+          style={{ color: 'var(--color-fg-default)', fontWeight: 500 }}
+        >
+          <span className="group-hover:text-(--color-fg-strong) transition-colors">
+            {article.title}
+          </span>
         </h2>
-        {summary && <p className="text-zinc-400 mt-3 leading-relaxed">{summary}</p>}
+        {summary && (
+          <p
+            className="mt-2.5 leading-[1.6] text-[14px]"
+            style={{ color: 'var(--color-fg-muted)' }}
+          >
+            {summary}
+          </p>
+        )}
       </a>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-        {article.tags.slice(0, 6).map((t) => (
+      <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        {article.tags.slice(0, 4).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => onTagClick?.(t)}
-            className="text-xs text-zinc-500 hover:text-zinc-200 transition-colors"
+            className="text-[11px] transition-colors"
+            style={{ color: 'var(--color-fg-subtle)' }}
           >
-            #{t}
+            <span className="hover:text-(--color-fg-default)">#{t}</span>
           </button>
         ))}
         <span className="flex-1" />
         <Link
           href={askUrl}
-          className="text-xs text-zinc-500 hover:text-emerald-300 transition-colors inline-flex items-center gap-1"
+          className="text-[11px] inline-flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ color: bar }}
         >
-          <span className="inline-block w-1 h-1 rounded-full bg-emerald-400" aria-hidden />
+          <span
+            aria-hidden
+            className="inline-block w-1 h-1 rounded-full"
+            style={{ background: bar }}
+          />
           챗봇에 묻기
         </Link>
       </div>
