@@ -35,31 +35,58 @@ export function ConferencesView({ conferences }: Props) {
     .filter((c) => daysUntil(c.startDate) < -1)
     .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
 
-  const [hero, ...rest] = upcoming;
+  const [first, second, ...rest] = upcoming;
+  const midPair = rest.slice(0, 2);
+  const tail = rest.slice(2);
 
   return (
     <div>
-      {hero && <HeroConference c={hero} />}
+      {first && <HeroConference c={first} direction="left" tag="가장 가까운 일정" />}
 
-      {rest.length > 0 && (
+      {second && <HeroConference c={second} direction="right" tag="그 다음" />}
+
+      {midPair.length > 0 && (
         <section className="mb-16">
           <div className="flex items-baseline gap-3 mb-7">
             <h2
               className="text-[11px] tracking-[0.22em] uppercase"
               style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
             >
-              다음 일정
+              이번 분기
             </h2>
             <span className="text-[11px]" style={{ color: 'var(--color-fg-subtle)' }}>
-              {rest.length}
+              {midPair.length}
             </span>
             <span className="flex-1 h-px" style={{ background: 'var(--color-line)' }} />
           </div>
-
-          <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start">
-            {rest.map((c, i) => (
+          <ul className="grid gap-6 md:grid-cols-2 items-start">
+            {midPair.map((c, i) => (
               <li key={c.id}>
-                <UpcomingCard c={c} index={i} />
+                <MidCard c={c} index={i} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {tail.length > 0 && (
+        <section className="mb-16">
+          <div className="flex items-baseline gap-3 mb-5">
+            <h2
+              className="text-[11px] tracking-[0.22em] uppercase"
+              style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
+            >
+              그 이후
+            </h2>
+            <span className="text-[11px]" style={{ color: 'var(--color-fg-subtle)' }}>
+              {tail.length}
+            </span>
+            <span className="flex-1 h-px" style={{ background: 'var(--color-line)' }} />
+          </div>
+          <ul>
+            {tail.map((c, i) => (
+              <li key={c.id}>
+                <TailRow c={c} index={i} />
               </li>
             ))}
           </ul>
@@ -112,11 +139,103 @@ export function ConferencesView({ conferences }: Props) {
   );
 }
 
-function HeroConference({ c }: { c: ConferenceDto }) {
+function HeroConference({
+  c,
+  direction,
+  tag,
+}: {
+  c: ConferenceDto;
+  direction: 'left' | 'right';
+  tag: string;
+}) {
   const d = daysUntil(c.startDate);
   const isOngoing = d <= 0 && d >= -2;
   const brand = c.brand ?? 'oklch(50% 0.012 245)';
   const dLabel = isOngoing ? '진행 중' : d === 0 ? '오늘' : `D-${d}`;
+
+  const isLeft = direction === 'left';
+  const heroSize = isLeft ? 'lg:text-[3.5rem]' : 'lg:text-[2.75rem]';
+  const numSize = isLeft ? 'text-[6rem]' : 'text-[5rem]';
+  const halo = isLeft
+    ? `radial-gradient(ellipse 60% 50% at 30% 50%, ${brand.replace(')', ' / 0.12)')}, transparent 70%)`
+    : `radial-gradient(ellipse 60% 50% at 70% 50%, ${brand.replace(')', ' / 0.10)')}, transparent 70%)`;
+
+  const content = (
+    <div className={isLeft ? '' : 'lg:text-right'}>
+      <div
+        className={`flex flex-wrap items-center gap-3 mb-5 text-[13px] ${isLeft ? '' : 'lg:justify-end'}`}
+      >
+        <span
+          className="px-3 py-1 rounded-full tabular-nums"
+          style={{
+            background: brand.replace(')', ' / 0.12)'),
+            color: brand,
+            border: `1px solid ${brand.replace(')', ' / 0.3)')}`,
+            fontWeight: 600,
+          }}
+        >
+          {dLabel}
+        </span>
+        <span style={{ color: 'var(--color-fg-default)' }}>
+          {formatDate(c.startDate, c.endDate)}
+        </span>
+        <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
+        <span style={{ color: 'var(--color-fg-muted)' }}>{fmtWeekday(c.startDate)}</span>
+        <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
+        <span style={{ color: 'var(--color-fg-muted)' }}>{c.location}</span>
+      </div>
+
+      <h2
+        className={`text-[2.25rem] sm:text-[3rem] ${heroSize} leading-[1.05] tracking-[-0.02em] transition-colors`}
+        style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
+      >
+        <span className="group-hover:opacity-85">{c.name}</span>
+      </h2>
+
+      {c.description && (
+        <p
+          className={`text-[15px] sm:text-[16px] mt-4 leading-relaxed max-w-xl ${isLeft ? '' : 'lg:ml-auto'}`}
+          style={{ color: 'var(--color-fg-default)' }}
+        >
+          {c.description}
+        </p>
+      )}
+
+      {c.topics.length > 0 && (
+        <div
+          className={`mt-5 flex flex-wrap gap-x-3 gap-y-1.5 ${isLeft ? '' : 'lg:justify-end'}`}
+        >
+          {c.topics.slice(0, 5).map((t) => (
+            <span key={t} className="text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
+              #{t}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const counter = (
+    <div className={`hidden lg:flex flex-col ${isLeft ? 'items-end' : 'items-start'} pt-2`}>
+      <p
+        className="text-[10px] mb-2 tracking-[0.25em] uppercase"
+        style={{ color: 'var(--color-fg-subtle)', fontWeight: 500 }}
+      >
+        남은 일수
+      </p>
+      <p
+        className={`${numSize} leading-none tabular-nums tracking-[-0.04em]`}
+        style={{ color: brand, fontWeight: 600 }}
+      >
+        {isOngoing ? '·' : d}
+      </p>
+      {!isOngoing && (
+        <p className="text-[12px] mt-1" style={{ color: 'var(--color-fg-muted)' }}>
+          일
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <motion.section
@@ -128,27 +247,25 @@ function HeroConference({ c }: { c: ConferenceDto }) {
       <div
         aria-hidden
         className="absolute -inset-6 lg:-inset-10 -z-10 blur-3xl pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse 60% 50% at 30% 50%, ${brand.replace(')', ' / 0.12)')}, transparent 70%)`,
-        }}
+        style={{ background: halo }}
       />
 
       <p
-        className="text-[11px] mb-4 tracking-[0.25em] uppercase"
+        className={`text-[11px] mb-4 tracking-[0.25em] uppercase ${isLeft ? '' : 'lg:text-right'}`}
         style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
       >
-        가장 가까운 일정
+        {tag}
       </p>
 
       <a
         href={c.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="group block relative pl-6"
+        className={`group block relative ${isLeft ? 'pl-6' : 'pr-6'}`}
       >
         <span
           aria-hidden
-          className="absolute left-0 top-2 bottom-2 w-1"
+          className={`absolute top-2 bottom-2 w-1 ${isLeft ? 'left-0' : 'right-0'}`}
           style={{
             background: `linear-gradient(to bottom, ${brand}, transparent 90%)`,
             boxShadow: `0 0 16px ${brand}`,
@@ -156,94 +273,32 @@ function HeroConference({ c }: { c: ConferenceDto }) {
           }}
         />
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_auto] items-start">
-          <div>
-            <div className="flex flex-wrap items-center gap-3 mb-5 text-[13px]">
-              <span
-                className="px-3 py-1 rounded-full tabular-nums"
-                style={{
-                  background: brand.replace(')', ' / 0.12)'),
-                  color: brand,
-                  border: `1px solid ${brand.replace(')', ' / 0.3)')}`,
-                  fontWeight: 600,
-                }}
-              >
-                {dLabel}
-              </span>
-              <span style={{ color: 'var(--color-fg-default)' }}>
-                {formatDate(c.startDate, c.endDate)}
-              </span>
-              <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-              <span style={{ color: 'var(--color-fg-muted)' }}>
-                {fmtWeekday(c.startDate)}
-              </span>
-              <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-              <span style={{ color: 'var(--color-fg-muted)' }}>{c.location}</span>
-            </div>
-
-            <h2
-              className="text-[2.25rem] sm:text-[3rem] lg:text-[3.5rem] leading-[1.05] tracking-[-0.02em] transition-colors"
-              style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
-            >
-              <span className="group-hover:opacity-85">{c.name}</span>
-            </h2>
-
-            {c.description && (
-              <p
-                className="text-[15px] sm:text-[16px] mt-4 leading-relaxed max-w-xl"
-                style={{ color: 'var(--color-fg-default)' }}
-              >
-                {c.description}
-              </p>
-            )}
-
-            {c.topics.length > 0 && (
-              <div className="mt-5 flex flex-wrap gap-x-3 gap-y-1.5">
-                {c.topics.slice(0, 5).map((t) => (
-                  <span
-                    key={t}
-                    className="text-[13px]"
-                    style={{ color: 'var(--color-fg-muted)' }}
-                  >
-                    #{t}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="hidden lg:flex flex-col items-end justify-start pt-2">
-            <p
-              className="text-[10px] mb-2 tracking-[0.25em] uppercase"
-              style={{ color: 'var(--color-fg-subtle)', fontWeight: 500 }}
-            >
-              남은 일수
-            </p>
-            <p
-              className="text-[6rem] leading-none tabular-nums tracking-[-0.04em]"
-              style={{ color: brand, fontWeight: 600 }}
-            >
-              {isOngoing ? '·' : d}
-            </p>
-            {!isOngoing && (
-              <p
-                className="text-[12px] mt-1"
-                style={{ color: 'var(--color-fg-muted)' }}
-              >
-                일
-              </p>
-            )}
-          </div>
+        <div
+          className={`grid gap-8 lg:gap-12 items-start ${
+            isLeft ? 'lg:grid-cols-[1fr_auto]' : 'lg:grid-cols-[auto_1fr]'
+          }`}
+        >
+          {isLeft ? (
+            <>
+              {content}
+              {counter}
+            </>
+          ) : (
+            <>
+              {counter}
+              {content}
+            </>
+          )}
         </div>
       </a>
     </motion.section>
   );
 }
 
-function UpcomingCard({ c, index }: { c: ConferenceDto; index: number }) {
+function MidCard({ c, index }: { c: ConferenceDto; index: number }) {
   const d = daysUntil(c.startDate);
-  const isNear = d <= 60;
   const brand = c.brand ?? 'oklch(50% 0.012 245)';
+  const isNear = d <= 90;
 
   return (
     <motion.a
@@ -252,82 +307,138 @@ function UpcomingCard({ c, index }: { c: ConferenceDto; index: number }) {
       rel="noopener noreferrer"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.35,
-        ease: [0.2, 0, 0, 1],
-        delay: 0.06 + index * 0.04,
-      }}
-      className="group relative block p-5 transition-all motion-safe:hover:-translate-y-0.5"
+      transition={{ duration: 0.35, ease: [0.2, 0, 0, 1], delay: 0.06 + index * 0.05 }}
+      className="group relative block p-7 transition-all motion-safe:hover:-translate-y-0.5"
       style={{
-        borderRadius: 12,
+        borderRadius: 14,
         border: '1px solid var(--color-line)',
         background: isNear
           ? `linear-gradient(135deg, ${brand.replace(')', ' / 0.07)')}, var(--color-bg-elevated) 60%)`
           : 'var(--color-bg-elevated)',
-        minHeight: 200,
+        minHeight: 220,
       }}
     >
-      <div className="flex items-start justify-between mb-4">
-        <span
-          className="text-[12px] tabular-nums px-2.5 py-1 rounded-full"
-          style={{
-            background: isNear ? brand.replace(')', ' / 0.12)') : 'transparent',
-            color: isNear ? brand : 'var(--color-fg-muted)',
-            border: `1px solid ${isNear ? brand.replace(')', ' / 0.3)') : 'var(--color-line-strong)'}`,
-            fontWeight: 600,
-          }}
+      <div className="grid grid-cols-[1fr_auto] gap-6 items-start h-full">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-3 text-[12px]">
+            <span style={{ color: 'var(--color-fg-default)' }}>
+              {formatDate(c.startDate, c.endDate)}
+            </span>
+            <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
+            <span style={{ color: 'var(--color-fg-muted)' }}>{fmtWeekday(c.startDate)}</span>
+          </div>
+
+          <h3
+            className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] tracking-[-0.01em] transition-colors"
+            style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
+          >
+            {c.name}
+          </h3>
+          <p className="text-[13px] mt-2" style={{ color: 'var(--color-fg-muted)' }}>
+            {c.location}
+          </p>
+
+          {c.description && (
+            <p
+              className="text-[13px] mt-3 leading-relaxed"
+              style={{
+                color: 'var(--color-fg-default)',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {c.description}
+            </p>
+          )}
+
+          {c.topics.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-x-2.5 gap-y-1">
+              {c.topics.slice(0, 4).map((t) => (
+                <span
+                  key={t}
+                  className="text-[11px]"
+                  style={{ color: 'var(--color-fg-subtle)' }}
+                >
+                  #{t}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col items-end shrink-0">
+          <p
+            className="text-[10px] mb-1 tracking-[0.22em] uppercase"
+            style={{ color: 'var(--color-fg-subtle)', fontWeight: 500 }}
+          >
+            D
+          </p>
+          <p
+            className="text-[3rem] leading-none tabular-nums tracking-[-0.03em]"
+            style={{ color: brand, fontWeight: 600 }}
+          >
+            {d}
+          </p>
+        </div>
+      </div>
+    </motion.a>
+  );
+}
+
+function TailRow({ c, index }: { c: ConferenceDto; index: number }) {
+  const d = daysUntil(c.startDate);
+  const brand = c.brand ?? 'oklch(50% 0.012 245)';
+
+  return (
+    <motion.a
+      href={c.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.2, 0, 0, 1], delay: 0.04 + index * 0.03 }}
+      className="group grid grid-cols-[auto_1fr_auto] gap-6 items-center py-4 transition-colors"
+      style={{ borderBottom: '1px solid var(--color-line)' }}
+    >
+      <span
+        className="text-[1.75rem] tabular-nums leading-none tracking-tight w-20 text-right"
+        style={{ color: brand, fontWeight: 600 }}
+      >
+        {d}
+      </span>
+
+      <div className="min-w-0">
+        <h3
+          className="text-[1.0625rem] tracking-[-0.005em] transition-colors leading-tight"
+          style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
         >
-          D-{d}
-        </span>
-        <span
-          className="text-[11px] tabular-nums"
-          style={{ color: 'var(--color-fg-muted)' }}
-        >
-          {formatDate(c.startDate, c.endDate)}
-        </span>
+          {c.name}
+        </h3>
+        <div className="flex flex-wrap items-center gap-2 mt-1 text-[12px]">
+          <span style={{ color: 'var(--color-fg-muted)' }}>
+            {formatDate(c.startDate, c.endDate)}
+          </span>
+          <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
+          <span style={{ color: 'var(--color-fg-muted)' }}>{c.location}</span>
+          {c.topics.length > 0 && (
+            <>
+              <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
+              <span style={{ color: 'var(--color-fg-subtle)' }}>
+                {c.topics.slice(0, 3).map((t) => `#${t}`).join(' ')}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
-      <h3
-        className="text-[1.125rem] leading-snug tracking-[-0.005em] transition-colors"
-        style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
+      <span
+        className="text-[12px] transition-colors"
+        style={{ color: 'var(--color-fg-subtle)' }}
       >
-        {c.name}
-      </h3>
-      <p
-        className="text-[12.5px] mt-1.5"
-        style={{ color: 'var(--color-fg-muted)' }}
-      >
-        {c.location}
-      </p>
-
-      {c.description && (
-        <p
-          className="text-[13px] mt-3 leading-relaxed"
-          style={{
-            color: 'var(--color-fg-default)',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {c.description}
-        </p>
-      )}
-
-      {c.topics.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-x-2.5 gap-y-1">
-          {c.topics.slice(0, 3).map((t) => (
-            <span
-              key={t}
-              className="text-[11px]"
-              style={{ color: 'var(--color-fg-subtle)' }}
-            >
-              #{t}
-            </span>
-          ))}
-        </div>
-      )}
+        <span className="group-hover:text-(--color-fg-default)">바로가기 →</span>
+      </span>
     </motion.a>
   );
 }
