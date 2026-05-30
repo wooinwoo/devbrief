@@ -24,94 +24,95 @@ export const ChatDrawer = forwardRef<InlineChatHandle>(function ChatDrawer(_, re
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* dim overlay (메인 콘텐츠 살짝 fade) */}
+          {/* 외부 클릭으로 닫기 위한 transparent overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-40 cursor-pointer"
-            style={{
-              background: 'oklch(15% 0.01 245 / 0.18)',
-              backdropFilter: 'blur(2px)',
-            }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-40"
             onClick={() => chat?.close()}
           />
 
+          {/* floating button 위에 anchored 모달 */}
           <motion.aside
-            initial={{ x: '100%', opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: '100%', opacity: 0 }}
-            transition={{ duration: 0.32, ease: [0.2, 0, 0, 1] }}
-            className="fixed z-50 top-0 right-0 bottom-0 w-full sm:w-[440px] lg:w-[480px] xl:w-[520px]"
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
+            className="fixed z-50 bottom-24 right-6 sm:right-8 w-[min(420px,calc(100vw-32px))] origin-bottom-right"
             style={{
-              boxShadow: '-30px 0 60px -20px oklch(15% 0.01 245 / 0.22)',
+              height: 'min(640px, calc(100vh - 140px))',
+              transformOrigin: 'bottom right',
             }}
             role="dialog"
             aria-label="Pulse 챗봇"
           >
             <div
-              className="flex flex-col h-full w-full"
+              className="flex flex-col h-full w-full overflow-hidden"
               style={{
                 background: 'oklch(100% 0 0)',
-                borderLeft: '1px solid var(--color-line)',
+                border: '1px solid var(--color-line)',
+                borderRadius: 16,
+                boxShadow:
+                  '0 24px 48px -16px oklch(15% 0.01 245 / 0.22), 0 12px 24px -12px oklch(15% 0.01 245 / 0.12)',
               }}
             >
-            <header
-              className="px-7 pt-7 pb-5"
-              style={{ borderBottom: '1px solid var(--color-line)' }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span
-                    aria-hidden
-                    className="inline-block w-1.5 h-1.5 rounded-full pulse-bar"
-                    style={{
-                      background: 'var(--color-accent)',
-                      boxShadow: '0 0 8px var(--color-accent)',
-                    }}
-                  />
-                  <p
-                    className="text-[10px] tracking-[0.25em] uppercase"
-                    style={{ color: 'var(--color-fg-subtle)' }}
+              <header
+                className="px-6 pt-5 pb-4 shrink-0"
+                style={{ borderBottom: '1px solid var(--color-line)' }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      aria-hidden
+                      className="inline-block w-1.5 h-1.5 rounded-full pulse-bar"
+                      style={{
+                        background: 'var(--color-accent)',
+                        boxShadow: '0 0 8px var(--color-accent)',
+                      }}
+                    />
+                    <p
+                      className="text-[10px] tracking-[0.25em] uppercase"
+                      style={{ color: 'var(--color-fg-subtle)' }}
+                    >
+                      Pulse · Chat
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => chat?.close()}
+                    aria-label="닫기"
+                    className="p-1 rounded-md transition-colors"
+                    style={{ color: 'var(--color-fg-muted)' }}
                   >
-                    Pulse · Chat
-                  </p>
+                    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden>
+                      <path
+                        d="M4 4L14 14M14 4L4 14"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => chat?.close()}
-                  aria-label="닫기"
-                  className="p-1.5 rounded-md transition-colors"
+                <h2
+                  className="text-[1.25rem] leading-tight tracking-[-0.01em]"
+                  style={{ color: 'var(--color-fg-strong)', fontWeight: 500 }}
+                >
+                  자연어로 묻기
+                </h2>
+                <p
+                  className="text-[12px] mt-1 leading-relaxed"
                   style={{ color: 'var(--color-fg-muted)' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                    <path
-                      d="M4 4L14 14M14 4L4 14"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <h2
-                className="text-[1.625rem] leading-tight tracking-[-0.01em]"
-                style={{ color: 'var(--color-fg-strong)', fontWeight: 500 }}
-              >
-                자연어로 묻기
-              </h2>
-              <p
-                className="text-[13px] mt-1.5 leading-relaxed"
-                style={{ color: 'var(--color-fg-muted)' }}
-              >
-                수집된 글 위에서 답합니다. 본 글 / 안 본 글 / 출처를 구분해서요.
-              </p>
-            </header>
+                  수집된 글 위에서 답합니다.
+                </p>
+              </header>
 
-            <div className="flex-1 overflow-y-auto px-7 py-6">
-              <ChatPanel ref={ref} />
-            </div>
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                <ChatPanel ref={ref} />
+              </div>
             </div>
           </motion.aside>
         </>
