@@ -8,9 +8,9 @@ import { ArticleCard } from './article-card';
 import { TopStoryCard } from './top-story-card';
 import { HeroStrip } from './hero-strip';
 import { PageFooter } from './page-footer';
-import { InlineChat, type InlineChatHandle } from './inline-chat';
+import { type InlineChatHandle } from './inline-chat';
 import { ChatProvider } from './chat-context';
-import { SideDock } from './side-dock';
+import { ChatPanel } from './chat-panel';
 import { readTracking } from '@/lib/read-tracking';
 import { groupByTime, extractTopTags } from '@/lib/group-articles';
 
@@ -71,17 +71,16 @@ export function ArticlesView({ articles }: Props) {
 
   return (
     <ChatProvider ask={ask}>
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-14">
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
       <div className="min-w-0">
       <HeroStrip
         total={articles.length}
         unread={unreadCount}
         sourceCount={sourceCounts.length}
+        sources={sourceCounts.map(([provider, { name, count }]) => ({ provider, name, count }))}
         topTags={topTags}
         onTagClick={(t) => setQuery(t)}
       />
-
-      <InlineChat ref={chatRef} />
 
       {/* sticky 필터바 — 좌측 메인 컬럼 내부에서만 sticky */}
       <div
@@ -301,11 +300,8 @@ export function ArticlesView({ articles }: Props) {
       <PageFooter total={articles.length} sourceCount={sourceCounts.length} />
       </div>
       <div className="hidden lg:block">
-        <div className="sticky top-20">
-          <SideDock
-            total={articles.length}
-            sources={sourceCounts.map(([provider, { name, count }]) => ({ provider, name, count }))}
-          />
+        <div className="sticky top-6">
+          <ChatPanel ref={chatRef} />
         </div>
       </div>
     </div>

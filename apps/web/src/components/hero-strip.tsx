@@ -1,22 +1,31 @@
 'use client';
 
 import { motion } from 'motion/react';
+import { SourceRing } from './source-ring';
 
 interface Props {
   total: number;
   unread: number;
   sourceCount: number;
+  sources: Array<{ provider: string; name: string; count: number }>;
   topTags: Array<{ tag: string; count: number }>;
   onTagClick?: (tag: string) => void;
 }
 
-export function HeroStrip({ total, unread, sourceCount, topTags, onTagClick }: Props) {
+export function HeroStrip({
+  total,
+  unread,
+  sourceCount,
+  sources,
+  topTags,
+  onTagClick,
+}: Props) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.2, 0, 0, 1] }}
-      className="relative mb-14"
+      className="relative mb-14 grid gap-10 md:grid-cols-[1fr_auto] md:items-start"
     >
       <div>
         <div
@@ -69,6 +78,9 @@ export function HeroStrip({ total, unread, sourceCount, topTags, onTagClick }: P
         )}
       </div>
 
+      <aside className="hidden md:block">
+        <SourceRing sources={sources} total={total} />
+      </aside>
     </motion.section>
   );
 }
