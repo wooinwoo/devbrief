@@ -58,10 +58,10 @@ export function ArticleCard({
   const isCompact = variant === 'compact';
 
   const titleClass = isFeatured
-    ? 'text-[1.5rem] sm:text-[1.75rem] leading-[1.25] tracking-[-0.01em]'
+    ? 'text-[1.625rem] sm:text-[1.875rem] leading-[1.2] tracking-[-0.012em]'
     : isCompact
-      ? 'text-[15px] leading-[1.4] tracking-[-0.003em]'
-      : 'text-[1.1875rem] sm:text-[1.3125rem] leading-[1.35] tracking-[-0.005em]';
+      ? 'text-[15.5px] leading-[1.35] tracking-[-0.003em]'
+      : 'text-[1.25rem] sm:text-[1.4375rem] leading-[1.3] tracking-[-0.007em]';
 
   const featuredBg = isFeatured
     ? `linear-gradient(to right, ${bar.replace(')', ' / 0.045)')}, transparent 65%)`
@@ -97,27 +97,27 @@ export function ArticleCard({
         onClick={onOpen}
         className="block focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--color-line-strong) focus-visible:rounded"
       >
-        <div className="flex items-center gap-2 mb-2 text-[12px] flex-wrap">
+        <div className="flex items-center gap-2 mb-2.5 text-[12.5px] flex-wrap">
           {!read && (
             <span
               aria-label="안 본 글"
-              className="inline-block h-1.5 w-1.5 rounded-full"
+              className="inline-block h-2 w-2 rounded-full"
               style={{ background: bar, boxShadow: `0 0 8px ${bar}` }}
             />
           )}
-          <span style={{ color: bar }} className="tracking-wide">
+          <span style={{ color: bar, fontWeight: 600 }} className="tracking-wide">
             {article.source.name}
           </span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
           <span style={{ color: 'var(--color-fg-muted)' }}>{relativeTime(article.publishedAt)}</span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-          <span className="tabular-nums" style={{ color: 'var(--color-fg-subtle)' }}>
+          <span className="tabular-nums" style={{ color: 'var(--color-fg-muted)' }}>
             {minutes}분 읽기
           </span>
         </div>
         <h2
           className={`${titleClass} transition-colors`}
-          style={{ color: 'var(--color-fg-default)', fontWeight: 500 }}
+          style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
         >
           <span className="group-hover:text-(--color-fg-strong) transition-colors">
             <Highlight text={article.title} query={query} />
@@ -125,8 +125,8 @@ export function ArticleCard({
         </h2>
         {summary && !isCompact && (
           <p
-            className="mt-2.5 leading-[1.6] text-[14px]"
-            style={{ color: 'var(--color-fg-muted)' }}
+            className="mt-3 leading-[1.65] text-[15px]"
+            style={{ color: 'var(--color-fg-default)' }}
           >
             <Highlight text={summary} query={query} />
           </p>
@@ -134,28 +134,28 @@ export function ArticleCard({
       </Link>
 
       {!isCompact && (
-        <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5">
           {article.tags.slice(0, 4).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => onTagClick?.(t)}
-              className="text-[11px] transition-colors"
-              style={{ color: 'var(--color-fg-subtle)' }}
+              className="text-[12px] transition-colors"
+              style={{ color: 'var(--color-fg-muted)' }}
             >
-              <span className="hover:text-(--color-fg-default)">#{t}</span>
+              <span className="hover:text-(--color-fg-strong)">#{t}</span>
             </button>
           ))}
           <span className="flex-1" />
           <button
             type="button"
             onClick={() => chat?.ask(`${article.title} 에 대해 설명해줘`)}
-            className="text-[11px] inline-flex items-center gap-1.5 transition-opacity opacity-60 group-hover:opacity-100"
-            style={{ color: bar }}
+            className="text-[12px] inline-flex items-center gap-1.5 transition-opacity opacity-70 group-hover:opacity-100"
+            style={{ color: bar, fontWeight: 500 }}
           >
             <span
               aria-hidden
-              className="inline-block w-1 h-1 rounded-full"
+              className="inline-block w-1.5 h-1.5 rounded-full"
               style={{ background: bar, boxShadow: `0 0 4px ${bar}` }}
             />
             챗봇에 묻기

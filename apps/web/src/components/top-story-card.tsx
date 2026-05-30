@@ -64,8 +64,8 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
       />
 
       <p
-        className="text-[11px] mb-4 tracking-[0.2em] uppercase"
-        style={{ color: 'var(--color-fg-subtle)' }}
+        className="text-[12px] mb-4 tracking-[0.25em] uppercase"
+        style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
       >
         Top Story
       </p>
@@ -75,8 +75,8 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
         onClick={onOpen}
         className="block group focus-visible:outline-none"
       >
-        <div className="flex items-center gap-2 mb-4 text-[13px]">
-          <span style={{ color: bar }} className="font-medium tracking-wide">
+        <div className="flex items-center gap-2 mb-4 text-[13.5px]">
+          <span style={{ color: bar, fontWeight: 600 }} className="tracking-wide">
             {article.source.name}
           </span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
@@ -91,15 +91,15 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
         </div>
 
         <h2
-          className="text-[1.625rem] sm:text-[2.25rem] lg:text-[2.75rem] font-medium leading-[1.2] tracking-[-0.01em] transition-colors break-keep"
-          style={{ color: 'var(--color-fg-strong)' }}
+          className="text-[1.875rem] sm:text-[2.5rem] lg:text-[3rem] leading-[1.15] tracking-[-0.015em] transition-colors break-keep"
+          style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
         >
           {article.title}
         </h2>
 
         {article.summaryOneLine && (
           <p
-            className="text-[15px] sm:text-[1.0625rem] mt-4 sm:mt-5 leading-[1.65] max-w-2xl"
+            className="text-[16px] sm:text-[17px] mt-5 sm:mt-6 leading-[1.7] max-w-2xl"
             style={{ color: 'var(--color-fg-default)' }}
           >
             {article.summaryOneLine}
@@ -109,7 +109,7 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
 
       <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2">
         {article.tags.slice(0, 5).map((t) => (
-          <span key={t} className="text-xs" style={{ color: 'var(--color-fg-subtle)' }}>
+          <span key={t} className="text-[12.5px]" style={{ color: 'var(--color-fg-muted)' }}>
             #{t}
           </span>
         ))}
