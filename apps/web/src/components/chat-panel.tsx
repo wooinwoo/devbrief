@@ -27,8 +27,8 @@ export const ChatPanel = forwardRef<InlineChatHandle>(function ChatPanel(_, ref)
       <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--color-line)' }}>
         <div className="flex items-baseline gap-3 mb-3">
           <p
-            className="text-[10px] tracking-[0.2em] uppercase"
-            style={{ color: 'var(--color-fg-subtle)' }}
+            className="text-[11px] tracking-[0.2em] uppercase"
+            style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
           >
             다가오는 컨퍼런스
           </p>
@@ -75,7 +75,7 @@ export const ChatPanel = forwardRef<InlineChatHandle>(function ChatPanel(_, ref)
                   />
                   <div className="flex items-baseline justify-between gap-3">
                     <span
-                      className="text-[13px] transition-colors"
+                      className="text-[14px] transition-colors"
                       style={{ color: 'var(--color-fg-default)', fontWeight: 500 }}
                     >
                       <span className="group-hover:text-(--color-fg-strong)">
@@ -83,11 +83,10 @@ export const ChatPanel = forwardRef<InlineChatHandle>(function ChatPanel(_, ref)
                       </span>
                     </span>
                     <span
-                      className="text-[11px] tabular-nums tracking-wide shrink-0"
+                      className="text-[12px] tabular-nums tracking-wide shrink-0"
                       style={{
-                        color: isNear
-                          ? 'var(--color-warm)'
-                          : 'var(--color-fg-muted)',
+                        color: isNear ? 'var(--color-warm)' : 'var(--color-fg-muted)',
+                        fontWeight: 600,
                       }}
                     >
                       D-{d}

@@ -66,15 +66,15 @@ export const ChatDrawer = forwardRef<InlineChatHandle>(function ChatDrawer(_, re
                   <div className="flex items-center gap-2">
                     <span
                       aria-hidden
-                      className="inline-block w-1.5 h-1.5 rounded-full pulse-bar"
+                      className="inline-block w-2 h-2 rounded-full pulse-bar"
                       style={{
                         background: 'var(--color-accent)',
-                        boxShadow: '0 0 8px var(--color-accent)',
+                        boxShadow: '0 0 10px var(--color-accent)',
                       }}
                     />
                     <p
-                      className="text-[10px] tracking-[0.25em] uppercase"
-                      style={{ color: 'var(--color-fg-subtle)' }}
+                      className="text-[11px] tracking-[0.22em] uppercase"
+                      style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
                     >
                       Pulse · Chat
                     </p>
@@ -97,13 +97,13 @@ export const ChatDrawer = forwardRef<InlineChatHandle>(function ChatDrawer(_, re
                   </button>
                 </div>
                 <h2
-                  className="text-[1.25rem] leading-tight tracking-[-0.01em]"
-                  style={{ color: 'var(--color-fg-strong)', fontWeight: 500 }}
+                  className="text-[1.375rem] leading-tight tracking-[-0.01em]"
+                  style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
                 >
                   자연어로 묻기
                 </h2>
                 <p
-                  className="text-[12px] mt-1 leading-relaxed"
+                  className="text-[13px] mt-1.5 leading-relaxed"
                   style={{ color: 'var(--color-fg-muted)' }}
                 >
                   수집된 글 위에서 답합니다.

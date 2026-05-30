@@ -209,12 +209,12 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
             id="inline-chat-input"
             type="text"
             name="query"
-            placeholder="자연어로 물어보세요. 예: 이번 주 AI 모델 출시 소식만"
+            placeholder="자연어로 물어보세요. 예: 이번 주 AI 모델 출시"
             autoComplete="off"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={streaming}
-            className="flex-1 bg-transparent outline-none px-3 py-2 text-[15px] disabled:opacity-50"
+            className="flex-1 bg-transparent outline-none px-3 py-2.5 text-[15px] disabled:opacity-50 placeholder:text-[var(--color-fg-subtle)]"
             style={{ color: 'var(--color-fg-strong)' }}
           />
           <button
@@ -235,8 +235,8 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
       {!hasConversation && (
         <div className="mt-5">
           <p
-            className="text-[10px] mb-3 tracking-[0.2em] uppercase"
-            style={{ color: 'var(--color-fg-subtle)' }}
+            className="text-[11px] mb-3 tracking-[0.2em] uppercase"
+            style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
           >
             빠른 질문
           </p>
@@ -263,14 +263,14 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
                   />
                   <div className="flex items-baseline justify-between gap-3">
                     <span
-                      className="text-[14px] transition-colors"
-                      style={{ color: 'var(--color-fg-default)' }}
+                      className="text-[14.5px] transition-colors"
+                      style={{ color: 'var(--color-fg-default)', fontWeight: 500 }}
                     >
                       <span className="group-hover:text-(--color-fg-strong)">{p.label}</span>
                     </span>
                     <span
-                      className="text-[11px] tracking-wide shrink-0"
-                      style={{ color: 'var(--color-fg-subtle)' }}
+                      className="text-[11.5px] tracking-wide shrink-0"
+                      style={{ color: 'var(--color-fg-muted)' }}
                     >
                       {p.hint}
                     </span>
