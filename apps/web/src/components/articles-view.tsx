@@ -223,7 +223,7 @@ export function ArticlesView({ articles }: Props) {
           조건에 맞는 글이 없어요.
         </p>
       ) : isFiltering ? (
-        <ul className="grid gap-x-10 gap-y-10 md:grid-cols-2 items-start">
+        <ul className="grid gap-x-10 gap-y-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start">
           {filtered.map((a) => (
             <li key={a.id}>
               <ArticleCard
@@ -247,19 +247,18 @@ export function ArticlesView({ articles }: Props) {
           )}
 
           {groups.map((group, gi) => {
-            const variant: 'default' | 'featured' | 'compact' =
-              gi === 0 ? 'featured' : gi >= 3 ? 'compact' : 'default';
-            const gridCols =
-              variant === 'compact'
-                ? 'md:grid-cols-2 lg:grid-cols-3'
-                : 'md:grid-cols-2';
+            // 그룹별 layout pattern 변주 — 잭 룰: 레이아웃 변주
+            // 0: hero+stack (8/4 비대칭)  1: 3컬럼 grid  2: 가로 스크롤 갤러리
+            // 3: 단줄 라인 리스트         4+: 4컬럼 compact
+            const pattern = gi % 5;
+
             return (
               <motion.section
                 key={group.label}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: [0.2, 0, 0, 1], delay: 0.1 + gi * 0.06 }}
-                className="mb-14"
+                className="mb-16"
               >
                 <div className="flex items-baseline gap-3 mb-7">
                   <h3
@@ -279,24 +278,133 @@ export function ArticlesView({ articles }: Props) {
                     style={{ background: 'var(--color-line)' }}
                   />
                 </div>
-                <ul
-                  className={`grid gap-x-8 ${
-                    variant === 'compact' ? 'gap-y-6' : 'gap-y-10'
-                  } ${gridCols} items-start`}
-                >
-                  {group.articles.map((a) => (
-                    <li key={a.id}>
-                      <ArticleCard
-                        article={a}
-                        read={readSet.has(a.id)}
-                        onOpen={() => handleArticleOpen(a.id)}
-                        onTagClick={(tag) => setQuery(tag)}
-                        query={query}
-                        variant={variant}
-                      />
-                    </li>
-                  ))}
-                </ul>
+
+                {/* Pattern 0 — hero + side stack (8/4) */}
+                {pattern === 0 && (
+                  <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12 items-start">
+                    {group.articles[0] && (
+                      <div className="lg:col-span-7">
+                        <ArticleCard
+                          article={group.articles[0]}
+                          read={readSet.has(group.articles[0].id)}
+                          onOpen={() => handleArticleOpen(group.articles[0]!.id)}
+                          onTagClick={(tag) => setQuery(tag)}
+                          query={query}
+                          variant="featured"
+                        />
+                      </div>
+                    )}
+                    <ul className="lg:col-span-5 space-y-6">
+                      {group.articles.slice(1, 4).map((a) => (
+                        <li key={a.id}>
+                          <ArticleCard
+                            article={a}
+                            read={readSet.has(a.id)}
+                            onOpen={() => handleArticleOpen(a.id)}
+                            onTagClick={(tag) => setQuery(tag)}
+                            query={query}
+                            variant="compact"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                    {group.articles.length > 4 && (
+                      <ul className="lg:col-span-12 grid gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start mt-2">
+                        {group.articles.slice(4).map((a) => (
+                          <li key={a.id}>
+                            <ArticleCard
+                              article={a}
+                              read={readSet.has(a.id)}
+                              onOpen={() => handleArticleOpen(a.id)}
+                              onTagClick={(tag) => setQuery(tag)}
+                              query={query}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
+                {/* Pattern 1 — 3 컬럼 standard grid */}
+                {pattern === 1 && (
+                  <ul className="grid gap-x-10 gap-y-10 md:grid-cols-2 lg:grid-cols-3 items-start">
+                    {group.articles.map((a) => (
+                      <li key={a.id}>
+                        <ArticleCard
+                          article={a}
+                          read={readSet.has(a.id)}
+                          onOpen={() => handleArticleOpen(a.id)}
+                          onTagClick={(tag) => setQuery(tag)}
+                          query={query}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {/* Pattern 2 — 가로 스크롤 갤러리 (잭 시그니처) */}
+                {pattern === 2 && (
+                  <ul
+                    className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 -mx-6 px-6 sm:-mx-10 sm:px-10 lg:-mx-16 lg:px-16 xl:-mx-24 xl:px-24"
+                    style={{ scrollbarWidth: 'thin' }}
+                  >
+                    {group.articles.map((a) => (
+                      <li
+                        key={a.id}
+                        className="snap-start shrink-0 w-[280px] sm:w-[320px]"
+                      >
+                        <ArticleCard
+                          article={a}
+                          read={readSet.has(a.id)}
+                          onOpen={() => handleArticleOpen(a.id)}
+                          onTagClick={(tag) => setQuery(tag)}
+                          query={query}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {/* Pattern 3 — 단줄 라인 리스트 (정보 밀도 ↑) */}
+                {pattern === 3 && (
+                  <ul className="divide-y" style={{ borderColor: 'var(--color-line)' }}>
+                    {group.articles.map((a) => (
+                      <li
+                        key={a.id}
+                        className="py-2 first:pt-0"
+                        style={{ borderColor: 'var(--color-line)' }}
+                      >
+                        <ArticleCard
+                          article={a}
+                          read={readSet.has(a.id)}
+                          onOpen={() => handleArticleOpen(a.id)}
+                          onTagClick={(tag) => setQuery(tag)}
+                          query={query}
+                          variant="compact"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {/* Pattern 4+ — 4 컬럼 compact */}
+                {pattern === 4 && (
+                  <ul className="grid gap-x-8 gap-y-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 items-start">
+                    {group.articles.map((a) => (
+                      <li key={a.id}>
+                        <ArticleCard
+                          article={a}
+                          read={readSet.has(a.id)}
+                          onOpen={() => handleArticleOpen(a.id)}
+                          onTagClick={(tag) => setQuery(tag)}
+                          query={query}
+                          variant="compact"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </motion.section>
             );
           })}

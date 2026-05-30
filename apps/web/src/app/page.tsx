@@ -27,7 +27,7 @@ export default async function Home() {
 
   return (
     <main
-      className="min-h-screen px-6 sm:px-10 lg:px-12 pt-12 pb-24 max-w-7xl mx-auto"
+      className="min-h-screen px-6 sm:px-10 lg:px-16 xl:px-24 pt-12 pb-24 mx-auto"
       style={{ overflowX: 'clip' }}
     >
       <SiteNav />
