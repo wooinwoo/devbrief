@@ -87,7 +87,7 @@ export function ArticlesView({ articles }: Props) {
       <div
         className="sticky top-0 z-20 -mx-6 sm:-mx-10 lg:-mx-4 px-6 sm:px-10 lg:px-4 py-3 mb-10 backdrop-blur-md"
         style={{
-          background: 'oklch(17% 0.012 245 / 0.85)',
+          background: 'oklch(98% 0.004 80 / 0.85)',
           borderBottom: '1px solid var(--color-line)',
         }}
       >

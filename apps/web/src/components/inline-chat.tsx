@@ -186,7 +186,7 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
           style={{
             border: '1px solid var(--color-line-strong)',
             background:
-              'linear-gradient(to right, var(--color-accent-glow), transparent 60%), oklch(15% 0.005 250 / 0.6)',
+              'linear-gradient(to right, var(--color-accent-glow), transparent 60%), var(--color-bg-elevated)',
           }}
         >
           <input

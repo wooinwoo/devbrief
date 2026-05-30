@@ -6,25 +6,25 @@ import { relativeTime } from '@/lib/relative-time';
 import { useChat } from './chat-context';
 
 const SOURCE_GLOW: Record<string, string> = {
-  geeknews: 'oklch(75% 0.15 160 / 0.18)',
-  hackernews: 'oklch(75% 0.16 50 / 0.18)',
-  devto: 'oklch(72% 0.16 290 / 0.18)',
-  techcrunch: 'oklch(72% 0.18 15 / 0.18)',
-  anthropic: 'oklch(80% 0.14 70 / 0.20)',
-  openai: 'oklch(75% 0.13 220 / 0.18)',
-  producthunt: 'oklch(74% 0.17 340 / 0.18)',
-  rss_generic: 'oklch(60% 0.01 250 / 0.12)',
+  geeknews: 'oklch(60% 0.16 160 / 0.12)',
+  hackernews: 'oklch(60% 0.18 45 / 0.12)',
+  devto: 'oklch(60% 0.18 290 / 0.12)',
+  techcrunch: 'oklch(60% 0.21 15 / 0.12)',
+  anthropic: 'oklch(65% 0.17 60 / 0.15)',
+  openai: 'oklch(60% 0.15 220 / 0.12)',
+  producthunt: 'oklch(60% 0.20 340 / 0.12)',
+  rss_generic: 'oklch(60% 0.012 250 / 0.08)',
 };
 
 const SOURCE_BAR: Record<string, string> = {
-  geeknews: 'oklch(75% 0.15 160)',
-  hackernews: 'oklch(75% 0.16 50)',
-  devto: 'oklch(72% 0.16 290)',
-  techcrunch: 'oklch(72% 0.18 15)',
-  anthropic: 'oklch(80% 0.14 70)',
-  openai: 'oklch(75% 0.13 220)',
-  producthunt: 'oklch(74% 0.17 340)',
-  rss_generic: 'oklch(60% 0.01 250)',
+  geeknews: 'oklch(48% 0.16 160)',
+  hackernews: 'oklch(55% 0.18 45)',
+  devto: 'oklch(48% 0.18 290)',
+  techcrunch: 'oklch(50% 0.21 15)',
+  anthropic: 'oklch(55% 0.17 60)',
+  openai: 'oklch(50% 0.15 220)',
+  producthunt: 'oklch(54% 0.20 340)',
+  rss_generic: 'oklch(45% 0.012 250)',
 };
 
 interface Props {

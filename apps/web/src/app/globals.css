@@ -3,19 +3,19 @@
 @import 'tailwindcss';
 
 :root {
-  /* 사용처 토큰 (oklch 슬레이트 톤 — 미세한 블루-그레이 끼) */
-  --bg-base: oklch(17% 0.012 245);
-  --bg-elevated: oklch(20% 0.013 245);
-  --bg-sunken: oklch(14% 0.011 245);
-  --fg-strong: oklch(95% 0.005 245);
-  --fg-default: oklch(82% 0.008 245);
-  --fg-muted: oklch(60% 0.012 245);
-  --fg-subtle: oklch(42% 0.013 245);
-  --line: oklch(26% 0.013 245);
-  --line-strong: oklch(36% 0.014 245);
-  --accent: oklch(78% 0.13 195);
-  --accent-glow: oklch(78% 0.13 195 / 0.16);
-  --warm: oklch(82% 0.12 70);
+  /* 사용처 토큰 (라이트 — 워머 오프 화이트 베이스) */
+  --bg-base: oklch(98% 0.004 80);
+  --bg-elevated: oklch(100% 0 0);
+  --bg-sunken: oklch(95% 0.006 80);
+  --fg-strong: oklch(20% 0.012 245);
+  --fg-default: oklch(35% 0.013 245);
+  --fg-muted: oklch(52% 0.013 245);
+  --fg-subtle: oklch(68% 0.011 245);
+  --line: oklch(90% 0.007 80);
+  --line-strong: oklch(80% 0.009 80);
+  --accent: oklch(55% 0.18 195);
+  --accent-glow: oklch(55% 0.18 195 / 0.10);
+  --warm: oklch(58% 0.18 45);
 }
 
 @theme inline {
@@ -48,7 +48,7 @@ html {
   overflow-x: hidden;
 }
 
-/* 미세한 noise 배경 (잭 시그니처 톤) */
+/* 미세한 색감 배경 (잭 시그니처 톤 - 라이트) */
 body::before {
   content: '';
   position: fixed;
@@ -56,9 +56,9 @@ body::before {
   z-index: -10;
   pointer-events: none;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, oklch(72% 0.14 200 / 0.14), transparent 65%),
-    radial-gradient(ellipse 50% 40% at 100% 110%, oklch(75% 0.13 280 / 0.10), transparent 60%),
-    radial-gradient(ellipse 40% 30% at 0% 100%, oklch(78% 0.11 30 / 0.06), transparent 60%);
+    radial-gradient(ellipse 80% 50% at 50% -10%, oklch(72% 0.14 200 / 0.07), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 100% 110%, oklch(75% 0.13 280 / 0.05), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 0% 100%, oklch(78% 0.11 30 / 0.04), transparent 60%);
 }
 
 body::after {
@@ -67,8 +67,8 @@ body::after {
   inset: 0;
   z-index: -9;
   pointer-events: none;
-  opacity: 0.65;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.2 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* shimmer 인라인 라인 (Top story 좌측) */

@@ -3,14 +3,14 @@
 import { relativeTime } from '@/lib/relative-time';
 
 const SOURCE_BAR: Record<string, string> = {
-  geeknews: 'oklch(75% 0.15 160)',
-  hackernews: 'oklch(75% 0.16 50)',
-  devto: 'oklch(72% 0.16 290)',
-  techcrunch: 'oklch(72% 0.18 15)',
-  anthropic: 'oklch(80% 0.14 70)',
-  openai: 'oklch(75% 0.13 220)',
-  producthunt: 'oklch(74% 0.17 340)',
-  rss_generic: 'oklch(60% 0.01 250)',
+  geeknews: 'oklch(48% 0.16 160)',
+  hackernews: 'oklch(55% 0.18 45)',
+  devto: 'oklch(48% 0.18 290)',
+  techcrunch: 'oklch(50% 0.21 15)',
+  anthropic: 'oklch(55% 0.17 60)',
+  openai: 'oklch(50% 0.15 220)',
+  producthunt: 'oklch(54% 0.20 340)',
+  rss_generic: 'oklch(45% 0.012 250)',
 };
 
 export interface Citation {

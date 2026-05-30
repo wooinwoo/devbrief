@@ -6,14 +6,14 @@ interface Slice {
 }
 
 const SOURCE_COLOR: Record<string, string> = {
-  geeknews: 'oklch(75% 0.15 160)',
-  hackernews: 'oklch(75% 0.16 50)',
-  devto: 'oklch(72% 0.16 290)',
-  techcrunch: 'oklch(72% 0.18 15)',
-  anthropic: 'oklch(80% 0.14 70)',
-  openai: 'oklch(75% 0.13 220)',
-  producthunt: 'oklch(74% 0.17 340)',
-  rss_generic: 'oklch(60% 0.01 250)',
+  geeknews: 'oklch(55% 0.17 160)',
+  hackernews: 'oklch(60% 0.18 45)',
+  devto: 'oklch(55% 0.18 290)',
+  techcrunch: 'oklch(55% 0.21 15)',
+  anthropic: 'oklch(62% 0.17 60)',
+  openai: 'oklch(58% 0.15 220)',
+  producthunt: 'oklch(60% 0.20 340)',
+  rss_generic: 'oklch(55% 0.012 250)',
 };
 
 interface Props {
@@ -49,7 +49,7 @@ export function SourceRing({ sources, total }: Props) {
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="oklch(22% 0.006 250)"
+            stroke="var(--color-line)"
             strokeWidth={stroke}
           />
           {slices.map((s) => {
