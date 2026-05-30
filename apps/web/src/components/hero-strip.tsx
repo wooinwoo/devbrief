@@ -43,9 +43,9 @@ export function HeroStrip({
         </div>
 
         <div className="grid grid-cols-3 gap-x-8 max-w-md mb-7">
-          <Stat label="글" value={total} />
-          <Stat label="소스" value={sourceCount} />
-          <Stat label="안 본 글" value={unread} accent />
+          <Stat label="글" value={total} tone="oklch(50% 0.16 250)" />
+          <Stat label="소스" value={sourceCount} tone="oklch(50% 0.18 290)" />
+          <Stat label="안 본 글" value={unread} tone="oklch(50% 0.18 195)" />
         </div>
 
         {topTags.length > 0 && (
@@ -57,24 +57,38 @@ export function HeroStrip({
               이번 주 자주 등장한 키워드
             </p>
             <div className="flex flex-wrap gap-2">
-              {topTags.map(({ tag, count }) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => onTagClick?.(tag)}
-                  className="text-[13px] px-3.5 py-1.5 rounded-full transition-all"
-                  style={{
-                    color: 'var(--color-fg-default)',
-                    border: '1px solid var(--color-line-strong)',
-                    fontWeight: 500,
-                  }}
-                >
-                  <span className="hover:text-(--color-fg-strong) transition-colors">
-                    #{tag}{' '}
-                    <span style={{ color: 'var(--color-fg-muted)' }}>{count}</span>
-                  </span>
-                </button>
-              ))}
+              {topTags.map(({ tag, count }, i) => {
+                const palette = [
+                  'oklch(50% 0.18 195)',
+                  'oklch(52% 0.19 60)',
+                  'oklch(50% 0.18 290)',
+                  'oklch(50% 0.16 145)',
+                  'oklch(52% 0.20 15)',
+                  'oklch(50% 0.18 240)',
+                  'oklch(52% 0.20 340)',
+                  'oklch(50% 0.16 80)',
+                ];
+                const tone = palette[i % palette.length]!;
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => onTagClick?.(tag)}
+                    className="text-[13px] px-3.5 py-1.5 rounded-full transition-all"
+                    style={{
+                      color: tone,
+                      background: tone.replace(')', ' / 0.06)'),
+                      border: `1px solid ${tone.replace(')', ' / 0.25)')}`,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <span>
+                      #{tag}{' '}
+                      <span style={{ color: tone.replace(')', ' / 0.65)') }}>{count}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -87,7 +101,7 @@ export function HeroStrip({
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
     <div>
       <p
@@ -99,7 +113,7 @@ function Stat({ label, value, accent }: { label: string; value: number; accent?:
       <p
         className="text-[2rem] leading-none tabular-nums tracking-[-0.02em]"
         style={{
-          color: accent ? 'var(--color-accent)' : 'var(--color-fg-strong)',
+          color: tone,
           fontWeight: 600,
         }}
       >

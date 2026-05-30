@@ -63,9 +63,9 @@ export function ArticleCard({
       ? 'text-[15.5px] leading-[1.35] tracking-[-0.003em]'
       : 'text-[1.25rem] sm:text-[1.4375rem] leading-[1.3] tracking-[-0.007em]';
 
-  const featuredBg = isFeatured
-    ? `linear-gradient(to right, ${bar.replace(')', ' / 0.045)')}, transparent 65%)`
-    : undefined;
+  const cardBg = isFeatured
+    ? `linear-gradient(to right, ${bar.replace(')', ' / 0.07)')}, transparent 60%)`
+    : `linear-gradient(to right, ${bar.replace(')', ' / 0.025)')}, transparent 40%)`;
 
   return (
     <article
@@ -74,21 +74,23 @@ export function ArticleCard({
         ${read ? 'opacity-55 hover:opacity-90' : ''}
       `}
       style={{
-        background: featuredBg,
-        borderRadius: isFeatured ? 6 : undefined,
+        background: cardBg,
+        borderRadius: isFeatured ? 8 : undefined,
       }}
     >
       <span
         aria-hidden
-        className="absolute left-0 top-1 bottom-5 w-px"
-        style={{ background: 'var(--color-line-strong)' }}
+        className="absolute left-0 top-1 bottom-5 w-[2px]"
+        style={{
+          background: `linear-gradient(to bottom, ${bar} 0%, ${bar.replace(')', ' / 0.4)')} 70%, transparent 100%)`,
+        }}
       />
       <span
         aria-hidden
         className="absolute left-0 top-1 bottom-5 w-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
-          background: `linear-gradient(to bottom, ${bar} 0%, ${bar} 50%, transparent 100%)`,
-          boxShadow: `0 0 10px ${bar}`,
+          background: bar,
+          boxShadow: `0 0 12px ${bar}, 0 0 4px ${bar}`,
         }}
       />
 
