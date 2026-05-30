@@ -245,44 +245,60 @@ export function ArticlesView({ articles }: Props) {
 
           <ConferenceSection conferences={MOCK_CONFERENCES} />
 
-          {groups.map((group, gi) => (
-            <motion.section
-              key={group.label}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.2, 0, 0, 1], delay: 0.1 + gi * 0.06 }}
-              className="mb-14"
-            >
-              <div className="flex items-baseline gap-3 mb-7">
-                <h3
-                  className="text-[11px] tracking-[0.2em] uppercase"
-                  style={{ color: 'var(--color-fg-muted)' }}
+          {groups.map((group, gi) => {
+            const variant: 'default' | 'featured' | 'compact' =
+              gi === 0 ? 'featured' : gi >= 3 ? 'compact' : 'default';
+            const gridCols =
+              variant === 'compact'
+                ? 'md:grid-cols-2 lg:grid-cols-3'
+                : 'md:grid-cols-2';
+            return (
+              <motion.section
+                key={group.label}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: [0.2, 0, 0, 1], delay: 0.1 + gi * 0.06 }}
+                className="mb-14"
+              >
+                <div className="flex items-baseline gap-3 mb-7">
+                  <h3
+                    className="text-[11px] tracking-[0.2em] uppercase"
+                    style={{ color: 'var(--color-fg-muted)' }}
+                  >
+                    {group.label}
+                  </h3>
+                  <span
+                    className="text-[11px]"
+                    style={{ color: 'var(--color-fg-subtle)' }}
+                  >
+                    {group.articles.length}
+                  </span>
+                  <span
+                    className="flex-1 h-px"
+                    style={{ background: 'var(--color-line)' }}
+                  />
+                </div>
+                <ul
+                  className={`grid gap-x-8 ${
+                    variant === 'compact' ? 'gap-y-6' : 'gap-y-10'
+                  } ${gridCols} items-start`}
                 >
-                  {group.label}
-                </h3>
-                <span className="text-[11px]" style={{ color: 'var(--color-fg-subtle)' }}>
-                  {group.articles.length}
-                </span>
-                <span
-                  className="flex-1 h-px"
-                  style={{ background: 'var(--color-line)' }}
-                />
-              </div>
-              <ul className="grid gap-x-10 gap-y-10 md:grid-cols-2 items-start">
-                {group.articles.map((a) => (
-                  <li key={a.id}>
-                    <ArticleCard
-                      article={a}
-                      read={readSet.has(a.id)}
-                      onOpen={() => handleArticleOpen(a.id)}
-                      onTagClick={(tag) => setQuery(tag)}
-                query={query}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </motion.section>
-          ))}
+                  {group.articles.map((a) => (
+                    <li key={a.id}>
+                      <ArticleCard
+                        article={a}
+                        read={readSet.has(a.id)}
+                        onOpen={() => handleArticleOpen(a.id)}
+                        onTagClick={(tag) => setQuery(tag)}
+                        query={query}
+                        variant={variant}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </motion.section>
+            );
+          })}
         </>
       )}
 
