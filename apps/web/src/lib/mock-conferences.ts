@@ -7,6 +7,7 @@ export interface ConferenceDto {
   location: string;
   topics: string[];
   description?: string;
+  brand?: string;
 }
 
 // 한국 주요 개발자 컨퍼런스 mock (V1.5에서 자동 수집으로 교체)
@@ -20,6 +21,7 @@ export const MOCK_CONFERENCES: ConferenceDto[] = [
     location: '서울 양재 aT센터',
     topics: ['Frontend', 'React', 'Vue'],
     description: '국내 최대 프론트엔드 컨퍼런스',
+    brand: 'oklch(55% 0.20 245)',
   },
   {
     id: 'c2',
@@ -30,6 +32,7 @@ export const MOCK_CONFERENCES: ConferenceDto[] = [
     location: '온라인',
     topics: ['AI', '플랫폼', '인프라'],
     description: '카카오 개발자 컨퍼런스',
+    brand: 'oklch(60% 0.18 90)',
   },
   {
     id: 'c3',
@@ -40,6 +43,7 @@ export const MOCK_CONFERENCES: ConferenceDto[] = [
     location: '서울 코엑스',
     topics: ['핀테크', '백엔드', 'iOS'],
     description: '토스 개발자 컨퍼런스',
+    brand: 'oklch(52% 0.19 240)',
   },
   {
     id: 'c4',
@@ -49,6 +53,7 @@ export const MOCK_CONFERENCES: ConferenceDto[] = [
     location: '코엑스',
     topics: ['AI', '검색', '클라우드'],
     description: '네이버 개발자 컨퍼런스',
+    brand: 'oklch(55% 0.18 145)',
   },
   {
     id: 'c5',
@@ -59,5 +64,6 @@ export const MOCK_CONFERENCES: ConferenceDto[] = [
     location: '서울대학교',
     topics: ['Python', 'Data', 'ML'],
     description: '한국 파이썬 컨퍼런스',
+    brand: 'oklch(58% 0.16 230)',
   },
 ];
