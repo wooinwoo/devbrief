@@ -10,7 +10,8 @@ import { HeroStrip } from './hero-strip';
 import { PageFooter } from './page-footer';
 import { type InlineChatHandle } from './inline-chat';
 import { ChatProvider } from './chat-context';
-import { ChatPanel } from './chat-panel';
+import { ChatDrawer } from './chat-drawer';
+import { FloatingChatButton } from './floating-chat-button';
 import { readTracking } from '@/lib/read-tracking';
 import { groupByTime, extractTopTags } from '@/lib/group-articles';
 
@@ -30,7 +31,13 @@ export function ArticlesView({ articles }: Props) {
   }, []);
 
   const chatRef = useRef<InlineChatHandle>(null);
-  const ask = (text: string) => chatRef.current?.ask(text);
+  const [chatOpen, setChatOpen] = useState(false);
+  const openChat = () => setChatOpen(true);
+  const closeChat = () => setChatOpen(false);
+  const ask = (text: string) => {
+    setChatOpen(true);
+    requestAnimationFrame(() => chatRef.current?.ask(text));
+  };
 
   const sourceCounts = useMemo(() => {
     const map = new Map<string, { name: string; count: number }>();
@@ -70,9 +77,8 @@ export function ArticlesView({ articles }: Props) {
   const isFiltering = query.trim() !== '' || activeSource !== null || hideRead;
 
   return (
-    <ChatProvider ask={ask}>
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
-      <div className="min-w-0">
+    <ChatProvider ask={ask} open={openChat} close={closeChat} isOpen={chatOpen}>
+    <div>
       <HeroStrip
         total={articles.length}
         unread={unreadCount}
@@ -298,13 +304,9 @@ export function ArticlesView({ articles }: Props) {
       )}
 
       <PageFooter total={articles.length} sourceCount={sourceCounts.length} />
-      </div>
-      <div className="hidden lg:block">
-        <div className="sticky top-6">
-          <ChatPanel ref={chatRef} />
-        </div>
-      </div>
     </div>
+    <ChatDrawer ref={chatRef} />
+    <FloatingChatButton />
     </ChatProvider>
   );
 }
