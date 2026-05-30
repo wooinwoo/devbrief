@@ -12,6 +12,8 @@ import { type InlineChatHandle } from './inline-chat';
 import { ChatProvider } from './chat-context';
 import { ChatDrawer } from './chat-drawer';
 import { FloatingChatButton } from './floating-chat-button';
+import { UpcomingRow } from './upcoming-row';
+import { VideoRow } from './video-row';
 import { readTracking } from '@/lib/read-tracking';
 import { groupByTime, extractTopTags } from '@/lib/group-articles';
 
@@ -87,6 +89,26 @@ export function ArticlesView({ articles }: Props) {
         topTags={topTags}
         onTagClick={(t) => setQuery(t)}
       />
+
+      <UpcomingRow />
+
+      <VideoRow />
+
+      <div
+        className="flex items-baseline gap-3 mb-6"
+        style={{ marginTop: '0.5rem' }}
+      >
+        <h2
+          className="text-[12px] tracking-[0.25em] uppercase"
+          style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
+        >
+          오늘의 글
+        </h2>
+        <span className="text-[11px]" style={{ color: 'var(--color-fg-subtle)' }}>
+          {articles.length}
+        </span>
+        <span className="flex-1 h-px" style={{ background: 'var(--color-line)' }} />
+      </div>
 
       {/* sticky 필터바 — 좌측 메인 컬럼 내부에서만 sticky */}
       <div
