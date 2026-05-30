@@ -70,7 +70,7 @@ export function ArticleCard({
 
   return (
     <article
-      className={`group relative pl-5 -ml-5 transition-all duration-300 motion-safe:hover:-translate-y-px
+      className={`group relative pl-5 -ml-5 min-w-0 transition-all duration-300 motion-safe:hover:-translate-y-px
         ${isCompact ? 'pb-5' : 'pb-7'}
         ${read ? 'opacity-55 hover:opacity-90' : ''}
       `}
@@ -119,7 +119,7 @@ export function ArticleCard({
           </span>
         </div>
         <h2
-          className={`${titleClass} transition-colors`}
+          className={`${titleClass} transition-colors break-keep`}
           style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
         >
           <span className="group-hover:text-(--color-fg-strong) transition-colors">

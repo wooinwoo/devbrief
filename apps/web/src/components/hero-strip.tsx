@@ -41,7 +41,7 @@ export function HeroStrip({
             개가 들어왔어요.
           </p>
           <h2
-            className="text-[3.5rem] sm:text-[4.5rem] lg:text-[5.5rem] leading-[0.95] tracking-[-0.035em]"
+            className="text-[2.25rem] sm:text-[3.25rem] md:text-[4rem] lg:text-[5rem] leading-[0.95] tracking-[-0.035em] break-keep"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
           >
             오늘은 무엇이

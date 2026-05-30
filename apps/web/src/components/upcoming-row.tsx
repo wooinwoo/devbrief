@@ -38,7 +38,7 @@ export function UpcomingRow() {
       <div className="flex items-end justify-between mb-7 pb-4 border-b" style={{ borderColor: 'var(--color-line)' }}>
         <div>
           <h2
-            className="text-[1.875rem] sm:text-[2.125rem] leading-none tracking-[-0.025em]"
+            className="text-[1.5rem] sm:text-[2.125rem] leading-none tracking-[-0.025em] break-keep"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
           >
             곧 열리는 컨퍼런스

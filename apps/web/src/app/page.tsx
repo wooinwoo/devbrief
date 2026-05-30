@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { ArticlesView } from '@/components/articles-view';
 import { SiteNav } from '@/components/site-nav';
 import type { ArticleDto } from '@/components/article-card';
@@ -25,7 +26,9 @@ export default async function Home() {
       style={{ overflowX: 'clip' }}
     >
       <SiteNav />
-      <ArticlesView articles={articles} />
+      <Suspense fallback={null}>
+        <ArticlesView articles={articles} />
+      </Suspense>
     </main>
   );
 }
