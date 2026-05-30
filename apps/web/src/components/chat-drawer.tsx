@@ -39,15 +39,20 @@ export const ChatDrawer = forwardRef<InlineChatHandle>(function ChatDrawer(_, re
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ duration: 0.32, ease: [0.2, 0, 0, 1] }}
-            className="fixed z-50 top-0 right-0 bottom-0 w-full sm:w-[420px] lg:w-[400px] flex flex-col"
+            className="fixed z-50 top-0 right-0 bottom-0 w-full sm:w-[420px] lg:w-[400px]"
             style={{
-              background: 'var(--color-bg-elevated)',
-              borderLeft: '1px solid var(--color-line)',
               boxShadow: '-20px 0 40px -20px oklch(0% 0 0 / 0.15)',
             }}
             role="dialog"
             aria-label="Pulse 챗봇"
           >
+            <div
+              className="flex flex-col h-full w-full"
+              style={{
+                background: 'oklch(100% 0 0)',
+                borderLeft: '1px solid var(--color-line)',
+              }}
+            >
             <header
               className="flex items-center justify-between px-5 py-4"
               style={{ borderBottom: '1px solid var(--color-line)' }}
@@ -88,6 +93,7 @@ export const ChatDrawer = forwardRef<InlineChatHandle>(function ChatDrawer(_, re
 
             <div className="flex-1 overflow-y-auto p-5">
               <ChatPanel ref={ref} />
+            </div>
             </div>
           </motion.aside>
         </>

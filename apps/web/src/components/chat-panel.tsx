@@ -20,34 +20,11 @@ export const ChatPanel = forwardRef<InlineChatHandle>(function ChatPanel(_, ref)
     .slice(0, 3);
 
   return (
-    <div
-      className="rounded-xl p-5"
-      style={{
-        border: '1px solid var(--color-line)',
-        background: 'var(--color-bg-elevated)',
-      }}
-    >
-      <div className="flex items-center gap-2 mb-5">
-        <span
-          aria-hidden
-          className="inline-block w-1.5 h-1.5 rounded-full pulse-bar"
-          style={{
-            background: 'var(--color-accent)',
-            boxShadow: '0 0 8px var(--color-accent)',
-          }}
-        />
-        <p
-          className="text-[11px] tracking-[0.2em] uppercase"
-          style={{ color: 'var(--color-fg-muted)' }}
-        >
-          Pulse 챗봇
-        </p>
-      </div>
-
+    <div>
       <InlineChat ref={ref} />
 
       {/* 다가오는 컨퍼런스 미리보기 */}
-      <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--color-line)' }}>
+      <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--color-line)' }}>
         <div className="flex items-baseline gap-3 mb-3">
           <p
             className="text-[10px] tracking-[0.2em] uppercase"

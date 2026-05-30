@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
 import type { ArticleDto } from './article-card';
@@ -32,12 +32,12 @@ export function ArticlesView({ articles }: Props) {
 
   const chatRef = useRef<InlineChatHandle>(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const openChat = () => setChatOpen(true);
-  const closeChat = () => setChatOpen(false);
-  const ask = (text: string) => {
+  const openChat = useCallback(() => setChatOpen(true), []);
+  const closeChat = useCallback(() => setChatOpen(false), []);
+  const ask = useCallback((text: string) => {
     setChatOpen(true);
     requestAnimationFrame(() => chatRef.current?.ask(text));
-  };
+  }, []);
 
   const sourceCounts = useMemo(() => {
     const map = new Map<string, { name: string; count: number }>();

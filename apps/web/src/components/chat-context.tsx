@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 
 interface ChatContextValue {
   ask(text: string): void;
@@ -24,11 +24,11 @@ export function ChatProvider({
   close: () => void;
   isOpen: boolean;
 }) {
-  return (
-    <ChatContext.Provider value={{ ask, open, close, isOpen }}>
-      {children}
-    </ChatContext.Provider>
+  const value = useMemo(
+    () => ({ ask, open, close, isOpen }),
+    [ask, open, close, isOpen],
   );
+  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
 
 export function useChat(): ChatContextValue | null {
