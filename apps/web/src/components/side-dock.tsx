@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { SourceRing } from './source-ring';
 import { MOCK_CONFERENCES } from '@/lib/mock-conferences';
 import { useChat } from './chat-context';
@@ -45,6 +46,13 @@ export function SideDock({ total, sources }: Props) {
             다가오는 컨퍼런스
           </p>
           <span className="flex-1 h-px" style={{ background: 'var(--color-line)' }} />
+          <Link
+            href="/conferences"
+            className="text-[10px] tracking-wide transition-colors"
+            style={{ color: 'var(--color-fg-muted)' }}
+          >
+            <span className="hover:text-(--color-fg-strong) transition-colors">전체 →</span>
+          </Link>
         </div>
         <ul className="space-y-4">
           {upcoming.map((c) => {

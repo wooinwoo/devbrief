@@ -7,14 +7,12 @@ import type { ArticleDto } from './article-card';
 import { ArticleCard } from './article-card';
 import { TopStoryCard } from './top-story-card';
 import { HeroStrip } from './hero-strip';
-import { ConferenceSection } from './conference-section';
 import { PageFooter } from './page-footer';
 import { InlineChat, type InlineChatHandle } from './inline-chat';
 import { ChatProvider } from './chat-context';
 import { SideDock } from './side-dock';
 import { readTracking } from '@/lib/read-tracking';
 import { groupByTime, extractTopTags } from '@/lib/group-articles';
-import { MOCK_CONFERENCES } from '@/lib/mock-conferences';
 
 interface Props {
   articles: ArticleDto[];
@@ -242,8 +240,6 @@ export function ArticlesView({ articles }: Props) {
               onOpen={() => handleArticleOpen(topStory.id)}
             />
           )}
-
-          <ConferenceSection conferences={MOCK_CONFERENCES} />
 
           {groups.map((group, gi) => {
             const variant: 'default' | 'featured' | 'compact' =

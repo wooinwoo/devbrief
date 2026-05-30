@@ -1,4 +1,5 @@
 import { ArticlesView } from '@/components/articles-view';
+import { SiteNav } from '@/components/site-nav';
 import type { ArticleDto } from '@/components/article-card';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
 
@@ -29,13 +30,8 @@ export default async function Home() {
       className="min-h-screen px-6 sm:px-10 lg:px-12 pt-12 pb-24 max-w-7xl mx-auto"
       style={{ overflowX: 'clip' }}
     >
+      <SiteNav />
       <header className="mb-10">
-        <p
-          className="text-[11px] mb-3 tracking-[0.25em] uppercase"
-          style={{ color: 'var(--color-fg-subtle)' }}
-        >
-          Pulse
-        </p>
         <h1
           className="text-3xl sm:text-4xl leading-tight tracking-tight"
           style={{ color: 'var(--color-fg-strong)', fontWeight: 500 }}
