@@ -143,7 +143,7 @@ export function ArticlesView({ articles }: Props) {
 
       {isFiltering && (
         <div
-          className="mb-6 text-[12px] flex items-center gap-2"
+          className="mb-6 flex flex-wrap items-center gap-3 text-[12px]"
           style={{ color: 'var(--color-fg-muted)' }}
         >
           <span
@@ -169,6 +169,27 @@ export function ArticlesView({ articles }: Props) {
               </>
             )}
           </span>
+
+          <span className="flex-1 min-w-2" />
+
+          {query.trim() && filtered.length > 0 && (
+            <a
+              href={`/chat?q=${encodeURIComponent(query.trim())}`}
+              className="text-[11px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-colors"
+              style={{
+                color: 'var(--color-accent)',
+                border: '1px solid var(--color-line-strong)',
+              }}
+            >
+              <span
+                aria-hidden
+                className="inline-block w-1 h-1 rounded-full"
+                style={{ background: 'var(--color-accent)' }}
+              />
+              이 결과로 챗봇에 묻기
+            </a>
+          )}
+
           <button
             type="button"
             onClick={() => {
@@ -176,7 +197,7 @@ export function ArticlesView({ articles }: Props) {
               setActiveSource(null);
               setHideRead(false);
             }}
-            className="ml-auto text-[11px] transition-colors hover:text-(--color-fg-strong)"
+            className="text-[11px] transition-colors hover:text-(--color-fg-strong)"
             style={{ color: 'var(--color-fg-subtle)' }}
           >
             필터 초기화
