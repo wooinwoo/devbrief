@@ -76,6 +76,9 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^@pulse/db$": "<rootDir>/../test/__mocks__/pulse-db.ts"
+    },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
