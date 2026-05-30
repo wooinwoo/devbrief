@@ -9,6 +9,8 @@ import { AnthropicModule } from './ai/anthropic.module';
 import { IngestionModule } from './ingestion/ingestion.module';
 import { SummarizationModule } from './summarization/summarization.module';
 import { ArticlesModule } from './articles/articles.module';
+import { ConferencesModule } from './conferences/conferences.module';
+import { VideosModule } from './videos/videos.module';
 import { EmbeddingModule } from './embedding/embedding.module';
 import { ChatModule } from './chat/chat.module';
 
@@ -49,6 +51,8 @@ import { ChatModule } from './chat/chat.module';
     SummarizationModule,
     EmbeddingModule,
     ArticlesModule,
+    ConferencesModule,
+    VideosModule,
     ChatModule,
   ],
   controllers: [AppController],

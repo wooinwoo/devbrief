@@ -42,6 +42,8 @@ export class IngestionService {
       const existed = await this.prisma.article.findUnique({ where: { url } });
       if (existed) continue;
 
+      const imageUrl = await this.rss.resolveImageUrl(item);
+
       const article = await this.prisma.article.create({
         data: {
           sourceId,
@@ -50,6 +52,7 @@ export class IngestionService {
           author: item.creator ?? null,
           publishedAt: item.isoDate ? new Date(item.isoDate) : new Date(),
           tags: (item.categories ?? []).slice(0, 10),
+          imageUrl,
         },
       });
       newCount++;

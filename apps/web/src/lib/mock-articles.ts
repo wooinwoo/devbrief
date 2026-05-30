@@ -10,6 +10,8 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-29T08:30:00Z',
     tags: ['AI', 'LLM', 'Anthropic'],
+    imageUrl:
+      'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&q=80&auto=format&fit=crop',
     source: { name: 'Anthropic', provider: 'anthropic' },
   },
   {
@@ -20,6 +22,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-29T07:15:00Z',
     tags: ['Claude', '워크플로우', 'AI'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -30,6 +33,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-29T06:45:00Z',
     tags: ['Anthropic', '투자', 'IPO'],
+    imageUrl: null,
     source: { name: 'TechCrunch', provider: 'techcrunch' },
   },
   {
@@ -40,6 +44,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-29T05:20:00Z',
     tags: ['에이전트', 'LLM', '아키텍처'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -50,6 +55,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-29T04:10:00Z',
     tags: ['LLM', '인지과학'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -60,6 +66,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-29T03:30:00Z',
     tags: ['커뮤니티', '비즈니스'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -70,6 +77,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-29T02:50:00Z',
     tags: ['Anthropic', 'GPU', '인프라'],
+    imageUrl: null,
     source: { name: 'TechCrunch', provider: 'techcrunch' },
   },
   {
@@ -80,6 +88,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-28T22:00:00Z',
     tags: ['Cursor', 'Claude', 'IDE'],
+    imageUrl: null,
     source: { name: 'dev.to', provider: 'devto' },
   },
   {
@@ -90,6 +99,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-28T19:30:00Z',
     tags: ['Apple', 'Siri', 'AI 어시스턴트'],
+    imageUrl: null,
     source: { name: 'TechCrunch', provider: 'techcrunch' },
   },
   {
@@ -100,6 +110,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-28T17:00:00Z',
     tags: ['Rust', 'Ruby', '언어 선택'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -110,6 +121,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-28T15:00:00Z',
     tags: ['AI', '커리어'],
+    imageUrl: null,
     source: { name: 'dev.to', provider: 'devto' },
   },
   {
@@ -120,6 +132,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-28T12:30:00Z',
     tags: ['YouTube', 'AI 정책'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -130,6 +143,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-28T10:00:00Z',
     tags: ['데이터', '엔지니어링'],
+    imageUrl: null,
     source: { name: 'dev.to', provider: 'devto' },
   },
   {
@@ -140,6 +154,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-28T08:00:00Z',
     tags: ['음악', '서비스'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -150,6 +165,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-28T06:00:00Z',
     tags: ['Anthropic', 'OpenAI', 'PMF'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -160,6 +176,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-28T04:00:00Z',
     tags: ['AI', '경험기'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -170,6 +187,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-27T20:00:00Z',
     tags: ['에이전트', '노코드', '인수'],
+    imageUrl: null,
     source: { name: 'TechCrunch', provider: 'techcrunch' },
   },
   {
@@ -180,6 +198,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-27T18:00:00Z',
     tags: ['CLI', '에이전트', '개발도구'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -190,6 +209,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-27T15:00:00Z',
     tags: ['스타트업', '컨퍼런스'],
+    imageUrl: null,
     source: { name: 'TechCrunch', provider: 'techcrunch' },
   },
   {
@@ -200,6 +220,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-27T12:00:00Z',
     tags: ['AI 코딩', '비교'],
+    imageUrl: null,
     source: { name: 'dev.to', provider: 'devto' },
   },
   {
@@ -210,6 +231,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-27T09:00:00Z',
     tags: ['AI 윤리', 'UX'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -220,6 +242,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-27T07:00:00Z',
     tags: ['핀테크', '에이전트'],
+    imageUrl: null,
     source: { name: 'Product Hunt', provider: 'producthunt' },
   },
   {
@@ -230,6 +253,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-27T05:00:00Z',
     tags: ['Apple', 'Google', '플랫폼'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -240,6 +264,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-27T03:00:00Z',
     tags: ['보안', '메모리'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -250,6 +275,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-26T21:00:00Z',
     tags: ['LLM', '환각', '아키텍처'],
+    imageUrl: null,
     source: { name: 'dev.to', provider: 'devto' },
   },
   {
@@ -260,6 +286,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-26T18:00:00Z',
     tags: ['에디터', '개발자'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -270,6 +297,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-26T15:00:00Z',
     tags: ['자율주행', 'Waymo'],
+    imageUrl: null,
     source: { name: 'TechCrunch', provider: 'techcrunch' },
   },
   {
@@ -280,6 +308,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-26T12:00:00Z',
     tags: ['SNS', 'Bluesky'],
+    imageUrl: null,
     source: { name: 'TechCrunch', provider: 'techcrunch' },
   },
   {
@@ -290,6 +319,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-26T09:00:00Z',
     tags: ['게임', '레트로'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
   {
@@ -300,6 +330,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-26T06:00:00Z',
     tags: ['데이터', '실험'],
+    imageUrl: null,
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
 ];

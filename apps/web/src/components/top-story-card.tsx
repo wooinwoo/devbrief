@@ -75,36 +75,54 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
         onClick={onOpen}
         className="block group focus-visible:outline-none"
       >
-        <div className="flex items-center gap-2 mb-4 text-[13.5px]">
-          <span style={{ color: bar, fontWeight: 600 }} className="tracking-wide">
-            {article.source.name}
-          </span>
-          <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-          <span style={{ color: 'var(--color-fg-muted)' }}>{relativeTime(article.publishedAt)}</span>
-          {!read && (
-            <span
-              aria-label="안 본 글"
-              className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full"
-              style={{ background: bar }}
-            />
+        <div className={`grid gap-x-10 gap-y-6 ${article.imageUrl ? 'lg:grid-cols-[1.3fr_1fr] items-center' : ''}`}>
+          <div>
+            <div className="flex items-center gap-2 mb-4 text-[13.5px]">
+              <span style={{ color: bar, fontWeight: 600 }} className="tracking-wide">
+                {article.source.name}
+              </span>
+              <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
+              <span style={{ color: 'var(--color-fg-muted)' }}>{relativeTime(article.publishedAt)}</span>
+              {!read && (
+                <span
+                  aria-label="안 본 글"
+                  className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full"
+                  style={{ background: bar }}
+                />
+              )}
+            </div>
+
+            <h2
+              className="text-[1.875rem] sm:text-[2.5rem] lg:text-[3rem] leading-[1.15] tracking-[-0.015em] transition-colors break-keep"
+              style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
+            >
+              {article.title}
+            </h2>
+
+            {article.summaryOneLine && (
+              <p
+                className="text-[16px] sm:text-[17px] mt-5 sm:mt-6 leading-[1.7] max-w-2xl"
+                style={{ color: 'var(--color-fg-default)' }}
+              >
+                {article.summaryOneLine}
+              </p>
+            )}
+          </div>
+
+          {article.imageUrl && (
+            <div
+              className="relative aspect-[4/3] overflow-hidden order-first lg:order-last"
+              style={{ borderRadius: 6 }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={article.imageUrl}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+              />
+            </div>
           )}
         </div>
-
-        <h2
-          className="text-[1.875rem] sm:text-[2.5rem] lg:text-[3rem] leading-[1.15] tracking-[-0.015em] transition-colors break-keep"
-          style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
-        >
-          {article.title}
-        </h2>
-
-        {article.summaryOneLine && (
-          <p
-            className="text-[16px] sm:text-[17px] mt-5 sm:mt-6 leading-[1.7] max-w-2xl"
-            style={{ color: 'var(--color-fg-default)' }}
-          >
-            {article.summaryOneLine}
-          </p>
-        )}
       </Link>
 
       <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2">

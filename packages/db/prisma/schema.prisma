@@ -48,6 +48,9 @@ model Article {
   language         String   @default("en")
   fetchedAt        DateTime @default(now())
 
+  // 썸네일: RSS enclosure / media:thumbnail / og:image 순으로 fallback
+  imageUrl String?
+
   // pgvector embedding (1024 차원, Voyage voyage-3 또는 voyage-3-large 기준)
   // Prisma 6의 vector type 사용
   embedding  Unsupported("vector(1024)")?
@@ -59,18 +62,41 @@ model Article {
 }
 
 model Conference {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   name            String
-  url             String   @unique
+  url             String    @unique
   startDate       DateTime
   endDate         DateTime?
   location        String
   topics          String[]
   description     String?
+  imageUrl        String?
+  brandColor      String? // oklch / hex — 브랜드 컬러
   youtubeChannelId String?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
+
+  videos          Video[]
 
   @@index([startDate])
+}
+
+model Video {
+  id           String      @id @default(cuid())
+  videoId      String      @unique // YouTube video id
+  title        String
+  url          String
+  channel      String // 채널명 표시용
+  thumbnailUrl String
+  durationSec  Int // 초 단위
+  views        Int         @default(0)
+  publishedAt  DateTime
+  topics       String[]    @default([])
+  conferenceId String?
+  conference   Conference? @relation(fields: [conferenceId], references: [id])
+  fetchedAt    DateTime    @default(now())
+
+  @@index([publishedAt])
+  @@index([conferenceId])
 }
 
 model ReadingEvent {

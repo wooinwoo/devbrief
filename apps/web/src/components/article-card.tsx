@@ -13,6 +13,7 @@ export interface ArticleDto {
   summaryThreeLine: string | null;
   publishedAt: string;
   tags: string[];
+  imageUrl: string | null;
   source: { name: string; provider: string };
 }
 
