@@ -3,15 +3,16 @@
 @import 'tailwindcss';
 
 :root {
-  /* 사용처 토큰 (oklch 톤다운) */
-  --bg-base: oklch(13% 0.005 250);
-  --bg-elevated: oklch(16% 0.006 250);
-  --fg-strong: oklch(96% 0.003 250);
-  --fg-default: oklch(82% 0.005 250);
-  --fg-muted: oklch(58% 0.008 250);
-  --fg-subtle: oklch(40% 0.008 250);
-  --line: oklch(22% 0.006 250);
-  --line-strong: oklch(32% 0.008 250);
+  /* 사용처 토큰 (oklch 슬레이트 톤 — 미세한 블루-그레이 끼) */
+  --bg-base: oklch(17% 0.012 245);
+  --bg-elevated: oklch(20% 0.013 245);
+  --bg-sunken: oklch(14% 0.011 245);
+  --fg-strong: oklch(95% 0.005 245);
+  --fg-default: oklch(82% 0.008 245);
+  --fg-muted: oklch(60% 0.012 245);
+  --fg-subtle: oklch(42% 0.013 245);
+  --line: oklch(26% 0.013 245);
+  --line-strong: oklch(36% 0.014 245);
   --accent: oklch(78% 0.13 195);
   --accent-glow: oklch(78% 0.13 195 / 0.16);
   --warm: oklch(82% 0.12 70);
@@ -55,9 +56,9 @@ body::before {
   z-index: -10;
   pointer-events: none;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, oklch(72% 0.13 200 / 0.12), transparent 65%),
-    radial-gradient(ellipse 50% 40% at 100% 110%, oklch(75% 0.12 280 / 0.10), transparent 60%),
-    radial-gradient(ellipse 40% 30% at 0% 100%, oklch(78% 0.10 30 / 0.06), transparent 60%);
+    radial-gradient(ellipse 80% 50% at 50% -10%, oklch(72% 0.14 200 / 0.14), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 100% 110%, oklch(75% 0.13 280 / 0.10), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 0% 100%, oklch(78% 0.11 30 / 0.06), transparent 60%);
 }
 
 body::after {

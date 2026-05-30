@@ -11,6 +11,7 @@ import { ConferenceSection } from './conference-section';
 import { PageFooter } from './page-footer';
 import { InlineChat, type InlineChatHandle } from './inline-chat';
 import { ChatProvider } from './chat-context';
+import { SideDock } from './side-dock';
 import { readTracking } from '@/lib/read-tracking';
 import { groupByTime, extractTopTags } from '@/lib/group-articles';
 import { MOCK_CONFERENCES } from '@/lib/mock-conferences';
@@ -72,23 +73,23 @@ export function ArticlesView({ articles }: Props) {
 
   return (
     <ChatProvider ask={ask}>
-    <div>
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-14">
+      <div className="min-w-0">
       <HeroStrip
         total={articles.length}
         unread={unreadCount}
         sourceCount={sourceCounts.length}
-        sources={sourceCounts.map(([provider, { name, count }]) => ({ provider, name, count }))}
         topTags={topTags}
         onTagClick={(t) => setQuery(t)}
       />
 
       <InlineChat ref={chatRef} />
 
-      {/* sticky 필터바 — 페이지 패딩(px-6 sm:px-10 lg:px-16)과 음수 마진 동기화 */}
+      {/* sticky 필터바 — 좌측 메인 컬럼 내부에서만 sticky */}
       <div
-        className="sticky top-0 z-20 -mx-6 sm:-mx-10 lg:-mx-16 px-6 sm:px-10 lg:px-16 py-3 mb-10 backdrop-blur-md"
+        className="sticky top-0 z-20 -mx-6 sm:-mx-10 lg:-mx-4 px-6 sm:px-10 lg:px-4 py-3 mb-10 backdrop-blur-md"
         style={{
-          background: 'oklch(13% 0.005 250 / 0.85)',
+          background: 'oklch(17% 0.012 245 / 0.85)',
           borderBottom: '1px solid var(--color-line)',
         }}
       >
@@ -286,6 +287,15 @@ export function ArticlesView({ articles }: Props) {
       )}
 
       <PageFooter total={articles.length} sourceCount={sourceCounts.length} />
+      </div>
+      <div className="hidden lg:block">
+        <div className="sticky top-20">
+          <SideDock
+            total={articles.length}
+            sources={sourceCounts.map(([provider, { name, count }]) => ({ provider, name, count }))}
+          />
+        </div>
+      </div>
     </div>
     </ChatProvider>
   );
