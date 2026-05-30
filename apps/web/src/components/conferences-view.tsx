@@ -216,24 +216,68 @@ function HeroConference({
   );
 
   const counter = (
-    <div className={`hidden lg:flex flex-col ${isLeft ? 'items-end' : 'items-start'} pt-2`}>
-      <p
-        className="text-[10px] mb-2 tracking-[0.25em] uppercase"
-        style={{ color: 'var(--color-fg-subtle)', fontWeight: 500 }}
-      >
-        남은 일수
-      </p>
-      <p
-        className={`${numSize} leading-none tabular-nums tracking-[-0.04em]`}
-        style={{ color: brand, fontWeight: 600 }}
-      >
-        {isOngoing ? '·' : d}
-      </p>
-      {!isOngoing && (
-        <p className="text-[12px] mt-1" style={{ color: 'var(--color-fg-muted)' }}>
-          일
-        </p>
+    <div
+      className="hidden lg:block relative w-[360px] xl:w-[420px] aspect-[4/5] shrink-0"
+      style={{
+        borderRadius: 14,
+        overflow: 'hidden',
+        boxShadow: `0 24px 48px -16px ${brand.replace(')', ' / 0.25)')}`,
+      }}
+    >
+      {c.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={c.image}
+          alt={c.name}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+      ) : (
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.5)')} 60%, oklch(20% 0.01 245) 100%)`,
+          }}
+        />
       )}
+
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(to top, ${brand.replace(')', ' / 0.55)')} 0%, transparent 60%)`,
+        }}
+      />
+
+      <div className="absolute inset-0 p-7 flex flex-col justify-between text-white">
+        <span
+          className="text-[10px] tracking-[0.25em] uppercase"
+          style={{ color: 'oklch(95% 0 0 / 0.8)', fontWeight: 500 }}
+        >
+          남은 일수
+        </span>
+        <div>
+          <p
+            className="leading-none tabular-nums tracking-[-0.04em]"
+            style={{
+              fontSize: '6rem',
+              fontWeight: 700,
+              color: 'oklch(99% 0 0)',
+              textShadow: '0 4px 24px oklch(0% 0 0 / 0.4)',
+            }}
+          >
+            {isOngoing ? '·' : d}
+          </p>
+          {!isOngoing && (
+            <p
+              className="text-[13px] mt-2"
+              style={{ color: 'oklch(96% 0 0 / 0.92)' }}
+            >
+              일 남음
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 
@@ -308,17 +352,56 @@ function MidCard({ c, index }: { c: ConferenceDto; index: number }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.2, 0, 0, 1], delay: 0.06 + index * 0.05 }}
-      className="group relative block p-7 transition-all motion-safe:hover:-translate-y-0.5"
+      className="group relative block overflow-hidden transition-all motion-safe:hover:-translate-y-0.5"
       style={{
         borderRadius: 14,
         border: '1px solid var(--color-line)',
-        background: isNear
-          ? `linear-gradient(135deg, ${brand.replace(')', ' / 0.07)')}, var(--color-bg-elevated) 60%)`
-          : 'var(--color-bg-elevated)',
-        minHeight: 220,
+        background: 'var(--color-bg-elevated)',
       }}
     >
-      <div className="grid grid-cols-[1fr_auto] gap-6 items-start h-full">
+      {/* 카드 상단 이미지 */}
+      <div
+        className="relative aspect-[16/9] overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.5)')})`,
+        }}
+      >
+        {c.image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={c.image}
+            alt={c.name}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        )}
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(to top, ${brand.replace(')', ' / 0.50)')} 0%, transparent 55%)`,
+          }}
+        />
+        <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+          <span
+            className="text-[10px] tracking-[0.25em] uppercase"
+            style={{ color: 'oklch(96% 0 0 / 0.92)', fontWeight: 500 }}
+          >
+            남은 일수
+          </span>
+          <span
+            className="text-[2.75rem] leading-none tabular-nums tracking-[-0.03em]"
+            style={{
+              fontWeight: 700,
+              color: 'oklch(99% 0 0)',
+              textShadow: '0 2px 12px oklch(0% 0 0 / 0.4)',
+            }}
+          >
+            {d}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-6">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-3 text-[12px]">
             <span style={{ color: 'var(--color-fg-default)' }}>
@@ -367,21 +450,6 @@ function MidCard({ c, index }: { c: ConferenceDto; index: number }) {
             </div>
           )}
         </div>
-
-        <div className="flex flex-col items-end shrink-0">
-          <p
-            className="text-[10px] mb-1 tracking-[0.22em] uppercase"
-            style={{ color: 'var(--color-fg-subtle)', fontWeight: 500 }}
-          >
-            D
-          </p>
-          <p
-            className="text-[3rem] leading-none tabular-nums tracking-[-0.03em]"
-            style={{ color: brand, fontWeight: 600 }}
-          >
-            {d}
-          </p>
-        </div>
       </div>
     </motion.a>
   );
@@ -399,11 +467,28 @@ function TailRow({ c, index }: { c: ConferenceDto; index: number }) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.2, 0, 0, 1], delay: 0.04 + index * 0.03 }}
-      className="group grid grid-cols-[auto_1fr_auto] gap-6 items-center py-4 transition-colors"
+      className="group grid grid-cols-[auto_auto_1fr_auto] gap-5 items-center py-4 transition-colors"
       style={{ borderBottom: '1px solid var(--color-line)' }}
     >
+      <div
+        className="relative w-20 h-14 shrink-0 overflow-hidden"
+        style={{
+          borderRadius: 8,
+          background: `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.5)')})`,
+        }}
+      >
+        {c.image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={c.image}
+            alt={c.name}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+      </div>
+
       <span
-        className="text-[1.75rem] tabular-nums leading-none tracking-tight w-20 text-right"
+        className="text-[1.75rem] tabular-nums leading-none tracking-tight w-16 text-right"
         style={{ color: brand, fontWeight: 600 }}
       >
         {d}
