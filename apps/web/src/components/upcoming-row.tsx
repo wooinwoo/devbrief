@@ -35,20 +35,25 @@ export function UpcomingRow() {
       transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
       className="mb-14"
     >
-      <div className="flex items-baseline gap-3 mb-6">
-        <h2
-          className="text-[12px] tracking-[0.25em] uppercase"
-          style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
-        >
-          다가오는 컨퍼런스
-        </h2>
-        <span className="text-[11px]" style={{ color: 'var(--color-fg-subtle)' }}>
-          {upcoming.length}
-        </span>
-        <span className="flex-1 h-px" style={{ background: 'var(--color-line)' }} />
+      <div className="flex items-end justify-between mb-7 pb-4 border-b" style={{ borderColor: 'var(--color-line)' }}>
+        <div>
+          <h2
+            className="text-[1.875rem] sm:text-[2.125rem] leading-none tracking-[-0.025em]"
+            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+          >
+            곧 열리는 컨퍼런스
+          </h2>
+          <p className="mt-2 text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
+            앞으로 두 달 안에{' '}
+            <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}>
+              {upcoming.length}
+            </span>
+            개 예정.
+          </p>
+        </div>
         <Link
           href="/conferences"
-          className="text-[12px] tracking-wide transition-colors"
+          className="text-[13px] transition-colors pb-1"
           style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
         >
           <span className="hover:text-(--color-fg-strong)">전체 →</span>

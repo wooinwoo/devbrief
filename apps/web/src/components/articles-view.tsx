@@ -94,20 +94,21 @@ export function ArticlesView({ articles }: Props) {
 
       <VideoRow />
 
-      <div
-        className="flex items-baseline gap-3 mb-6"
-        style={{ marginTop: '0.5rem' }}
-      >
-        <h2
-          className="text-[12px] tracking-[0.25em] uppercase"
-          style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
-        >
-          오늘의 글
-        </h2>
-        <span className="text-[11px]" style={{ color: 'var(--color-fg-subtle)' }}>
-          {articles.length}
-        </span>
-        <span className="flex-1 h-px" style={{ background: 'var(--color-line)' }} />
+      <div className="flex items-end justify-between mb-7 pb-4 border-b" style={{ borderColor: 'var(--color-line)' }}>
+        <div>
+          <h2
+            className="text-[1.875rem] sm:text-[2.125rem] leading-none tracking-[-0.025em]"
+            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+          >
+            오늘 들어온 글
+          </h2>
+          <p className="mt-2 text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
+            <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}>
+              {articles.length}
+            </span>
+            개 모았어요. 시간 순으로 정리했어요.
+          </p>
+        </div>
       </div>
 
       {/* sticky 필터바 — 좌측 메인 컬럼 내부에서만 sticky */}
@@ -282,23 +283,19 @@ export function ArticlesView({ articles }: Props) {
                 transition={{ duration: 0.4, ease: [0.2, 0, 0, 1], delay: 0.1 + gi * 0.06 }}
                 className="mb-16"
               >
-                <div className="flex items-baseline gap-3 mb-7">
+                <div className="flex items-baseline gap-4 mb-6">
                   <h3
-                    className="text-[11px] tracking-[0.2em] uppercase"
-                    style={{ color: 'var(--color-fg-muted)' }}
+                    className="text-[1.05rem] leading-none tracking-[-0.012em]"
+                    style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
                   >
                     {group.label}
                   </h3>
                   <span
-                    className="text-[11px]"
+                    className="text-[12px] tabular-nums"
                     style={{ color: 'var(--color-fg-subtle)' }}
                   >
                     {group.articles.length}
                   </span>
-                  <span
-                    className="flex-1 h-px"
-                    style={{ background: 'var(--color-line)' }}
-                  />
                 </div>
 
                 {/* Pattern 0 — hero + side stack (8/4) */}

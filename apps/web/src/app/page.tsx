@@ -18,12 +18,6 @@ async function getArticles(): Promise<ArticleDto[]> {
 
 export default async function Home() {
   const articles = await getArticles();
-  const today = new Date().toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  });
 
   return (
     <main
@@ -31,18 +25,6 @@ export default async function Home() {
       style={{ overflowX: 'clip' }}
     >
       <SiteNav />
-      <header className="mb-10">
-        <h1
-          className="text-3xl sm:text-4xl leading-tight tracking-tight"
-          style={{ color: 'var(--color-fg-strong)', fontWeight: 500 }}
-        >
-          오늘의 기술 흐름
-        </h1>
-        <p className="mt-2 text-sm" style={{ color: 'var(--color-fg-muted)' }}>
-          {today}
-        </p>
-      </header>
-
       <ArticlesView articles={articles} />
     </main>
   );

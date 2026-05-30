@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { SourceRing } from './source-ring';
 
 interface Props {
   total: number;
@@ -16,109 +15,143 @@ export function HeroStrip({
   total,
   unread,
   sourceCount,
-  sources,
   topTags,
   onTagClick,
 }: Props) {
+  const readPercent = total > 0 ? Math.round(((total - unread) / total) * 100) : 0;
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.2, 0, 0, 1] }}
-      className="relative mb-14 grid gap-10 md:grid-cols-[1fr_auto] md:items-start"
+      className="relative mb-20"
     >
-      <div>
-        <div
-          className="inline-flex items-center gap-2 text-[13px] mb-6 tracking-wide"
-          style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
-        >
-          <span
-            aria-hidden
-            className="inline-block w-2 h-2 rounded-full pulse-bar"
-            style={{ background: 'var(--color-accent)', boxShadow: '0 0 10px var(--color-accent)' }}
-          />
-          <span>오늘 9시 자동 수집됨</span>
-          <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-          <span>마지막 갱신 방금</span>
-        </div>
-
-        <div className="grid grid-cols-3 gap-x-8 max-w-md mb-7">
-          <Stat label="글" value={total} tone="oklch(50% 0.16 250)" />
-          <Stat label="소스" value={sourceCount} tone="oklch(50% 0.18 290)" />
-          <Stat label="안 본 글" value={unread} tone="oklch(50% 0.18 195)" />
-        </div>
-
-        {topTags.length > 0 && (
-          <div>
-            <p
-              className="text-[12px] mb-3 tracking-[0.2em] uppercase"
-              style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
+      {/* 큰 수 + 짧은 카피 (잭 톤 박력) */}
+      <div className="grid gap-x-12 gap-y-8 lg:grid-cols-[auto_1fr] lg:items-end">
+        <div>
+          <p
+            className="text-[13px] mb-3 tracking-wide"
+            style={{ color: 'var(--color-fg-muted)' }}
+          >
+            오늘 9시에 새 글{' '}
+            <span style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}>
+              {unread}
+            </span>
+            개가 들어왔어요.
+          </p>
+          <h2
+            className="text-[3.5rem] sm:text-[4.5rem] lg:text-[5.5rem] leading-[0.95] tracking-[-0.035em]"
+            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+          >
+            오늘은 무엇이
+            <br />
+            <span
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--color-accent), oklch(50% 0.18 60))',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
             >
-              이번 주 자주 등장한 키워드
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {topTags.map(({ tag, count }, i) => {
-                const palette = [
-                  'oklch(50% 0.18 195)',
-                  'oklch(52% 0.19 60)',
-                  'oklch(50% 0.18 290)',
-                  'oklch(50% 0.16 145)',
-                  'oklch(52% 0.20 15)',
-                  'oklch(50% 0.18 240)',
-                  'oklch(52% 0.20 340)',
-                  'oklch(50% 0.16 80)',
-                ];
-                const tone = palette[i % palette.length]!;
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => onTagClick?.(tag)}
-                    className="text-[13px] px-3.5 py-1.5 rounded-full transition-all"
-                    style={{
-                      color: tone,
-                      background: tone.replace(')', ' / 0.06)'),
-                      border: `1px solid ${tone.replace(')', ' / 0.25)')}`,
-                      fontWeight: 600,
-                    }}
-                  >
-                    <span>
-                      #{tag}{' '}
-                      <span style={{ color: tone.replace(')', ' / 0.65)') }}>{count}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+              궁금한가요?
+            </span>
+          </h2>
+        </div>
+
+        {/* 우측 미세 통계 */}
+        <dl
+          className="grid grid-cols-3 gap-x-10 gap-y-2 max-w-md lg:justify-self-end"
+          style={{ borderLeft: '1px solid var(--color-line)' }}
+        >
+          <Stat label="전체" value={total} suffix="글" />
+          <Stat label="소스" value={sourceCount} />
+          <Stat label="진척" value={readPercent} suffix="%" />
+        </dl>
       </div>
 
-      <aside className="hidden md:block">
-        <SourceRing sources={sources} total={total} />
-      </aside>
+      {topTags.length > 0 && (
+        <div className="mt-12">
+          <p
+            className="text-[12px] mb-3 tracking-[0.22em] uppercase"
+            style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
+          >
+            지금 가장 많이 쓰인 단어 {topTags.length}개
+          </p>
+          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+            {topTags.map(({ tag, count }, i) => {
+              const size = Math.max(0.95, Math.min(1.6, count / 2));
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => onTagClick?.(tag)}
+                  className="transition-colors leading-none"
+                  style={{
+                    color:
+                      i === 0
+                        ? 'var(--color-fg-strong)'
+                        : 'var(--color-fg-muted)',
+                    fontSize: `${size}rem`,
+                    fontWeight: i === 0 ? 700 : 500,
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  <span className="hover:text-(--color-fg-strong) transition-colors">
+                    {tag}
+                  </span>
+                  <sup
+                    className="ml-0.5 tabular-nums"
+                    style={{
+                      fontSize: '0.55em',
+                      color: 'var(--color-fg-subtle)',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {count}
+                  </sup>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </motion.section>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
+function Stat({
+  label,
+  value,
+  suffix,
+}: {
+  label: string;
+  value: number;
+  suffix?: string;
+}) {
   return (
-    <div>
-      <p
-        className="text-[12px] mb-1.5 tracking-[0.18em] uppercase"
+    <div className="pl-6">
+      <dt
+        className="text-[11px] mb-1 tracking-[0.18em] uppercase"
         style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
       >
         {label}
-      </p>
-      <p
-        className="text-[2rem] leading-none tabular-nums tracking-[-0.02em]"
-        style={{
-          color: tone,
-          fontWeight: 600,
-        }}
+      </dt>
+      <dd
+        className="text-[1.25rem] leading-none tabular-nums tracking-[-0.02em] flex items-baseline gap-0.5"
+        style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
       >
         {value}
-      </p>
+        {suffix && (
+          <span
+            className="text-[12px] ml-0.5"
+            style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
+          >
+            {suffix}
+          </span>
+        )}
+      </dd>
     </div>
   );
 }
