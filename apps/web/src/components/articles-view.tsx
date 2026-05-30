@@ -9,6 +9,7 @@ import { TopStoryCard } from './top-story-card';
 import { HeroStrip } from './hero-strip';
 import { ConferenceSection } from './conference-section';
 import { PageFooter } from './page-footer';
+import { InlineChat } from './inline-chat';
 import { readTracking } from '@/lib/read-tracking';
 import { groupByTime, extractTopTags } from '@/lib/group-articles';
 import { MOCK_CONFERENCES } from '@/lib/mock-conferences';
@@ -75,6 +76,8 @@ export function ArticlesView({ articles }: Props) {
         topTags={topTags}
         onTagClick={(t) => setQuery(t)}
       />
+
+      <InlineChat />
 
       {/* sticky 필터바 — 페이지 패딩(px-6 sm:px-10 lg:px-16)과 음수 마진 동기화 */}
       <div
