@@ -37,8 +37,14 @@ body {
   color: var(--fg-default);
   font-family: var(--font-sans);
   word-break: keep-all;
+  overflow-wrap: anywhere;
   text-wrap: pretty;
   font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv11';
+  overflow-x: hidden;
+}
+
+html {
+  overflow-x: hidden;
 }
 
 /* 미세한 noise 배경 (잭 시그니처 톤) */
@@ -49,8 +55,9 @@ body::before {
   z-index: -10;
   pointer-events: none;
   background-image:
-    radial-gradient(ellipse 60% 40% at 50% 0%, oklch(70% 0.12 200 / 0.06), transparent 70%),
-    radial-gradient(ellipse 40% 30% at 100% 100%, oklch(75% 0.1 280 / 0.04), transparent 60%);
+    radial-gradient(ellipse 80% 50% at 50% -10%, oklch(72% 0.13 200 / 0.12), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 100% 110%, oklch(75% 0.12 280 / 0.10), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 0% 100%, oklch(78% 0.10 30 / 0.06), transparent 60%);
 }
 
 body::after {
@@ -59,8 +66,8 @@ body::after {
   inset: 0;
   z-index: -9;
   pointer-events: none;
-  opacity: 0.4;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.65;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* shimmer 인라인 라인 (Top story 좌측) */

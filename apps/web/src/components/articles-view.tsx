@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
+import { useSearchParams } from 'next/navigation';
 import type { ArticleDto } from './article-card';
 import { ArticleCard } from './article-card';
 import { TopStoryCard } from './top-story-card';
@@ -17,7 +18,8 @@ interface Props {
 }
 
 export function ArticlesView({ articles }: Props) {
-  const [query, setQuery] = useState('');
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [activeSource, setActiveSource] = useState<string | null>(null);
   const [readSet, setReadSet] = useState<Set<string>>(new Set());
   const [hideRead, setHideRead] = useState(false);
@@ -74,8 +76,14 @@ export function ArticlesView({ articles }: Props) {
         onTagClick={(t) => setQuery(t)}
       />
 
-      {/* sticky 필터바 */}
-      <div className="sticky top-0 z-20 -mx-6 sm:-mx-12 px-6 sm:px-12 py-3 mb-10 bg-black/85 backdrop-blur-md border-b border-zinc-900">
+      {/* sticky 필터바 — 페이지 패딩(px-6 sm:px-10 lg:px-16)과 음수 마진 동기화 */}
+      <div
+        className="sticky top-0 z-20 -mx-6 sm:-mx-10 lg:-mx-16 px-6 sm:px-10 lg:px-16 py-3 mb-10 backdrop-blur-md"
+        style={{
+          background: 'oklch(13% 0.005 250 / 0.85)',
+          borderBottom: '1px solid var(--color-line)',
+        }}
+      >
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap gap-1.5 text-xs">
             <button
@@ -133,8 +141,53 @@ export function ArticlesView({ articles }: Props) {
         </div>
       </div>
 
+      {isFiltering && (
+        <div
+          className="mb-6 text-[12px] flex items-center gap-2"
+          style={{ color: 'var(--color-fg-muted)' }}
+        >
+          <span
+            aria-hidden
+            className="inline-block w-1.5 h-1.5 rounded-full"
+            style={{ background: 'var(--color-accent)' }}
+          />
+          <span>
+            <span style={{ color: 'var(--color-fg-strong)' }}>{filtered.length}</span>개 매칭
+            {query.trim() && (
+              <>
+                {' '}
+                · <span style={{ color: 'var(--color-accent)' }}>"{query.trim()}"</span>
+              </>
+            )}
+            {activeSource && (
+              <>
+                {' '}
+                ·{' '}
+                <span style={{ color: 'var(--color-fg-default)' }}>
+                  {sourceCounts.find(([p]) => p === activeSource)?.[1].name}
+                </span>
+              </>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('');
+              setActiveSource(null);
+              setHideRead(false);
+            }}
+            className="ml-auto text-[11px] transition-colors hover:text-(--color-fg-strong)"
+            style={{ color: 'var(--color-fg-subtle)' }}
+          >
+            필터 초기화
+          </button>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
-        <p className="text-zinc-500 text-sm py-16 text-center">조건에 맞는 글이 없어요.</p>
+        <p className="text-sm py-16 text-center" style={{ color: 'var(--color-fg-muted)' }}>
+          조건에 맞는 글이 없어요.
+        </p>
       ) : isFiltering ? (
         <ul className="grid gap-x-10 gap-y-10 md:grid-cols-2 items-start">
           {filtered.map((a) => (
@@ -144,6 +197,7 @@ export function ArticlesView({ articles }: Props) {
                 read={readSet.has(a.id)}
                 onOpen={() => handleArticleOpen(a.id)}
                 onTagClick={(tag) => setQuery(tag)}
+                query={query}
               />
             </li>
           ))}
@@ -191,6 +245,7 @@ export function ArticlesView({ articles }: Props) {
                       read={readSet.has(a.id)}
                       onOpen={() => handleArticleOpen(a.id)}
                       onTagClick={(tag) => setQuery(tag)}
+                query={query}
                     />
                   </li>
                 ))}

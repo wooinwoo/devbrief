@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
 import { CitationGrid, type Citation } from '@/components/citation-card';
+import { AnswerText } from '@/components/answer-text';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
 
 interface Message {
@@ -57,7 +58,15 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(initialQuery);
   const [streaming, setStreaming] = useState(false);
+  const [highlightCite, setHighlightCite] = useState<{ msgId: string; index: number } | null>(null);
   const autoSentRef = useRef(false);
+
+  function handleCitationClick(msgId: string, index: number) {
+    setHighlightCite({ msgId, index });
+    const el = document.getElementById(`cite-${index}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => setHighlightCite(null), 2200);
+  }
 
   async function send(text: string) {
     if (!text.trim() || streaming) return;
@@ -149,7 +158,10 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="min-h-screen px-6 sm:px-10 lg:px-16 pt-12 pb-32 max-w-4xl mx-auto flex flex-col">
+    <main
+      className="min-h-screen px-6 sm:px-10 lg:px-16 pt-12 pb-32 max-w-4xl mx-auto flex flex-col w-full overflow-x-hidden"
+      style={{ minWidth: 0 }}
+    >
       <header className="mb-12">
         <div className="flex items-center justify-between mb-3">
           <p
@@ -251,25 +263,39 @@ export default function ChatPage() {
               >
                 {m.role === 'user' ? 'You' : 'Pulse'}
               </p>
-              <p
-                className="whitespace-pre-wrap text-[15px]"
-                style={{
-                  color: m.role === 'user' ? 'var(--color-fg-strong)' : 'var(--color-fg-default)',
-                }}
-              >
-                {m.content || (streaming && m.role === 'assistant' ? '…' : '')}
-                {streaming && m.role === 'assistant' && m.content && (
-                  <span
-                    aria-hidden
-                    className="ml-0.5 inline-block w-1.5 h-4 align-text-bottom"
-                    style={{
-                      background: 'var(--color-accent)',
-                      animation: 'pulse-glow 1.2s ease-in-out infinite',
-                    }}
-                  />
-                )}
-              </p>
-              {m.citations && m.citations.length > 0 && <CitationGrid citations={m.citations} />}
+              {m.role === 'assistant' && !streaming && m.content ? (
+                <AnswerText
+                  text={m.content}
+                  onCitationClick={(idx) => handleCitationClick(m.id, idx)}
+                />
+              ) : (
+                <p
+                  className="whitespace-pre-wrap break-words text-[15px] leading-relaxed"
+                  style={{
+                    color:
+                      m.role === 'user' ? 'var(--color-fg-strong)' : 'var(--color-fg-default)',
+                    overflowWrap: 'anywhere',
+                  }}
+                >
+                  {m.content || (streaming && m.role === 'assistant' ? '…' : '')}
+                  {streaming && m.role === 'assistant' && m.content && (
+                    <span
+                      aria-hidden
+                      className="ml-0.5 inline-block w-1.5 h-4 align-text-bottom"
+                      style={{
+                        background: 'var(--color-accent)',
+                        animation: 'pulse-glow 1.2s ease-in-out infinite',
+                      }}
+                    />
+                  )}
+                </p>
+              )}
+              {m.citations && m.citations.length > 0 && (
+                <CitationGrid
+                  citations={m.citations}
+                  highlightIndex={highlightCite?.msgId === m.id ? highlightCite.index : null}
+                />
+              )}
             </motion.li>
           ))}
         </ul>

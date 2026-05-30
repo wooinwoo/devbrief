@@ -92,7 +92,7 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
         </div>
 
         <h2
-          className="text-[2.25rem] sm:text-[2.75rem] font-medium leading-[1.15] tracking-[-0.01em] transition-colors"
+          className="text-[1.625rem] sm:text-[2.25rem] lg:text-[2.75rem] font-medium leading-[1.2] tracking-[-0.01em] transition-colors break-keep"
           style={{ color: 'var(--color-fg-strong)' }}
         >
           {article.title}
@@ -100,7 +100,7 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
 
         {article.summaryOneLine && (
           <p
-            className="text-[1.0625rem] mt-5 leading-[1.65] max-w-2xl"
+            className="text-[15px] sm:text-[1.0625rem] mt-4 sm:mt-5 leading-[1.65] max-w-2xl"
             style={{ color: 'var(--color-fg-default)' }}
           >
             {article.summaryOneLine}

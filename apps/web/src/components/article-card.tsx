@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { relativeTime } from '@/lib/relative-time';
+import { Highlight } from './highlight';
 
 export interface ArticleDto {
   id: string;
@@ -30,33 +31,39 @@ interface Props {
   read?: boolean;
   onOpen?: () => void;
   onTagClick?: (tag: string) => void;
+  query?: string;
 }
 
-export function ArticleCard({ article, read = false, onOpen, onTagClick }: Props) {
+export function ArticleCard({
+  article,
+  read = false,
+  onOpen,
+  onTagClick,
+  query = '',
+}: Props) {
   const bar = SOURCE_BAR[article.source.provider] ?? SOURCE_BAR.rss_generic;
   const summary = article.summaryOneLine;
   const askUrl = `/chat?q=${encodeURIComponent(`${article.title} 에 대해 설명해줘`)}`;
 
   return (
     <article
-      className={`group relative pl-5 -ml-5 pb-7 transition-all
-        ${read ? 'opacity-50 hover:opacity-80' : ''}
+      className={`group relative pl-5 -ml-5 pb-7 transition-all duration-300 motion-safe:hover:-translate-y-px
+        ${read ? 'opacity-55 hover:opacity-90' : ''}
       `}
     >
-      {/* 좌측 라인 (기본 zinc → hover 시 source 색) */}
+      {/* baseline 좌측 라인 (항상 보임, 약하게) */}
       <span
         aria-hidden
-        className="absolute left-0 top-1 bottom-7 w-px transition-all duration-300"
-        style={{
-          background: 'var(--color-line)',
-        }}
+        className="absolute left-0 top-1 bottom-7 w-px"
+        style={{ background: 'var(--color-line-strong)' }}
       />
+      {/* hover 시 source 색 라인 + 글로우 */}
       <span
         aria-hidden
-        className="absolute left-0 top-1 bottom-7 w-px transition-opacity duration-300 opacity-0 group-hover:opacity-100"
+        className="absolute left-0 top-1 bottom-7 w-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
-          background: `linear-gradient(to bottom, ${bar} 0%, transparent 100%)`,
-          boxShadow: `0 0 8px ${bar}`,
+          background: `linear-gradient(to bottom, ${bar} 0%, ${bar} 50%, transparent 100%)`,
+          boxShadow: `0 0 10px ${bar}`,
         }}
       />
 
@@ -86,7 +93,7 @@ export function ArticleCard({ article, read = false, onOpen, onTagClick }: Props
           style={{ color: 'var(--color-fg-default)', fontWeight: 500 }}
         >
           <span className="group-hover:text-(--color-fg-strong) transition-colors">
-            {article.title}
+            <Highlight text={article.title} query={query} />
           </span>
         </h2>
         {summary && (
@@ -94,7 +101,7 @@ export function ArticleCard({ article, read = false, onOpen, onTagClick }: Props
             className="mt-2.5 leading-[1.6] text-[14px]"
             style={{ color: 'var(--color-fg-muted)' }}
           >
-            {summary}
+            <Highlight text={summary} query={query} />
           </p>
         )}
       </a>

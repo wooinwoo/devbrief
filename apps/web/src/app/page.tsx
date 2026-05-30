@@ -26,7 +26,10 @@ export default async function Home() {
   });
 
   return (
-    <main className="min-h-screen px-6 sm:px-10 lg:px-16 pt-12 pb-24 max-w-6xl mx-auto">
+    <main
+      className="min-h-screen px-6 sm:px-10 lg:px-16 pt-12 pb-24 max-w-6xl mx-auto"
+      style={{ overflowX: 'clip' }}
+    >
       <header className="mb-10">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs text-zinc-500 tracking-widest uppercase">Pulse</p>
