@@ -33,7 +33,7 @@ export function UpcomingRow() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
-      className="mb-14"
+      className="mb-20"
     >
       <div className="flex items-end justify-between mb-7 pb-4 border-b" style={{ borderColor: 'var(--color-line)' }}>
         <div>
@@ -66,7 +66,6 @@ export function UpcomingRow() {
       >
         {upcoming.map((c, i) => {
           const d = daysUntil(c.startDate);
-          const isNear = d <= 60;
           const brand = c.brand ?? 'oklch(50% 0.012 245)';
           return (
             <motion.li
@@ -78,73 +77,54 @@ export function UpcomingRow() {
                 ease: [0.2, 0, 0, 1],
                 delay: 0.06 + i * 0.04,
               }}
-              className="snap-start shrink-0 w-[300px] sm:w-[340px]"
+              className="snap-start shrink-0 w-[280px] sm:w-[320px]"
             >
               <a
                 href={c.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group block overflow-hidden transition-all motion-safe:hover:-translate-y-0.5"
-                style={{
-                  borderRadius: 14,
-                  border: '1px solid var(--color-line)',
-                  background: 'var(--color-bg-elevated)',
-                }}
+                className="group block transition-all motion-safe:hover:-translate-y-0.5"
               >
+                {/* 이미지 대신 brand 색 + 큰 D-day 타이포 */}
                 <div
-                  className="relative aspect-[16/10] overflow-hidden"
+                  className="relative aspect-[16/10] overflow-hidden mb-4 flex flex-col justify-between p-5"
                   style={{
-                    background: `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.5)')})`,
+                    borderRadius: 4,
+                    background: brand,
                   }}
                 >
-                  {c.image && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={c.image}
-                      alt={c.name}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  )}
-                  <div
-                    aria-hidden
-                    className="absolute inset-0"
-                    style={{
-                      background: `linear-gradient(to top, ${brand.replace(')', ' / 0.55)')} 0%, transparent 55%)`,
-                    }}
-                  />
-                  <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+                  <span
+                    className="text-[11px] tracking-[0.25em] uppercase"
+                    style={{ color: 'oklch(99% 0 0 / 0.7)', fontWeight: 500 }}
+                  >
+                    D-{d}
+                  </span>
+                  <div className="flex items-end justify-between">
                     <span
-                      className="text-[10px] tracking-[0.25em] uppercase"
-                      style={{ color: 'oklch(95% 0 0 / 0.92)', fontWeight: 500 }}
+                      className="text-[11px] tabular-nums"
+                      style={{ color: 'oklch(99% 0 0 / 0.7)' }}
                     >
-                      D-{d}
+                      {formatDate(c.startDate, c.endDate)}
                     </span>
                     <span
-                      className="text-[2rem] leading-none tabular-nums tracking-[-0.03em]"
+                      className="text-[3.5rem] leading-none tabular-nums tracking-[-0.04em]"
                       style={{
                         fontWeight: 700,
                         color: 'oklch(99% 0 0)',
-                        textShadow: '0 2px 12px oklch(0% 0 0 / 0.4)',
                       }}
                     >
                       {d}
                     </span>
                   </div>
                 </div>
-                <div className="p-4">
-                  <h3
-                    className="text-[15px] leading-snug tracking-[-0.005em] transition-colors"
-                    style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
-                  >
-                    {c.name}
-                  </h3>
-                  <div className="mt-1.5 flex items-center gap-2 text-[12px]">
-                    <span style={{ color: 'var(--color-fg-default)' }}>
-                      {formatDate(c.startDate, c.endDate)}
-                    </span>
-                    <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-                    <span style={{ color: 'var(--color-fg-muted)' }}>{c.location}</span>
-                  </div>
+                <h3
+                  className="text-[15px] leading-snug tracking-[-0.005em] transition-colors break-keep"
+                  style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
+                >
+                  {c.name}
+                </h3>
+                <div className="mt-1.5 flex items-center gap-2 text-[12px]">
+                  <span style={{ color: 'var(--color-fg-muted)' }}>{c.location}</span>
                 </div>
               </a>
             </motion.li>

@@ -224,22 +224,13 @@ function HeroConference({
         boxShadow: `0 24px 48px -16px ${brand.replace(')', ' / 0.25)')}`,
       }}
     >
-      {c.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={c.image}
-          alt={c.name}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-        />
-      ) : (
-        <div
-          aria-hidden
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.5)')} 60%, oklch(20% 0.01 245) 100%)`,
-          }}
-        />
-      )}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.5)')} 60%, oklch(20% 0.01 245) 100%)`,
+        }}
+      />
 
       <div
         aria-hidden
@@ -359,21 +350,13 @@ function MidCard({ c, index }: { c: ConferenceDto; index: number }) {
         background: 'var(--color-bg-elevated)',
       }}
     >
-      {/* 카드 상단 이미지 */}
+      {/* 카드 상단 — brand 그라데이션 + 큰 D-day (이미지 X) */}
       <div
         className="relative aspect-[16/9] overflow-hidden"
         style={{
           background: `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.5)')})`,
         }}
       >
-        {c.image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={c.image}
-            alt={c.name}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        )}
         <div
           aria-hidden
           className="absolute inset-0"
@@ -476,16 +459,7 @@ function TailRow({ c, index }: { c: ConferenceDto; index: number }) {
           borderRadius: 8,
           background: `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.5)')})`,
         }}
-      >
-        {c.image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={c.image}
-            alt={c.name}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        )}
-      </div>
+      />
 
       <span
         className="text-[1.75rem] tabular-nums leading-none tracking-tight w-16 text-right"

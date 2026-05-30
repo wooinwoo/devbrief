@@ -10,8 +10,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     summaryThreeLine: null,
     publishedAt: '2026-05-29T08:30:00Z',
     tags: ['AI', 'LLM', 'Anthropic'],
-    imageUrl:
-      'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&q=80&auto=format&fit=crop',
+    imageUrl: null,
     source: { name: 'Anthropic', provider: 'anthropic' },
   },
   {

@@ -23,7 +23,6 @@ export function VideoRow() {
       transition={{ duration: 0.4, ease: [0.2, 0, 0, 1], delay: 0.08 }}
       className="mb-20"
     >
-      {/* 잡지 톤 헤더 - uppercase tracking X */}
       <div className="flex items-end justify-between mb-7 pb-4 border-b" style={{ borderColor: 'var(--color-line)' }}>
         <div>
           <h2
@@ -43,7 +42,7 @@ export function VideoRow() {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-        {/* 좌: 메인 (큰 영상) */}
+        {/* 좌: 메인 (큰 영상) — 이미지 X, brand 색 + 큰 duration */}
         <a
           href={hero.url}
           target="_blank"
@@ -51,63 +50,53 @@ export function VideoRow() {
           className="group block"
         >
           <div
-            className="relative aspect-[16/10] overflow-hidden mb-4"
-            style={{ borderRadius: 4 }}
+            className="relative aspect-[16/10] overflow-hidden mb-4 flex flex-col justify-between p-6"
+            style={{
+              borderRadius: 4,
+              background: hero.brand ?? 'oklch(45% 0.012 245)',
+            }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={hero.thumbnail}
-              alt={hero.title}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-            />
-            <div
-              aria-hidden
-              className="absolute inset-0"
-              style={{
-                background:
-                  'linear-gradient(to top, oklch(0% 0 0 / 0.65) 0%, transparent 55%)',
-              }}
-            />
-            {/* 좌하단 채널 + 시간 */}
-            <div className="absolute bottom-4 left-5 right-5 flex items-end justify-between">
-              <div>
-                <span
-                  className="text-[11px] tracking-wide"
-                  style={{ color: 'oklch(98% 0 0 / 0.85)', fontWeight: 600 }}
-                >
-                  {hero.channel}
-                </span>
-              </div>
+            <div className="flex items-center justify-between">
               <span
-                className="text-[12px] tabular-nums px-2 py-0.5"
+                className="text-[11px] tracking-wide"
+                style={{ color: 'oklch(98% 0 0 / 0.8)', fontWeight: 600 }}
+              >
+                {hero.channel}
+              </span>
+              {/* 재생 표시 — 작게 */}
+              <span
+                aria-hidden
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full"
+                style={{ background: 'oklch(99% 0 0 / 0.15)' }}
+              >
+                <svg width="12" height="14" viewBox="0 0 14 16" fill="none">
+                  <path
+                    d="M2 1.5L12 8L2 14.5V1.5Z"
+                    fill="oklch(99% 0 0 / 0.9)"
+                  />
+                </svg>
+              </span>
+            </div>
+            <div className="flex items-end justify-between">
+              <span
+                className="text-[12px]"
+                style={{ color: 'oklch(98% 0 0 / 0.65)' }}
+              >
+                재생 시간
+              </span>
+              <span
+                className="text-[3.25rem] leading-none tabular-nums tracking-[-0.04em]"
                 style={{
-                  color: 'oklch(98% 0 0)',
-                  background: 'oklch(0% 0 0 / 0.55)',
-                  borderRadius: 2,
-                  fontWeight: 600,
+                  color: 'oklch(99% 0 0)',
+                  fontWeight: 700,
                 }}
               >
                 {hero.duration}
               </span>
             </div>
-            {/* 재생 */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span
-                aria-hidden
-                className="inline-flex items-center justify-center w-14 h-14 rounded-full transition-transform group-hover:scale-110"
-                style={{
-                  background: 'oklch(98% 0 0 / 0.95)',
-                  boxShadow: '0 8px 32px -4px oklch(0% 0 0 / 0.4)',
-                }}
-              >
-                <svg width="16" height="18" viewBox="0 0 14 16" fill="none">
-                  <path d="M2 1.5L12 8L2 14.5V1.5Z" fill="oklch(20% 0.012 245)" />
-                </svg>
-              </span>
-            </div>
           </div>
           <h3
-            className="text-[1.375rem] leading-[1.25] tracking-[-0.012em]"
+            className="text-[1.375rem] leading-[1.25] tracking-[-0.012em] break-keep"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
           >
             {hero.title}
@@ -123,7 +112,7 @@ export function VideoRow() {
           </div>
         </a>
 
-        {/* 우: 리스트 */}
+        {/* 우: 리스트 — duration 좌측 큰 글자 + 텍스트 우측 */}
         <ul className="flex flex-col">
           {sideList.map((v, i) => (
             <motion.li
@@ -140,27 +129,19 @@ export function VideoRow() {
                 href={v.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex gap-4 py-3.5 first:pt-0 border-b last:border-b-0 transition-colors"
+                className="group flex items-center gap-5 py-4 first:pt-0 border-b last:border-b-0 transition-colors"
                 style={{ borderColor: 'var(--color-line)' }}
               >
-                <div
-                  className="relative shrink-0 w-[140px] aspect-[16/10] overflow-hidden"
-                  style={{ borderRadius: 3 }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={v.thumbnail}
-                    alt={v.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                {/* 좌측: duration 큰 글자 + brand 색 dot */}
+                <div className="shrink-0 w-[88px] flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="inline-block w-2 h-2 rounded-full"
+                    style={{ background: v.brand ?? 'var(--color-fg-subtle)' }}
                   />
                   <span
-                    className="absolute bottom-1 right-1 px-1.5 py-px text-[10px] tabular-nums"
-                    style={{
-                      background: 'oklch(0% 0 0 / 0.7)',
-                      color: 'oklch(98% 0 0)',
-                      fontWeight: 600,
-                      borderRadius: 2,
-                    }}
+                    className="text-[1.05rem] tabular-nums tracking-[-0.015em]"
+                    style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
                   >
                     {v.duration}
                   </span>
@@ -173,7 +154,7 @@ export function VideoRow() {
                     {v.channel}
                   </div>
                   <h3
-                    className="text-[14.5px] leading-[1.35] tracking-[-0.005em]"
+                    className="text-[14px] leading-[1.35] tracking-[-0.005em] break-keep"
                     style={{
                       color: 'var(--color-fg-strong)',
                       fontWeight: 600,
@@ -185,15 +166,6 @@ export function VideoRow() {
                   >
                     {v.title}
                   </h3>
-                  <div className="mt-1.5 flex items-center gap-1.5 text-[11.5px]">
-                    <span style={{ color: 'var(--color-fg-muted)' }}>
-                      {v.views} views
-                    </span>
-                    <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-                    <span style={{ color: 'var(--color-fg-muted)' }}>
-                      {relativeShort(v.publishedAt)}
-                    </span>
-                  </div>
                 </div>
               </a>
             </motion.li>
