@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { relativeTime } from '@/lib/relative-time';
 import { Highlight } from './highlight';
+import { useChat } from './chat-context';
 
 export interface ArticleDto {
   id: string;
@@ -43,7 +43,7 @@ export function ArticleCard({
 }: Props) {
   const bar = SOURCE_BAR[article.source.provider] ?? SOURCE_BAR.rss_generic;
   const summary = article.summaryOneLine;
-  const askUrl = `/chat?q=${encodeURIComponent(`${article.title} 에 대해 설명해줘`)}`;
+  const chat = useChat();
 
   return (
     <article
@@ -119,8 +119,9 @@ export function ArticleCard({
           </button>
         ))}
         <span className="flex-1" />
-        <Link
-          href={askUrl}
+        <button
+          type="button"
+          onClick={() => chat?.ask(`${article.title} 에 대해 설명해줘`)}
           className="text-[11px] inline-flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
           style={{ color: bar }}
         >
@@ -130,7 +131,7 @@ export function ArticleCard({
             style={{ background: bar }}
           />
           챗봇에 묻기
-        </Link>
+        </button>
       </div>
     </article>
   );

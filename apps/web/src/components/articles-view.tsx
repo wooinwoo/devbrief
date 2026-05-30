@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
 import type { ArticleDto } from './article-card';
@@ -9,7 +9,8 @@ import { TopStoryCard } from './top-story-card';
 import { HeroStrip } from './hero-strip';
 import { ConferenceSection } from './conference-section';
 import { PageFooter } from './page-footer';
-import { InlineChat } from './inline-chat';
+import { InlineChat, type InlineChatHandle } from './inline-chat';
+import { ChatProvider } from './chat-context';
 import { readTracking } from '@/lib/read-tracking';
 import { groupByTime, extractTopTags } from '@/lib/group-articles';
 import { MOCK_CONFERENCES } from '@/lib/mock-conferences';
@@ -28,6 +29,9 @@ export function ArticlesView({ articles }: Props) {
   useEffect(() => {
     setReadSet(readTracking.load());
   }, []);
+
+  const chatRef = useRef<InlineChatHandle>(null);
+  const ask = (text: string) => chatRef.current?.ask(text);
 
   const sourceCounts = useMemo(() => {
     const map = new Map<string, { name: string; count: number }>();
@@ -67,6 +71,7 @@ export function ArticlesView({ articles }: Props) {
   const isFiltering = query.trim() !== '' || activeSource !== null || hideRead;
 
   return (
+    <ChatProvider ask={ask}>
     <div>
       <HeroStrip
         total={articles.length}
@@ -77,7 +82,7 @@ export function ArticlesView({ articles }: Props) {
         onTagClick={(t) => setQuery(t)}
       />
 
-      <InlineChat />
+      <InlineChat ref={chatRef} />
 
       {/* sticky 필터바 — 페이지 패딩(px-6 sm:px-10 lg:px-16)과 음수 마진 동기화 */}
       <div
@@ -176,8 +181,9 @@ export function ArticlesView({ articles }: Props) {
           <span className="flex-1 min-w-2" />
 
           {query.trim() && filtered.length > 0 && (
-            <a
-              href={`/chat?q=${encodeURIComponent(query.trim())}`}
+            <button
+              type="button"
+              onClick={() => ask(`"${query.trim()}" 관련해서 정리해줘`)}
               className="text-[11px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-colors"
               style={{
                 color: 'var(--color-accent)',
@@ -190,7 +196,7 @@ export function ArticlesView({ articles }: Props) {
                 style={{ background: 'var(--color-accent)' }}
               />
               이 결과로 챗봇에 묻기
-            </a>
+            </button>
           )}
 
           <button
@@ -281,5 +287,6 @@ export function ArticlesView({ articles }: Props) {
 
       <PageFooter total={articles.length} sourceCount={sourceCounts.length} />
     </div>
+    </ChatProvider>
   );
 }

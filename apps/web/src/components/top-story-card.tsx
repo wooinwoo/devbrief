@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { motion } from 'motion/react';
 import type { ArticleDto } from './article-card';
 import { relativeTime } from '@/lib/relative-time';
+import { useChat } from './chat-context';
 
 const SOURCE_GLOW: Record<string, string> = {
   geeknews: 'oklch(75% 0.15 160 / 0.18)',
@@ -36,7 +36,7 @@ interface Props {
 export function TopStoryCard({ article, read = false, onOpen }: Props) {
   const glow = SOURCE_GLOW[article.source.provider] ?? SOURCE_GLOW.rss_generic;
   const bar = SOURCE_BAR[article.source.provider] ?? SOURCE_BAR.rss_generic;
-  const askUrl = `/chat?q=${encodeURIComponent(`${article.title} 에 대해 설명해줘`)}`;
+  const chat = useChat();
 
   return (
     <motion.article
@@ -115,8 +115,9 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
           </span>
         ))}
         <span className="flex-1" />
-        <Link
-          href={askUrl}
+        <button
+          type="button"
+          onClick={() => chat?.ask(`${article.title} 에 대해 설명해줘`)}
           className="text-[13px] inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full transition-all"
           style={{
             color: bar,
@@ -130,7 +131,7 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
             style={{ background: bar }}
           />
           이 글로 챗봇에 묻기
-        </Link>
+        </button>
       </div>
     </motion.article>
   );

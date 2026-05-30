@@ -1,10 +1,21 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CitationGrid, type Citation } from './citation-card';
 import { AnswerText } from './answer-text';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
+
+export interface InlineChatHandle {
+  ask(text: string): void;
+}
 
 interface Message {
   id: string;
@@ -51,7 +62,11 @@ interface Props {
   initialQuery?: string;
 }
 
-export function InlineChat({ initialQuery = '' }: Props) {
+export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineChat(
+  { initialQuery = '' },
+  ref,
+) {
+  const sectionRef = useRef<HTMLElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(initialQuery);
   const [streaming, setStreaming] = useState(false);
@@ -139,6 +154,13 @@ export function InlineChat({ initialQuery = '' }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
+  useImperativeHandle(ref, () => ({
+    ask(text: string) {
+      sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      send(text);
+    },
+  }));
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     send(input);
@@ -147,7 +169,7 @@ export function InlineChat({ initialQuery = '' }: Props) {
   const hasConversation = messages.length > 0;
 
   return (
-    <section className="mb-14">
+    <section ref={sectionRef} className="mb-14 scroll-mt-4">
       <p
         className="text-[11px] mb-3 tracking-[0.2em] uppercase"
         style={{ color: 'var(--color-fg-subtle)' }}
@@ -298,4 +320,4 @@ export function InlineChat({ initialQuery = '' }: Props) {
       </AnimatePresence>
     </section>
   );
-}
+});
