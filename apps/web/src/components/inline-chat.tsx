@@ -24,11 +24,27 @@ interface Message {
   citations?: Citation[];
 }
 
-const QUICK_PROMPTS = [
-  '이번 주 AI 모델 출시 소식만',
-  'Anthropic 관련 최근 글',
-  '내가 안 본 글 중 핵심만',
-  '한국 개발 블로그 핫이슈',
+const QUICK_PROMPTS: Array<{ label: string; hint: string; tone: string }> = [
+  {
+    label: '이번 주 AI 모델 출시 소식만',
+    hint: 'GPT-5 / Opus 4.8 / Gemini',
+    tone: 'oklch(55% 0.17 60)',
+  },
+  {
+    label: 'Anthropic 관련 최근 글',
+    hint: '최근 7일',
+    tone: 'oklch(55% 0.17 60)',
+  },
+  {
+    label: '내가 안 본 글 중 핵심만',
+    hint: 'unread 우선 큐레이션',
+    tone: 'oklch(48% 0.16 160)',
+  },
+  {
+    label: '한국 개발 블로그 핫이슈',
+    hint: 'GeekNews · 카카오 · 토스',
+    tone: 'oklch(48% 0.16 160)',
+  },
 ];
 
 function buildMockCitations(query: string): Citation[] {
@@ -217,21 +233,52 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
       </form>
 
       {!hasConversation && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {QUICK_PROMPTS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => send(p)}
-              className="text-[12px] px-3 py-1 rounded-full transition-colors"
-              style={{
-                color: 'var(--color-fg-muted)',
-                border: '1px solid var(--color-line)',
-              }}
-            >
-              <span className="hover:text-(--color-fg-strong) transition-colors">{p}</span>
-            </button>
-          ))}
+        <div className="mt-5">
+          <p
+            className="text-[10px] mb-3 tracking-[0.2em] uppercase"
+            style={{ color: 'var(--color-fg-subtle)' }}
+          >
+            빠른 질문
+          </p>
+          <ul className="space-y-1.5">
+            {QUICK_PROMPTS.map((p) => (
+              <li key={p.label}>
+                <button
+                  type="button"
+                  onClick={() => send(p.label)}
+                  className="group relative w-full text-left pl-3 pr-3 py-2.5 transition-all motion-safe:hover:-translate-y-px"
+                  style={{
+                    borderRadius: 8,
+                    border: '1px solid var(--color-line)',
+                    background: 'var(--color-bg-base)',
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    className="absolute left-0 top-2 bottom-2 w-[2px] opacity-50 group-hover:opacity-100 transition-opacity"
+                    style={{
+                      background: p.tone,
+                      boxShadow: `0 0 6px ${p.tone}`,
+                    }}
+                  />
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span
+                      className="text-[14px] transition-colors"
+                      style={{ color: 'var(--color-fg-default)' }}
+                    >
+                      <span className="group-hover:text-(--color-fg-strong)">{p.label}</span>
+                    </span>
+                    <span
+                      className="text-[11px] tracking-wide shrink-0"
+                      style={{ color: 'var(--color-fg-subtle)' }}
+                    >
+                      {p.hint}
+                    </span>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

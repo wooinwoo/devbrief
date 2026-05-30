@@ -44,7 +44,7 @@ export const ChatPanel = forwardRef<InlineChatHandle>(function ChatPanel(_, ref)
             <span className="hover:text-(--color-fg-strong)">전체 →</span>
           </Link>
         </div>
-        <ul className="space-y-3">
+        <ul className="space-y-2">
           {upcoming.map((c) => {
             const d = daysUntil(c.startDate);
             const isNear = d <= 30;
@@ -54,21 +54,36 @@ export const ChatPanel = forwardRef<InlineChatHandle>(function ChatPanel(_, ref)
                   href={c.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block group relative pl-3"
+                  className="block group relative pl-3 pr-3 py-2.5 transition-all motion-safe:hover:-translate-y-px"
+                  style={{
+                    borderRadius: 8,
+                    border: '1px solid var(--color-line)',
+                    background: isNear
+                      ? `linear-gradient(to right, oklch(58% 0.18 45 / 0.06), var(--color-bg-base) 70%)`
+                      : 'var(--color-bg-base)',
+                  }}
                 >
                   <span
                     aria-hidden
-                    className="absolute left-0 top-0.5 bottom-0.5 w-px"
+                    className="absolute left-0 top-2 bottom-2 w-[2px]"
                     style={{
                       background: isNear
-                        ? 'linear-gradient(to bottom, var(--color-warm), transparent)'
+                        ? 'linear-gradient(to bottom, var(--color-warm), transparent 80%)'
                         : 'var(--color-line-strong)',
-                      boxShadow: isNear ? '0 0 4px var(--color-warm)' : 'none',
+                      boxShadow: isNear ? '0 0 6px var(--color-warm)' : 'none',
                     }}
                   />
-                  <div className="flex items-center gap-2 text-[11px]">
+                  <div className="flex items-baseline justify-between gap-3">
                     <span
-                      className="tabular-nums tracking-wide"
+                      className="text-[13px] transition-colors"
+                      style={{ color: 'var(--color-fg-default)', fontWeight: 500 }}
+                    >
+                      <span className="group-hover:text-(--color-fg-strong)">
+                        {c.name}
+                      </span>
+                    </span>
+                    <span
+                      className="text-[11px] tabular-nums tracking-wide shrink-0"
                       style={{
                         color: isNear
                           ? 'var(--color-warm)'
@@ -76,15 +91,6 @@ export const ChatPanel = forwardRef<InlineChatHandle>(function ChatPanel(_, ref)
                       }}
                     >
                       D-{d}
-                    </span>
-                    <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-                    <span
-                      className="text-[12px] transition-colors"
-                      style={{ color: 'var(--color-fg-default)', fontWeight: 500 }}
-                    >
-                      <span className="group-hover:text-(--color-fg-strong)">
-                        {c.name}
-                      </span>
                     </span>
                   </div>
                 </a>
