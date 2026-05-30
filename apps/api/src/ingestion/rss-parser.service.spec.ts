@@ -1,10 +1,28 @@
 import { RssParserService, RssItem } from './rss-parser.service';
+import { OgImageService } from '../common/og-image.service';
 
 describe('RssParserService', () => {
   let service: RssParserService;
+  let og: jest.Mocked<OgImageService>;
 
   beforeEach(() => {
-    service = new RssParserService();
+    og = {
+      fetch: jest.fn(),
+      absolutize: jest.fn((src: string, base?: string) => {
+        if (src.startsWith('//')) return `https:${src}`;
+        if (src.startsWith('/') && base) {
+          try {
+            const u = new URL(base);
+            return `${u.protocol}//${u.host}${src}`;
+          } catch {
+            return src;
+          }
+        }
+        return src;
+      }),
+      parse: jest.fn(),
+    } as unknown as jest.Mocked<OgImageService>;
+    service = new RssParserService(og);
   });
 
   describe('extractImageFromItem', () => {
@@ -139,33 +157,32 @@ describe('RssParserService', () => {
   });
 
   describe('resolveImageUrl', () => {
-    it('RSS에서 잡히면 fetch 안 함', async () => {
+    it('RSS에서 잡히면 OgImageService.fetch 호출 안 함', async () => {
       jest
         .spyOn(service, 'extractImageFromItem')
         .mockReturnValue('https://rss-img.com/a.png');
-      const fetchSpy = jest.spyOn(service, 'fetchOgImage');
       const result = await service.resolveImageUrl({
         link: 'https://blog.com/x',
       } as RssItem);
       expect(result).toBe('https://rss-img.com/a.png');
-      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(og.fetch).not.toHaveBeenCalled();
     });
 
     it('RSS에서 못 잡고 link 없으면 null', async () => {
       jest.spyOn(service, 'extractImageFromItem').mockReturnValue(null);
       const result = await service.resolveImageUrl({} as RssItem);
       expect(result).toBeNull();
+      expect(og.fetch).not.toHaveBeenCalled();
     });
 
-    it('RSS에서 못 잡으면 og:image fetch 시도', async () => {
+    it('RSS에서 못 잡으면 OgImageService.fetch 시도', async () => {
       jest.spyOn(service, 'extractImageFromItem').mockReturnValue(null);
-      jest
-        .spyOn(service, 'fetchOgImage')
-        .mockResolvedValue('https://og.com/a.png');
+      og.fetch.mockResolvedValue('https://og.com/a.png');
       const result = await service.resolveImageUrl({
         link: 'https://blog.com/x',
       } as RssItem);
       expect(result).toBe('https://og.com/a.png');
+      expect(og.fetch).toHaveBeenCalledWith('https://blog.com/x');
     });
   });
 });

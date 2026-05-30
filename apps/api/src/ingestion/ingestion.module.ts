@@ -6,9 +6,11 @@ import { IngestionProcessor } from './ingestion.processor';
 import { IngestionCron } from './ingestion.cron';
 import { SourceSeederService } from './source-seeder.service';
 import { RssParserService } from './rss-parser.service';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
+    CommonModule,
     BullModule.registerQueue(
       { name: 'ingestion' },
       { name: 'summarization' },

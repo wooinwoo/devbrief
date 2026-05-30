@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Parser from 'rss-parser';
-import axios from 'axios';
+import { OgImageService } from '../common/og-image.service';
 
 export type RssItem = Parser.Item & {
   'content:encoded'?: string;
@@ -24,6 +24,8 @@ export class RssParserService {
       ],
     },
   });
+
+  constructor(private og: OgImageService) {}
 
   async parse(url: string): Promise<Parser.Output<RssItem>> {
     return this.parser.parseURL(url);
@@ -60,61 +62,13 @@ export class RssParserService {
     return null;
   }
 
-  /**
-   * article URL에서 og:image fetch. 5초 타임아웃, 실패 시 null.
-   */
-  async fetchOgImage(url: string): Promise<string | null> {
-    try {
-      const res = await axios.get<string>(url, {
-        timeout: 5000,
-        maxContentLength: 2_000_000,
-        responseType: 'text',
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (compatible; PulseBot/1.0; +https://pulse.dev)',
-        },
-      });
-      const html = res.data;
-      const og =
-        /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i.exec(
-          html,
-        ) ??
-        /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i.exec(
-          html,
-        ) ??
-        /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i.exec(
-          html,
-        );
-      return og?.[1] ?? null;
-    } catch (e) {
-      this.logger.debug(`og:image 추출 실패 ${url}: ${(e as Error).message}`);
-      return null;
-    }
-  }
-
-  /**
-   * 추출 통합 — RSS 우선, 없으면 og:image fallback.
-   */
+  /** RSS 우선, 없으면 article URL의 og:image fallback */
   async resolveImageUrl(item: RssItem): Promise<string | null> {
     const fromRss = this.extractImageFromItem(item);
-    if (fromRss) return this.absolutize(fromRss, item.link);
+    if (fromRss) return this.og.absolutize(fromRss, item.link);
     if (item.link) {
-      const og = await this.fetchOgImage(item.link);
-      return og ? this.absolutize(og, item.link) : null;
+      return this.og.fetch(item.link);
     }
     return null;
-  }
-
-  private absolutize(src: string, base?: string): string {
-    if (src.startsWith('//')) return `https:${src}`;
-    if (src.startsWith('/') && base) {
-      try {
-        const u = new URL(base);
-        return `${u.protocol}//${u.host}${src}`;
-      } catch {
-        return src;
-      }
-    }
-    return src;
   }
 }

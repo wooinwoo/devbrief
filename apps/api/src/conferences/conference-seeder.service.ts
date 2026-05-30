@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConferenceImageSyncService } from './conference-image-sync.service';
 
 interface ConfSeed {
   name: string;
@@ -74,7 +75,10 @@ const SEEDS: ConfSeed[] = [
 export class ConferenceSeederService implements OnApplicationBootstrap {
   private readonly logger = new Logger(ConferenceSeederService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private imageSync: ConferenceImageSyncService,
+  ) {}
 
   async onApplicationBootstrap() {
     try {
@@ -86,12 +90,12 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
             startDate: new Date(seed.startDate),
             endDate: seed.endDate ? new Date(seed.endDate) : null,
           },
+          // update에서 imageUrl 빼서 자동 sync된 값을 보존
           update: {
             name: seed.name,
             location: seed.location,
             topics: seed.topics,
             description: seed.description,
-            imageUrl: seed.imageUrl,
             brandColor: seed.brandColor,
             youtubeChannelId: seed.youtubeChannelId,
           },
@@ -100,6 +104,20 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
       this.logger.log(`Seeded ${SEEDS.length} conferences`);
     } catch (e) {
       this.logger.warn(`Conference seeding skipped: ${(e as Error).message}`);
+      return;
     }
+
+    // 백그라운드: imageUrl 비어 있는 컨퍼런스 og:image 자동 추출
+    // await 하지 않고 fire-and-forget — 부팅 차단 X
+    this.imageSync
+      .syncAll()
+      .then((r) =>
+        this.logger.log(
+          `Conference image auto-sync: total=${r.total} updated=${r.updated} failed=${r.failed}`,
+        ),
+      )
+      .catch((e) =>
+        this.logger.warn(`Conference image sync 실패: ${(e as Error).message}`),
+      );
   }
 }
