@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { relativeTime } from '@/lib/relative-time';
 import { Highlight } from './highlight';
 import { useChat } from './chat-context';
@@ -91,10 +92,8 @@ export function ArticleCard({
         }}
       />
 
-      <a
-        href={article.url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        href={`/articles/${article.id}`}
         onClick={onOpen}
         className="block focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--color-line-strong) focus-visible:rounded"
       >
@@ -132,7 +131,7 @@ export function ArticleCard({
             <Highlight text={summary} query={query} />
           </p>
         )}
-      </a>
+      </Link>
 
       {!isCompact && (
         <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import type { ArticleDto } from './article-card';
 import { relativeTime } from '@/lib/relative-time';
@@ -69,10 +70,8 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
         Top Story
       </p>
 
-      <a
-        href={article.url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        href={`/articles/${article.id}`}
         onClick={onOpen}
         className="block group focus-visible:outline-none"
       >
@@ -106,7 +105,7 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
             {article.summaryOneLine}
           </p>
         )}
-      </a>
+      </Link>
 
       <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2">
         {article.tags.slice(0, 5).map((t) => (
