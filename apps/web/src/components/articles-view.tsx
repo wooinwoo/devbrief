@@ -68,6 +68,12 @@ export function ArticlesView({
     <div className="w-full">
       {/* === 공통 헤더 ===================================== */}
       <header className="mb-5 pt-2">
+        <div
+          className="text-[11px] tracking-[0.28em] uppercase mb-3"
+          style={{ color: 'var(--color-accent)', fontWeight: 700 }}
+        >
+          Pulse
+        </div>
         <div className="flex items-baseline gap-4 flex-wrap">
           <h1
             className="text-[1.5rem] sm:text-[1.875rem] leading-none tracking-[-0.025em] break-keep"

@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { ArticlesView } from '@/components/articles-view';
-import { SiteNav } from '@/components/site-nav';
 import type { ArticleDto } from '@/components/article-card';
 import type { DigestDto } from '@/components/daily-digest';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
@@ -130,7 +129,6 @@ export default async function Home() {
       className="min-h-screen w-full max-w-[1600px] px-6 sm:px-10 lg:px-16 xl:px-24 pt-12 pb-24 mx-auto"
       style={{ overflowX: 'clip' }}
     >
-      <SiteNav />
       <Suspense fallback={null}>
         <ArticlesView
           articles={articles}
