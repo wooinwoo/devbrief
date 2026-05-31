@@ -11,6 +11,7 @@ import { SummarizationModule } from './summarization/summarization.module';
 import { ArticlesModule } from './articles/articles.module';
 import { ConferencesModule } from './conferences/conferences.module';
 import { VideosModule } from './videos/videos.module';
+import { SourcesModule } from './sources/sources.module';
 import { EmbeddingModule } from './embedding/embedding.module';
 import { ChatModule } from './chat/chat.module';
 
@@ -53,6 +54,7 @@ import { ChatModule } from './chat/chat.module';
     ArticlesModule,
     ConferencesModule,
     VideosModule,
+    SourcesModule,
     ChatModule,
   ],
   controllers: [AppController],
