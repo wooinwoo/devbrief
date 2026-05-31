@@ -30,8 +30,12 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
-      className={`relative pb-7 mb-6 border-b ${read ? 'opacity-65' : ''}`}
-      style={{ borderColor: 'var(--color-line)' }}
+      className={`relative p-6 mb-6 rounded-2xl border ${read ? 'opacity-65' : ''}`}
+      style={{
+        background: 'var(--color-bg-elevated)',
+        borderColor: 'var(--color-line)',
+        boxShadow: 'var(--shadow-card)',
+      }}
     >
       {/* 잡지 톤 overline */}
       <div className="flex items-baseline gap-3 mb-3 text-[11px] tracking-[0.25em] uppercase">

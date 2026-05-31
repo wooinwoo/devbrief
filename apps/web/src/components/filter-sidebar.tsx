@@ -29,9 +29,16 @@ interface Props {
  */
 export function FilterSidebar({ groups, search, extra }: Props) {
   return (
-    <aside className="lg:w-[200px] lg:shrink-0">
-      {/* 모바일: 가로 칩 / 데스크탑: 세로 */}
-      <div className="flex flex-col gap-6">
+    <aside className="lg:w-[210px] lg:shrink-0">
+      {/* 모바일: 가로 칩 / 데스크탑: 세로 — 카드 면 + sticky */}
+      <div
+        className="flex flex-col gap-6 lg:sticky lg:top-20 p-4 rounded-xl border"
+        style={{
+          background: 'var(--color-bg-elevated)',
+          borderColor: 'var(--color-line)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
         {search && (
           <input
             type="search"

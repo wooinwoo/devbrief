@@ -4,23 +4,26 @@
 
 :root {
   /* 라이트 — 따뜻한 라벤더 화이트 베이스 + 바이올렛 시그니처.
-     순흑/순백(#000/#fff) 안 씀: 배경은 살짝 라벤더, 텍스트는 짙은 보라회색. */
-  --bg-base: oklch(98.5% 0.006 290);
-  --bg-elevated: oklch(100% 0.003 290);
-  --bg-sunken: oklch(96% 0.008 290);
-  --fg-strong: oklch(28% 0.03 285);
-  --fg-default: oklch(40% 0.025 285);
-  --fg-muted: oklch(55% 0.022 285);
-  --fg-subtle: oklch(68% 0.018 285);
-  --line: oklch(91% 0.01 290);
-  --line-strong: oklch(83% 0.014 290);
+     순흑/순백(#000/#fff) 안 씀. base 와 카드(elevated) 대비를 키워 면이 떠 보이게. */
+  --bg-base: oklch(96.5% 0.01 290);
+  --bg-elevated: oklch(100% 0.002 290);
+  --bg-sunken: oklch(93.5% 0.014 290);
+  --fg-strong: oklch(27% 0.035 285);
+  --fg-default: oklch(40% 0.028 285);
+  --fg-muted: oklch(54% 0.024 285);
+  --fg-subtle: oklch(67% 0.02 285);
+  --line: oklch(90% 0.012 290);
+  --line-strong: oklch(82% 0.016 290);
   /* 시그니처 — 바이올렛 (라이트 배경 위 충분히 진하게) */
   --accent: oklch(54% 0.2 292);
   --accent-strong: oklch(48% 0.22 292);
+  --accent-soft: oklch(94% 0.04 292); /* 색 면 (digest/featured 배경 틴트) */
   --accent-glow: oklch(54% 0.2 292 / 0.1);
   --warm: oklch(58% 0.17 45);
-  /* 카드 hover 배경 미세 보라 틴트 */
-  --bg-tint: oklch(95% 0.02 292);
+  --bg-tint: oklch(94.5% 0.022 292);
+  /* 카드 그림자 (보라 틴트, 은은하게) */
+  --shadow-card: 0 1px 2px oklch(50% 0.05 290 / 0.04), 0 4px 16px -4px oklch(50% 0.08 290 / 0.07);
+  --shadow-card-hover: 0 2px 4px oklch(50% 0.05 290 / 0.06), 0 12px 28px -6px oklch(50% 0.1 290 / 0.12);
 }
 
 @theme inline {
@@ -38,6 +41,7 @@
   --color-line-strong: var(--line-strong);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
   --color-warm: var(--warm);
   --font-sans: 'Pretendard Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
