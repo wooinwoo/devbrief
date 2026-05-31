@@ -160,10 +160,8 @@ export function DashboardSidebar({
           <ul className="space-y-2.5">
             {videos.slice(0, 4).map((v) => (
               <li key={v.id}>
-                <a
-                  href={v.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href={`/videos/${v.id}`}
                   className="group flex items-baseline gap-3"
                 >
                   <span
@@ -196,7 +194,7 @@ export function DashboardSidebar({
                       {v.channel}
                     </span>
                   </span>
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

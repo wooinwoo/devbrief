@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import { formatDuration } from '@/lib/format-duration';
 import type { VideoDto } from '@/lib/mock-videos';
@@ -32,10 +33,8 @@ export function VideoCard({ video: v, index = 0 }: Props) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.2, 0, 0, 1], delay: 0.04 * index }}
     >
-      <a
-        href={v.url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        href={`/videos/${v.id}`}
         className="group block transition-transform motion-safe:hover:-translate-y-1"
       >
         {/* 썸네일 */}
@@ -164,7 +163,7 @@ export function VideoCard({ video: v, index = 0 }: Props) {
             {relativeShort(v.publishedAt)}
           </span>
         </div>
-      </a>
+      </Link>
     </motion.li>
   );
 }

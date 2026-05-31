@@ -9,6 +9,7 @@ interface YtSearchItem {
     title: string;
     channelTitle: string;
     publishedAt: string;
+    description?: string;
     thumbnails: {
       maxres?: { url: string };
       high?: { url: string };
@@ -22,6 +23,7 @@ interface YtVideoDetail {
   id: string;
   contentDetails: { duration: string }; // ISO 8601 PT42M18S
   statistics?: { viewCount?: string };
+  snippet?: { description?: string };
 }
 
 @Injectable()
@@ -96,7 +98,9 @@ export class YouTubeSyncService {
         params: {
           key: this.apiKey,
           id: ids,
-          part: 'contentDetails,statistics',
+          // snippet 추가 — videos.list 의 snippet.description 은 풀 description
+          // (search.list 의 snippet.description 은 ~160자 truncated)
+          part: 'contentDetails,statistics,snippet',
         },
       },
     );
@@ -123,10 +127,14 @@ export class YouTubeSyncService {
           durationSec: parseIsoDuration(detail.contentDetails.duration),
           views: Number(detail.statistics?.viewCount ?? 0),
           publishedAt: new Date(it.snippet.publishedAt),
+          description:
+            detail.snippet?.description ?? it.snippet.description ?? null,
           conferenceId,
         },
         update: {
           title: it.snippet.title,
+          description:
+            detail.snippet?.description ?? it.snippet.description ?? null,
           thumbnailUrl: thumb,
           views: Number(detail.statistics?.viewCount ?? 0),
         },

@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { YouTubeSyncService } from './youtube-sync.service';
 
@@ -17,6 +24,16 @@ export class VideosController {
       take: limit,
       include: { conference: { select: { name: true, brandColor: true } } },
     });
+  }
+
+  @Get(':id')
+  async getOne(@Param('id') id: string) {
+    const video = await this.prisma.video.findUnique({
+      where: { id },
+      include: { conference: { select: { name: true, brandColor: true } } },
+    });
+    if (!video) throw new NotFoundException('Video not found');
+    return video;
   }
 
   @Post('sync')

@@ -101,6 +101,7 @@ model Video {
   views        Int         @default(0)
   publishedAt  DateTime
   topics       String[]    @default([])
+  description  String? // YouTube snippet.description (chapters 파싱 소스)
   conferenceId String?
   conference   Conference? @relation(fields: [conferenceId], references: [id])
   fetchedAt    DateTime    @default(now())
