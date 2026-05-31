@@ -31,29 +31,12 @@ export function DailyDigest({ digest }: Props) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
-      className="mb-2 p-6 sm:p-7 rounded-2xl border relative overflow-hidden"
-      style={{
-        background:
-          'linear-gradient(135deg, var(--color-accent-soft), var(--color-bg-elevated) 70%)',
-        borderColor: 'oklch(85% 0.05 292)',
-        boxShadow: 'var(--shadow-card)',
-      }}
     >
-      {/* 우상단 장식 글로우 */}
+      {/* 룰러 헤더 */}
       <div
-        aria-hidden
-        className="absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl pointer-events-none"
-        style={{ background: 'oklch(70% 0.18 292 / 0.18)' }}
-      />
-
-      <div className="relative flex items-center gap-2.5 mb-4">
-        <span
-          aria-hidden
-          className="inline-flex items-center justify-center w-6 h-6 rounded-md text-[13px]"
-          style={{ background: 'var(--color-accent)', color: 'oklch(99% 0 0)' }}
-        >
-          ✦
-        </span>
+        className="flex items-baseline gap-3 mb-4 pb-2 border-b"
+        style={{ borderColor: 'var(--color-fg-strong)' }}
+      >
         <span
           className="text-[15px] tracking-[-0.01em]"
           style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
@@ -61,58 +44,50 @@ export function DailyDigest({ digest }: Props) {
           오늘의 핵심
         </span>
         <span
-          className="text-[11.5px] tabular-nums px-1.5 py-0.5 rounded-full"
-          style={{
-            color: 'var(--color-accent-strong)',
-            background: 'oklch(88% 0.06 292)',
-            fontWeight: 600,
-          }}
+          className="text-[11.5px] tabular-nums"
+          style={{ color: 'var(--color-fg-subtle)' }}
         >
           {digest.items.length}
         </span>
         <span className="flex-1" />
         <span
           className="text-[10px] tracking-[0.2em] uppercase"
-          style={{ color: 'var(--color-accent-strong)', fontWeight: 700 }}
+          style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
         >
-          AI · Gemini
+          요약 · Gemini
         </span>
       </div>
 
       {digest.intro && (
         <p
-          className="relative text-[14px] leading-[1.65] mb-5 max-w-2xl"
+          className="text-[14px] leading-[1.7] mb-5 max-w-2xl"
           style={{ color: 'var(--color-fg-default)' }}
         >
           {digest.intro}
         </p>
       )}
 
-      <ol className="relative grid gap-2.5 md:grid-cols-2">
+      <ol className="grid gap-x-8 gap-y-0 md:grid-cols-2">
         {digest.items.map((it, i) => (
-          <li key={it.articleId}>
+          <li
+            key={it.articleId}
+            className="border-b"
+            style={{ borderColor: 'var(--color-line)' }}
+          >
             <Link
               href={`/articles/${it.articleId}`}
-              className="group flex gap-3 items-start p-3 rounded-xl transition-all hover:-translate-y-0.5"
-              style={{
-                background: 'var(--color-bg-elevated)',
-                border: '1px solid var(--color-line)',
-              }}
+              className="group flex gap-3 items-baseline py-3"
             >
               <span
-                className="flex items-center justify-center shrink-0 w-6 h-6 rounded-lg tabular-nums text-[12px]"
-                style={{
-                  background: 'var(--color-accent)',
-                  color: 'oklch(99% 0 0)',
-                  fontWeight: 700,
-                }}
+                className="shrink-0 tabular-nums text-[13px] leading-none w-5"
+                style={{ color: 'var(--color-accent)', fontWeight: 700 }}
               >
                 {i + 1}
               </span>
               <div className="min-w-0">
                 <span
-                  className="block text-[14px] leading-snug tracking-[-0.005em] break-keep group-hover:text-(--color-accent-strong) transition-colors"
-                  style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+                  className="block text-[14px] leading-snug tracking-[-0.005em] break-keep group-hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
+                  style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
                 >
                   {it.headline}
                 </span>

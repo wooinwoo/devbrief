@@ -30,15 +30,8 @@ interface Props {
 export function FilterSidebar({ groups, search, extra }: Props) {
   return (
     <aside className="lg:w-[210px] lg:shrink-0">
-      {/* 모바일: 가로 칩 / 데스크탑: 세로 — 카드 면 + sticky */}
-      <div
-        className="flex flex-col gap-6 lg:sticky lg:top-20 p-4 rounded-xl border"
-        style={{
-          background: 'var(--color-bg-elevated)',
-          borderColor: 'var(--color-line)',
-          boxShadow: 'var(--shadow-card)',
-        }}
-      >
+      {/* 모바일: 가로 칩 / 데스크탑: 세로 sticky */}
+      <div className="flex flex-col gap-6 lg:sticky lg:top-20">
         {search && (
           <input
             type="search"
@@ -107,18 +100,17 @@ function FilterButton({
     <button
       type="button"
       onClick={onClick}
-      className="group flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12.5px] transition-colors lg:w-full"
+      className="group flex items-center gap-2 px-2 py-1.5 rounded text-[12.5px] transition-colors lg:w-full hover:bg-(--color-bg-sunken)"
       style={{
-        background: active ? 'var(--color-accent)' : 'transparent',
-        color: active ? 'oklch(99% 0 0)' : 'var(--color-fg-muted)',
-        fontWeight: active ? 600 : 500,
+        color: active ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
+        fontWeight: active ? 700 : 500,
       }}
     >
       {color && (
         <span
           aria-hidden
           className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
-          style={{ background: active ? 'oklch(99% 0 0)' : color }}
+          style={{ background: color }}
         />
       )}
       <span className="truncate">{label}</span>
@@ -126,7 +118,8 @@ function FilterButton({
         <span
           className="ml-auto tabular-nums text-[11px]"
           style={{
-            color: active ? 'oklch(99% 0 0 / 0.8)' : 'var(--color-fg-subtle)',
+            color: active ? 'var(--color-accent)' : 'var(--color-fg-subtle)',
+            fontWeight: active ? 700 : 500,
           }}
         >
           {count}

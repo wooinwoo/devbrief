@@ -30,24 +30,21 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
-      className={`relative p-6 mb-6 rounded-2xl border ${read ? 'opacity-65' : ''}`}
-      style={{
-        background: 'var(--color-bg-elevated)',
-        borderColor: 'var(--color-line)',
-        boxShadow: 'var(--shadow-card)',
-      }}
+      className={`relative pb-7 mb-6 border-b ${read ? 'opacity-65' : ''}`}
+      style={{ borderColor: 'var(--color-line)' }}
     >
-      {/* 잡지 톤 overline */}
-      <div className="flex items-baseline gap-3 mb-3 text-[11px] tracking-[0.25em] uppercase">
+      {/* 오늘의 머리기사 라벨 */}
+      <div className="flex items-center gap-2 mb-3">
         <span
+          className="inline-block w-5 h-px"
+          style={{ background: 'var(--color-accent)' }}
+          aria-hidden
+        />
+        <span
+          className="text-[11px] tracking-[0.18em]"
           style={{ color: 'var(--color-accent)', fontWeight: 700 }}
-          aria-label="Featured 라벨"
         >
-          Featured
-        </span>
-        <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-        <span style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}>
-          Top Story
+          오늘의 머리기사
         </span>
       </div>
 

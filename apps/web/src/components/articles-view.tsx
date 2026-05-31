@@ -75,92 +75,52 @@ export function ArticlesView({
 
   return (
     <div className="w-full">
-      {/* === 공통 헤더 (hero 카드) ========================= */}
-      <header
-        className="relative overflow-hidden mb-6 px-6 sm:px-8 py-7 sm:py-8 rounded-2xl border"
-        style={{
-          background:
-            'linear-gradient(120deg, oklch(96% 0.03 292) 0%, var(--color-bg-elevated) 55%)',
-          borderColor: 'var(--color-line)',
-          boxShadow: 'var(--shadow-card)',
-        }}
-      >
-        {/* 배경 장식 글로우 */}
+      {/* === 헤더 (신문 1면 마스트헤드) ===================== */}
+      <header className="mb-6">
+        {/* 마스트헤드 라인: 로고 · 날짜 */}
         <div
-          aria-hidden
-          className="absolute -top-20 -right-10 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-          style={{ background: 'oklch(70% 0.18 292 / 0.2)' }}
-        />
-        <div
-          aria-hidden
-          className="absolute -bottom-24 right-1/3 w-56 h-56 rounded-full blur-3xl pointer-events-none"
-          style={{ background: 'oklch(72% 0.14 240 / 0.12)' }}
-        />
+          className="flex items-center justify-between pb-2 mb-4 border-b"
+          style={{ borderColor: 'var(--color-fg-strong)' }}
+        >
+          <span
+            className="text-[12px] tracking-[0.3em] uppercase"
+            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+          >
+            Pulse
+          </span>
+          {today && (
+            <span
+              className="text-[11.5px] tabular-nums"
+              style={{ color: 'var(--color-fg-muted)' }}
+            >
+              {today}
+            </span>
+          )}
+        </div>
 
-        <div className="relative">
-          {/* 상단: 로고 + 날짜 */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[14px]"
-                style={{
-                  background:
-                    'linear-gradient(135deg, var(--color-accent), oklch(60% 0.2 260))',
-                  color: 'oklch(99% 0 0)',
-                }}
-              >
-                ⚡
-              </span>
-              <span
-                className="text-[13px] tracking-[0.26em] uppercase"
-                style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-              >
-                Pulse
-              </span>
-            </div>
-            {today && (
-              <span
-                className="text-[12px] tabular-nums px-2.5 py-1 rounded-full"
-                style={{
-                  color: 'var(--color-fg-muted)',
-                  background: 'var(--color-bg-elevated)',
-                  border: '1px solid var(--color-line)',
-                }}
-              >
-                {today}
-              </span>
-            )}
-          </div>
-
-          {/* 타이틀 + 인사 */}
+        {/* 제호 + 통계 한 줄 */}
+        <div className="flex items-end justify-between gap-4 flex-wrap">
           <h1
-            className="text-[1.75rem] sm:text-[2.25rem] leading-[1.1] tracking-[-0.03em] break-keep mb-2"
+            className="text-[2rem] sm:text-[2.5rem] leading-[0.95] tracking-[-0.035em] break-keep"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
           >
             오늘의 흐름
           </h1>
-          <p className="text-[13.5px] mb-5" style={{ color: 'var(--color-fg-muted)' }}>
-            {unreadCount > 0 ? (
-              <>
-                새로 들어온 글{' '}
-                <span style={{ color: 'var(--color-accent-strong)', fontWeight: 700 }}>
-                  {unreadCount}
-                </span>
-                개. 오늘 무엇이 궁금한가요?
-              </>
-            ) : (
-              '오늘 들어온 글을 모두 확인했어요.'
-            )}
+          <p
+            className="text-[12.5px] tabular-nums pb-1"
+            style={{ color: 'var(--color-fg-muted)' }}
+          >
+            전체 {articles.length}
+            <span style={{ color: 'var(--color-fg-subtle)' }}> · </span>
+            안 본 글{' '}
+            <span style={{ color: 'var(--color-accent-strong)', fontWeight: 700 }}>
+              {unreadCount}
+            </span>
+            <span style={{ color: 'var(--color-fg-subtle)' }}> · </span>
+            컨퍼런스 {upcomingCount}
+            <span style={{ color: 'var(--color-fg-subtle)' }}> · </span>
+            영상 {videos.length}
           </p>
-
-          {/* 통계 pill */}
-          <div className="flex flex-wrap gap-2">
-            <StatPill label="전체 글" value={articles.length} />
-            <StatPill label="안 본 글" value={unreadCount} accent />
-            <StatPill label="컨퍼런스" value={upcomingCount} />
-            <StatPill label="발표 영상" value={videos.length} />
-          </div>
         </div>
       </header>
 
@@ -225,47 +185,6 @@ export function ArticlesView({
       {tab === 'videos' && <VideosTab videos={videos} />}
 
       <PageFooter total={articles.length} sourceCount={0} />
-    </div>
-  );
-}
-
-function StatPill({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: number;
-  accent?: boolean;
-}) {
-  return (
-    <div
-      className="flex items-baseline gap-1.5 px-3 py-1.5 rounded-full"
-      style={{
-        background: accent
-          ? 'var(--color-accent)'
-          : 'var(--color-bg-elevated)',
-        border: accent ? 'none' : '1px solid var(--color-line)',
-      }}
-    >
-      <span
-        className="text-[15px] tabular-nums leading-none tracking-[-0.02em]"
-        style={{
-          color: accent ? 'oklch(99% 0 0)' : 'var(--color-fg-strong)',
-          fontWeight: 700,
-        }}
-      >
-        {value}
-      </span>
-      <span
-        className="text-[11.5px]"
-        style={{
-          color: accent ? 'oklch(99% 0 0 / 0.85)' : 'var(--color-fg-muted)',
-          fontWeight: 500,
-        }}
-      >
-        {label}
-      </span>
     </div>
   );
 }
