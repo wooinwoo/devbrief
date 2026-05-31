@@ -38,6 +38,7 @@ export class GeminiService {
     system?: string;
     maxTokens?: number;
     model?: string;
+    json?: boolean; // responseMimeType=application/json 강제
   }): Promise<string> {
     const res = await this.ensure().models.generateContent({
       model: opts.model ?? 'gemini-2.5-flash',
@@ -45,22 +46,32 @@ export class GeminiService {
       config: {
         systemInstruction: opts.system,
         maxOutputTokens: opts.maxTokens ?? 800,
+        responseMimeType: opts.json ? 'application/json' : undefined,
       },
     });
     return res.text ?? '';
   }
 
-  /** JSON only. 응답에서 첫 {} 추출 → JSON.parse. */
+  /** JSON only. responseMimeType=application/json 강제 + 파싱. */
   async generateJson<T>(opts: {
     prompt: string;
     system?: string;
     maxTokens?: number;
     model?: string;
   }): Promise<T> {
-    const text = await this.generateText(opts);
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('Gemini 응답에 JSON 없음: ' + text.slice(0, 100));
-    return JSON.parse(match[0]) as T;
+    const text = await this.generateText({ ...opts, json: true });
+    // responseMimeType 적용했어도 응답 앞뒤에 공백/줄바꿈 있을 수 있어 안전하게 trim
+    const trimmed = text.trim();
+    try {
+      return JSON.parse(trimmed) as T;
+    } catch {
+      // 혹시 코드블록(```json ... ```) 으로 감싸져 왔을 때 추출 fallback
+      const m = trimmed.match(/\{[\s\S]*\}/);
+      if (!m) {
+        throw new Error('Gemini 응답에 JSON 없음: ' + trimmed.slice(0, 200));
+      }
+      return JSON.parse(m[0]) as T;
+    }
   }
 
   /** Streaming text. async generator → chunk yield. */

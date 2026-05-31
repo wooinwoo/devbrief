@@ -63,6 +63,75 @@ export class VideoAnalyzerService {
     return /^[A-Za-z0-9_-]{8,15}$/.test(videoId) && !videoId.startsWith('mock-');
   }
 
+  /** YouTube URL / videoId 에서 videoId 추출. */
+  static parseVideoId(input: string): string | null {
+    const s = input.trim();
+    // 이미 11자 id
+    if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+    const patterns = [
+      /[?&]v=([A-Za-z0-9_-]{11})/, // watch?v=
+      /youtu\.be\/([A-Za-z0-9_-]{11})/, // youtu.be/
+      /\/embed\/([A-Za-z0-9_-]{11})/, // /embed/
+      /\/shorts\/([A-Za-z0-9_-]{11})/, // /shorts/
+      /\/live\/([A-Za-z0-9_-]{11})/, // /live/
+    ];
+    for (const re of patterns) {
+      const m = re.exec(s);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
+  /**
+   * YouTube URL → youtubei.js 로 메타 가져와 Video 저장 (analyze 는 호출자가 큐로).
+   * YouTube Data API quota 안 씀 (innertube 무료).
+   */
+  async fetchAndStore(url: string): Promise<{ id: string; videoId: string }> {
+    const videoId = VideoAnalyzerService.parseVideoId(url);
+    if (!videoId) throw new Error('유효한 YouTube URL 이 아닙니다');
+
+    const yt = await this.ensureInnertube();
+    const info = await yt.getInfo(videoId);
+    const basic = info.basic_info;
+
+    const title = basic.title ?? '제목 없음';
+    const channel = basic.author ?? '알 수 없는 채널';
+    const durationSec = basic.duration ?? 0;
+    const views = basic.view_count ?? 0;
+    const thumb =
+      basic.thumbnail?.[0]?.url ??
+      `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
+    const description =
+      (info as unknown as { basic_info: { short_description?: string } })
+        .basic_info.short_description ?? null;
+
+    const video = await this.prisma.video.upsert({
+      where: { videoId },
+      create: {
+        videoId,
+        title,
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        channel,
+        thumbnailUrl: thumb,
+        durationSec,
+        views,
+        publishedAt: new Date(),
+        description,
+      },
+      update: {
+        title,
+        channel,
+        thumbnailUrl: thumb,
+        durationSec,
+        views,
+        description,
+      },
+      select: { id: true, videoId: true },
+    });
+
+    return video;
+  }
+
   /**
    * 단일 영상 분석 → DB 저장.
    * 이미 analyzedAt 있고 force=false 면 skip.

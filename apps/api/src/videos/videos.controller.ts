@@ -1,5 +1,8 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -41,6 +44,21 @@ export class VideosController {
     });
     if (!video) throw new NotFoundException('Video not found');
     return video;
+  }
+
+  /** 어드민 — YouTube URL 붙여넣기로 영상 추가 + 자동 분석 큐. */
+  @Post('add')
+  async addByUrl(@Body() body: { url?: string }) {
+    if (!body.url) throw new BadRequestException('url 필수');
+    const video = await this.analyzer.fetchAndStore(body.url);
+    await this.analyzeQueue.add('analyze', { videoDbId: video.id });
+    return { ...video, queuedForAnalysis: true };
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    await this.prisma.video.delete({ where: { id } });
+    return { ok: true };
   }
 
   @Post('sync')

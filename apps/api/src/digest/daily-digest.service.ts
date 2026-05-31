@@ -5,27 +5,21 @@ import { PrismaService } from '../prisma/prisma.service';
 const SYSTEM_PROMPT = `당신은 한국 개발자 매체의 시니어 에디터입니다.
 그 날 들어온 글 N 개 중 핵심 5 개를 골라 *오늘의 다이제스트* 를 만듭니다.
 
-선별 기준 (중요도 순):
-1. 중대한 발표 / 출시 / 신기술 (예: 새 모델, 새 프레임워크 메이저 버전)
-2. 한국 개발자에게 실용 가치 큰 운영 사례 / 깊이 있는 분석
-3. 산업 동향 / 큰 흐름의 변곡점
-4. 흥미롭지만 클릭베이트 제외
+매우 짧게. 토큰 절약 필수.
 
-JSON 만 출력. 마크다운 금지, em dash 금지.
-
-스키마:
+스키마 (이 키 외 추가 금지):
 {
-  "intro": "오늘의 흐름을 1~2 문장 한국어로. 전반적 톤 / 키워드 캡쳐.",
+  "intro": "최대 35자, 한 문장",
   "items": [
-    {
-      "articleId": "원본 article id 그대로",
-      "headline": "한국어 한 줄 제목 (40자 내외). 영문 제목은 자연스러운 한글로.",
-      "takeaway": "왜 중요한지 / 핵심 포인트 한국어 한 줄 (50자 내외)."
-    }
+    { "articleId": "원본 id", "headline": "최대 30자", "takeaway": "최대 40자" }
   ]
 }
 
-items 는 5개. 글이 5개 미만이면 그 만큼.`;
+규칙:
+- items 정확히 5개. 글 5개 미만이면 그만큼.
+- 영문 제목은 자연스러운 한국어로.
+- em dash 금지, 마크다운 금지, 줄바꿈 금지 (\\n 금지).
+- 모든 값 큰따옴표.`;
 
 interface ArticleInput {
   id: string;
@@ -109,19 +103,20 @@ export class DailyDigestService {
       tags: a.tags,
     }));
 
+    // 입력 압축 — id / 제목 / 소스 / 태그만 (요약은 대부분 비어 있어 정보 X)
     const listText = input
       .map(
-        (a, i) =>
-          `[${i + 1}] id=${a.id}\n    제목: ${a.titleKo ?? a.title}\n    원문: ${a.title}\n    소스: ${a.sourceName} | 태그: ${a.tags.slice(0, 5).join(', ')}\n    요약: ${a.summaryOneLine ?? '(없음)'}`,
+        (a) =>
+          `${a.id} | ${a.titleKo ?? a.title} | ${a.sourceName} | ${a.tags.slice(0, 4).join(',')}`,
       )
-      .join('\n\n');
+      .join('\n');
 
     let parsed: DigestPayload;
     try {
       parsed = await this.gemini.generateJson<DigestPayload>({
         system: SYSTEM_PROMPT,
-        prompt: `오늘 (${today.toISOString().slice(0, 10)}) 들어온 글 ${articles.length} 개입니다.\n\n${listText}\n\n핵심 5 개를 골라 JSON 으로 응답하세요.`,
-        maxTokens: 1500,
+        prompt: `오늘 (${today.toISOString().slice(0, 10)}) 글 ${articles.length}개. 각 줄: id | 제목 | 소스 | 태그.\n\n${listText}\n\n핵심 5개 JSON.`,
+        maxTokens: 8000,
       });
     } catch (e) {
       this.logger.warn(`digest 생성 실패: ${(e as Error).message}`);
