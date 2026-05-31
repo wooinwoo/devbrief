@@ -48,9 +48,18 @@ export function ArticlesView({
     TABS.some((t) => t.id === initialTab) ? initialTab : 'all',
   );
   const [readSet, setReadSet] = useState<Set<string>>(new Set());
+  const [today, setToday] = useState('');
 
   useEffect(() => {
     setReadSet(readTracking.load());
+    setToday(
+      new Date().toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long',
+      }),
+    );
   }, []);
 
   const unreadCount = articles.filter((a) => !readSet.has(a.id)).length;
@@ -66,39 +75,92 @@ export function ArticlesView({
 
   return (
     <div className="w-full">
-      {/* === 공통 헤더 ===================================== */}
-      <header className="mb-5 pt-2">
+      {/* === 공통 헤더 (hero 카드) ========================= */}
+      <header
+        className="relative overflow-hidden mb-6 px-6 sm:px-8 py-7 sm:py-8 rounded-2xl border"
+        style={{
+          background:
+            'linear-gradient(120deg, oklch(96% 0.03 292) 0%, var(--color-bg-elevated) 55%)',
+          borderColor: 'var(--color-line)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        {/* 배경 장식 글로우 */}
         <div
-          className="text-[11px] tracking-[0.28em] uppercase mb-3"
-          style={{ color: 'var(--color-accent)', fontWeight: 700 }}
-        >
-          Pulse
-        </div>
-        <div className="flex items-baseline gap-4 flex-wrap">
+          aria-hidden
+          className="absolute -top-20 -right-10 w-64 h-64 rounded-full blur-3xl pointer-events-none"
+          style={{ background: 'oklch(70% 0.18 292 / 0.2)' }}
+        />
+        <div
+          aria-hidden
+          className="absolute -bottom-24 right-1/3 w-56 h-56 rounded-full blur-3xl pointer-events-none"
+          style={{ background: 'oklch(72% 0.14 240 / 0.12)' }}
+        />
+
+        <div className="relative">
+          {/* 상단: 로고 + 날짜 */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <span
+                aria-hidden
+                className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[14px]"
+                style={{
+                  background:
+                    'linear-gradient(135deg, var(--color-accent), oklch(60% 0.2 260))',
+                  color: 'oklch(99% 0 0)',
+                }}
+              >
+                ⚡
+              </span>
+              <span
+                className="text-[13px] tracking-[0.26em] uppercase"
+                style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+              >
+                Pulse
+              </span>
+            </div>
+            {today && (
+              <span
+                className="text-[12px] tabular-nums px-2.5 py-1 rounded-full"
+                style={{
+                  color: 'var(--color-fg-muted)',
+                  background: 'var(--color-bg-elevated)',
+                  border: '1px solid var(--color-line)',
+                }}
+              >
+                {today}
+              </span>
+            )}
+          </div>
+
+          {/* 타이틀 + 인사 */}
           <h1
-            className="text-[1.5rem] sm:text-[1.875rem] leading-none tracking-[-0.025em] break-keep"
+            className="text-[1.75rem] sm:text-[2.25rem] leading-[1.1] tracking-[-0.03em] break-keep mb-2"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
           >
             오늘의 흐름
           </h1>
-          <span
-            className="text-[12.5px] flex items-baseline gap-1.5"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
-            새 글{' '}
-            <span
-              className="px-1.5 py-px text-[12px] tabular-nums"
-              style={{
-                color: 'oklch(99% 0 0)',
-                background: 'var(--color-accent)',
-                fontWeight: 700,
-                borderRadius: 3,
-              }}
-            >
-              {unreadCount}
-            </span>
-            · 컨퍼런스 {upcomingCount} · 영상 {videos.length}
-          </span>
+          <p className="text-[13.5px] mb-5" style={{ color: 'var(--color-fg-muted)' }}>
+            {unreadCount > 0 ? (
+              <>
+                새로 들어온 글{' '}
+                <span style={{ color: 'var(--color-accent-strong)', fontWeight: 700 }}>
+                  {unreadCount}
+                </span>
+                개. 오늘 무엇이 궁금한가요?
+              </>
+            ) : (
+              '오늘 들어온 글을 모두 확인했어요.'
+            )}
+          </p>
+
+          {/* 통계 pill */}
+          <div className="flex flex-wrap gap-2">
+            <StatPill label="전체 글" value={articles.length} />
+            <StatPill label="안 본 글" value={unreadCount} accent />
+            <StatPill label="컨퍼런스" value={upcomingCount} />
+            <StatPill label="발표 영상" value={videos.length} />
+          </div>
         </div>
       </header>
 
@@ -163,6 +225,47 @@ export function ArticlesView({
       {tab === 'videos' && <VideosTab videos={videos} />}
 
       <PageFooter total={articles.length} sourceCount={0} />
+    </div>
+  );
+}
+
+function StatPill({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className="flex items-baseline gap-1.5 px-3 py-1.5 rounded-full"
+      style={{
+        background: accent
+          ? 'var(--color-accent)'
+          : 'var(--color-bg-elevated)',
+        border: accent ? 'none' : '1px solid var(--color-line)',
+      }}
+    >
+      <span
+        className="text-[15px] tabular-nums leading-none tracking-[-0.02em]"
+        style={{
+          color: accent ? 'oklch(99% 0 0)' : 'var(--color-fg-strong)',
+          fontWeight: 700,
+        }}
+      >
+        {value}
+      </span>
+      <span
+        className="text-[11.5px]"
+        style={{
+          color: accent ? 'oklch(99% 0 0 / 0.85)' : 'var(--color-fg-muted)',
+          fontWeight: 500,
+        }}
+      >
+        {label}
+      </span>
     </div>
   );
 }
