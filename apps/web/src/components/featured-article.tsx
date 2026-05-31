@@ -54,7 +54,7 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
         className="group block focus-visible:outline-none"
       >
         <div
-          className={`grid gap-x-8 gap-y-4 ${article.imageUrl ? 'md:grid-cols-[1.4fr_1fr] items-center' : ''}`}
+          className={`grid gap-x-8 gap-y-4 ${article.imageUrl ? 'md:grid-cols-[1.6fr_1fr] items-center' : ''}`}
         >
           <div>
             <h2
@@ -121,8 +121,8 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
 
           {article.imageUrl && (
             <div
-              className="relative aspect-[4/3] overflow-hidden order-first md:order-last"
-              style={{ borderRadius: 4 }}
+              className="relative aspect-[16/10] overflow-hidden order-first md:order-last"
+              style={{ borderRadius: 8, background: 'oklch(92% 0.01 290)' }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

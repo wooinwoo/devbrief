@@ -24,7 +24,9 @@ interface Props {
   videos: VideoDto[];
   digest: DigestDto | null;
   readSet: Set<string>;
+  bookmarkSet?: Set<string>;
   onOpen: (id: string) => void;
+  onBookmark?: (id: string) => void;
   onMore: (tab: 'articles' | 'conferences' | 'videos') => void;
 }
 
@@ -39,7 +41,9 @@ export function OverviewTab({
   videos,
   digest,
   readSet,
+  bookmarkSet,
   onOpen,
+  onBookmark,
   onMore,
 }: Props) {
   const [featured, ...rest] = articles;
@@ -80,7 +84,9 @@ export function OverviewTab({
               key={a.id}
               article={a}
               read={readSet.has(a.id)}
+              bookmarked={bookmarkSet?.has(a.id)}
               onOpen={() => onOpen(a.id)}
+              onBookmark={onBookmark}
               index={i}
             />
           ))}

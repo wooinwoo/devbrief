@@ -24,7 +24,9 @@ const SOURCE_DOT: Record<string, string> = {
 interface Props {
   articles: ArticleDto[];
   readSet: Set<string>;
+  bookmarkSet?: Set<string>;
   onOpen: (id: string) => void;
+  onBookmark?: (id: string) => void;
 }
 
 const SECTION_HINT: Record<string, string> = {
@@ -35,7 +37,13 @@ const SECTION_HINT: Record<string, string> = {
   '그 외': 'older',
 };
 
-export function ArticlesTab({ articles, readSet, onOpen }: Props) {
+export function ArticlesTab({
+  articles,
+  readSet,
+  bookmarkSet,
+  onOpen,
+  onBookmark,
+}: Props) {
   const [query, setQuery] = useState('');
   const [source, setSource] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
@@ -141,8 +149,10 @@ export function ArticlesTab({ articles, readSet, onOpen }: Props) {
                   key={a.id}
                   article={a}
                   read={readSet.has(a.id)}
+                  bookmarked={bookmarkSet?.has(a.id)}
                   onOpen={() => onOpen(a.id)}
                   onTagClick={setCategory}
+                  onBookmark={onBookmark}
                   index={i}
                 />
               ))}
@@ -174,8 +184,10 @@ export function ArticlesTab({ articles, readSet, onOpen }: Props) {
                         key={a.id}
                         article={a}
                         read={readSet.has(a.id)}
+                        bookmarked={bookmarkSet?.has(a.id)}
                         onOpen={() => onOpen(a.id)}
                         onTagClick={setCategory}
+                        onBookmark={onBookmark}
                         index={base + i}
                       />
                     ))}

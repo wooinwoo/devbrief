@@ -12,6 +12,7 @@ import { ConferencesTab } from './tabs/conferences-tab';
 import { VideosTab } from './tabs/videos-tab';
 import { PageFooter } from './page-footer';
 import { readTracking } from '@/lib/read-tracking';
+import { bookmarks } from '@/lib/bookmark';
 
 interface Props {
   articles: ArticleDto[];
@@ -48,10 +49,12 @@ export function ArticlesView({
     TABS.some((t) => t.id === initialTab) ? initialTab : 'all',
   );
   const [readSet, setReadSet] = useState<Set<string>>(new Set());
+  const [bookmarkSet, setBookmarkSet] = useState<Set<string>>(new Set());
   const [today, setToday] = useState('');
 
   useEffect(() => {
     setReadSet(readTracking.load());
+    setBookmarkSet(bookmarks.load());
     setToday(
       new Date().toLocaleDateString('ko-KR', {
         year: 'numeric',
@@ -71,6 +74,10 @@ export function ArticlesView({
   const handleOpen = (id: string) => {
     readTracking.add(id);
     setReadSet((prev) => new Set([...prev, id]));
+  };
+
+  const handleBookmark = (id: string) => {
+    setBookmarkSet(bookmarks.toggle(id));
   };
 
   const activeTab = TABS.find((t) => t.id === tab);
@@ -165,12 +172,20 @@ export function ArticlesView({
           videos={videos}
           digest={digest}
           readSet={readSet}
+          bookmarkSet={bookmarkSet}
           onOpen={handleOpen}
+          onBookmark={handleBookmark}
           onMore={setTab}
         />
       )}
       {tab === 'articles' && (
-        <ArticlesTab articles={articles} readSet={readSet} onOpen={handleOpen} />
+        <ArticlesTab
+          articles={articles}
+          readSet={readSet}
+          bookmarkSet={bookmarkSet}
+          onOpen={handleOpen}
+          onBookmark={handleBookmark}
+        />
       )}
       {tab === 'conferences' && <ConferencesTab conferences={conferences} />}
       {tab === 'videos' && <VideosTab videos={videos} />}
