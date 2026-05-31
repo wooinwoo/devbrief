@@ -9,10 +9,11 @@ import { ArticleRow } from './article-row';
 import { FeaturedArticle } from './featured-article';
 import { SectionHeader } from './section-header';
 import { DashboardSidebar } from './dashboard-sidebar';
+import { ConferenceCard } from './conference-card';
+import { VideoCard } from './video-card';
 import { PageFooter } from './page-footer';
 import { readTracking } from '@/lib/read-tracking';
 import { extractTopTags, groupByTime } from '@/lib/group-articles';
-import { formatDuration } from '@/lib/format-duration';
 
 interface Props {
   articles: ArticleDto[];
@@ -411,8 +412,12 @@ function FilterChip({
   );
 }
 
-// ── 컨퍼런스 탭 ─────────────────────────────────────────────────────────────
+// ── 컨퍼런스 탭 — 키비주얼 카드 그리드 (onoffmix 톤) ───────────────────────
+type ConfSort = 'soonest' | 'latest';
+
 function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }) {
+  const [sort, setSort] = useState<ConfSort>('soonest');
+
   if (conferences.length === 0) {
     return (
       <p
@@ -424,129 +429,56 @@ function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }) {
     );
   }
 
-  // 시간 버킷: 이번 달 / 다음 달 / 그 이후
-  const now = new Date();
-  const thisMonth = now.getMonth();
-  const thisYear = now.getFullYear();
-  const buckets: Record<string, ConferenceDto[]> = {
-    '이번 달': [],
-    '다음 달': [],
-    '그 이후': [],
-  };
-  for (const c of conferences) {
-    const d = new Date(c.startDate);
-    if (d.getFullYear() === thisYear && d.getMonth() === thisMonth)
-      buckets['이번 달'].push(c);
-    else if (
-      (d.getFullYear() === thisYear && d.getMonth() === thisMonth + 1) ||
-      (thisMonth === 11 &&
-        d.getFullYear() === thisYear + 1 &&
-        d.getMonth() === 0)
-    )
-      buckets['다음 달'].push(c);
-    else buckets['그 이후'].push(c);
-  }
+  const sorted = [...conferences].sort((a, b) => {
+    const da = new Date(a.startDate).getTime();
+    const db = new Date(b.startDate).getTime();
+    return sort === 'soonest' ? da - db : db - da;
+  });
 
   return (
     <>
-      {Object.entries(buckets)
-        .filter(([, list]) => list.length > 0)
-        .map(([label, list]) => (
-          <section key={label} className="mb-8">
-            <SectionHeader
-              label={label}
-              count={list.length}
-              hint={
-                label === '이번 달'
-                  ? 'this month'
-                  : label === '다음 달'
-                    ? 'next month'
-                    : 'later'
-              }
-            />
-            <ul>
-              {list.map((c) => {
-                const d = daysUntil(c.startDate);
-                const brand = c.brand ?? 'oklch(50% 0.012 245)';
-                return (
-                  <li
-                    key={c.id}
-                    className="grid grid-cols-[auto_auto_1fr_auto] gap-4 items-baseline py-3 px-2 -mx-2 border-b transition-colors hover:bg-(--color-bg-elevated)/40"
-                    style={{ borderColor: 'var(--color-line)' }}
-                  >
-                    <span
-                      className="tabular-nums text-[12.5px] shrink-0 px-2 py-0.5 self-baseline"
-                      style={{
-                        background: brand,
-                        color: 'oklch(99% 0 0)',
-                        fontWeight: 700,
-                        borderRadius: 2,
-                        minWidth: 48,
-                        textAlign: 'center',
-                      }}
-                    >
-                      D-{d}
-                    </span>
-                    <span
-                      className="text-[12px] tabular-nums shrink-0 w-20"
-                      style={{ color: 'var(--color-fg-muted)' }}
-                    >
-                      {new Date(c.startDate).toLocaleDateString('ko-KR', {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </span>
-                    <a
-                      href={c.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="min-w-0 block"
-                    >
-                      <span
-                        className="text-[14.5px] tracking-[-0.005em] hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
-                        style={{
-                          color: 'var(--color-fg-strong)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {c.name}
-                      </span>
-                      <span
-                        className="ml-3 text-[12px]"
-                        style={{ color: 'var(--color-fg-muted)' }}
-                      >
-                        {c.location}
-                      </span>
-                      {c.topics.length > 0 && (
-                        <span
-                          className="ml-2 text-[11.5px]"
-                          style={{ color: 'var(--color-fg-subtle)' }}
-                        >
-                          {c.topics
-                            .slice(0, 3)
-                            .map((t) => `#${t}`)
-                            .join(' ')}
-                        </span>
-                      )}
-                    </a>
-                    <span
-                      className="text-[11.5px] tracking-wide"
-                      style={{ color: 'var(--color-fg-subtle)' }}
-                    >
-                      사이트 ↗
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+      {/* 상단: 검색 결과 + 정렬 옵션 */}
+      <div
+        className="flex items-baseline gap-4 mb-6 pt-1 border-t-2"
+        style={{ borderColor: 'var(--color-fg-strong)' }}
+      >
+        <span
+          className="text-[14px] tracking-[-0.005em]"
+          style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+        >
+          <span style={{ color: 'var(--color-accent)' }}>
+            {conferences.length}
+          </span>{' '}
+          개의 컨퍼런스
+        </span>
+        <span className="flex-1" />
+        <SortLink
+          active={sort === 'soonest'}
+          onClick={() => setSort('soonest')}
+        >
+          가까운 순
+        </SortLink>
+        <SortLink active={sort === 'latest'} onClick={() => setSort('latest')}>
+          최근 등록순
+        </SortLink>
+      </div>
+
+      {/* 그리드 카드 */}
+      <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+        {sorted.map((c, i) => (
+          <ConferenceCard key={c.id} conference={c} index={i} />
         ))}
+      </ul>
     </>
   );
 }
 
-// ── 영상 탭 ────────────────────────────────────────────────────────────────
+// ── 영상 탭 — 썸네일 카드 그리드 ──────────────────────────────────────────
+type VideoSort = 'recent' | 'views';
+
 function VideosTab({ videos }: { videos: VideoDto[] }) {
+  const [sort, setSort] = useState<VideoSort>('recent');
+
   if (videos.length === 0) {
     return (
       <p
@@ -557,62 +489,70 @@ function VideosTab({ videos }: { videos: VideoDto[] }) {
       </p>
     );
   }
+
+  const sorted = [...videos].sort((a, b) => {
+    if (sort === 'views') return b.views - a.views;
+    return (
+      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    );
+  });
+
   return (
     <>
-      <SectionHeader
-        label="이번 주 발표"
-        count={videos.length}
-        hint="recent talks"
-      />
-      <ul>
-        {videos.map((v) => (
-          <li
-            key={v.id}
-            className="grid grid-cols-[auto_auto_1fr_auto] gap-4 items-baseline py-3 px-2 -mx-2 border-b transition-colors hover:bg-(--color-bg-elevated)/40"
-            style={{ borderColor: 'var(--color-line)' }}
-          >
-            <span
-              className="tabular-nums text-[11.5px] shrink-0 px-2 py-0.5"
-              style={{
-                color: 'var(--color-fg-muted)',
-                border: '1px solid var(--color-line-strong)',
-                borderRadius: 2,
-                minWidth: 52,
-                textAlign: 'center',
-                fontWeight: 600,
-              }}
-            >
-              {formatDuration(v.durationSec)}
-            </span>
-            <span
-              className="text-[12px] shrink-0 truncate w-28"
-              style={{
-                color: 'var(--color-fg-default)',
-                fontWeight: 600,
-              }}
-              title={v.channel}
-            >
-              {v.channel}
-            </span>
-            <a
-              href={v.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="min-w-0 block truncate text-[14.5px] tracking-[-0.005em] hover:underline underline-offset-2"
-              style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
-              title={v.title}
-            >
-              {v.title}
-            </a>
-            <span
-              className="tabular-nums text-[11.5px] shrink-0"
-              style={{ color: 'var(--color-fg-muted)' }}
-            >
-              {Math.round(v.views / 1000)}K
-            </span>
-          </li>
+      <div
+        className="flex items-baseline gap-4 mb-6 pt-1 border-t-2"
+        style={{ borderColor: 'var(--color-fg-strong)' }}
+      >
+        <span
+          className="text-[14px] tracking-[-0.005em]"
+          style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+        >
+          <span style={{ color: 'var(--color-accent)' }}>
+            {videos.length}
+          </span>{' '}
+          개의 발표 영상
+        </span>
+        <span className="flex-1" />
+        <SortLink
+          active={sort === 'recent'}
+          onClick={() => setSort('recent')}
+        >
+          최신순
+        </SortLink>
+        <SortLink active={sort === 'views'} onClick={() => setSort('views')}>
+          조회수순
+        </SortLink>
+      </div>
+
+      <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+        {sorted.map((v, i) => (
+          <VideoCard key={v.id} video={v} index={i} />
         ))}
       </ul>
     </>
+  );
+}
+
+function SortLink({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-[12.5px] transition-colors"
+      style={{
+        color: active ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
+        fontWeight: active ? 700 : 500,
+      }}
+    >
+      {children}
+    </button>
   );
 }
