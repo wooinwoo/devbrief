@@ -1,0 +1,236 @@
+import { Injectable, Logger } from '@nestjs/common';
+import type Anthropic from '@anthropic-ai/sdk';
+import { AnthropicService } from '../ai/anthropic.service';
+import { PrismaService } from '../prisma/prisma.service';
+
+const SYSTEM_PROMPT = `당신은 한국어 / 영어 기술 글에서 컨퍼런스 이벤트 정보를 추출하는 NER 전문가입니다.
+
+주어진 글 (제목 + 본문) 안에서 개발자 컨퍼런스 / 컨퍼런스성 행사 정보를 식별해 JSON으로만 응답합니다.
+
+규칙:
+- 단순 언급(예: "지난 FECONF에서 본..." 같은 회고)은 제외
+- 미래 일정이 명시된 것만 (예: "2026년 10월 22일 개최", "다음 달에 열립니다")
+- 글 안에 공식 URL이 있으면 url 필드에 포함, 없으면 url=null
+- 컨퍼런스가 아니면 빈 배열 반환 (밋업 / 1회성 토크 / 라이브 스트림은 제외)
+- 같은 글에서 여러 컨퍼런스가 발견되면 모두 포함
+- date 는 ISO yyyy-mm-dd. 정확한 날짜 모르면 null
+
+JSON 스키마:
+{ "conferences": [{ "name": string, "url": string|null, "startDate": string|null, "endDate": string|null, "location": string|null, "topics": string[] }] }
+
+회고 / 과거 / 컨퍼런스 아님이면: { "conferences": [] }`;
+
+export interface DiscoveredConference {
+  name: string;
+  url: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  location: string | null;
+  topics: string[];
+}
+
+@Injectable()
+export class ConferenceDiscoveryService {
+  private readonly logger = new Logger(ConferenceDiscoveryService.name);
+
+  constructor(
+    private anthropic: AnthropicService,
+    private prisma: PrismaService,
+  ) {}
+
+  /** 글 1개를 Haiku에 NER 요청. 추출 후보 반환. */
+  async extractFromArticle(article: {
+    id: string;
+    title: string;
+    snippet: string;
+  }): Promise<DiscoveredConference[]> {
+    const response = await this.anthropic.client.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 700,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: `제목: ${article.title}\n\n본문:\n${article.snippet.slice(0, 4000)}`,
+        },
+      ],
+    });
+
+    const text = response.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map((b) => b.text)
+      .join('');
+
+    try {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) return [];
+      const parsed = JSON.parse(match[0]) as {
+        conferences?: DiscoveredConference[];
+      };
+      return parsed.conferences ?? [];
+    } catch (e) {
+      this.logger.debug(
+        `[${article.id}] NER JSON 파싱 실패: ${(e as Error).message}`,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * 추출된 후보들을 conference 테이블에 PROPOSED 상태로 upsert.
+   * - URL이 있으면 url 기준 unique 매칭 (이미 ACTIVE이면 skip)
+   * - URL 없으면 이름 + startDate로 fuzzy dedupe (간단히 이름만 비교)
+   * - 동일 후보가 REJECTED 상태로 있으면 재제안 X
+   */
+  async saveProposals(
+    candidates: DiscoveredConference[],
+    sourceArticleId: string,
+  ): Promise<{ saved: number; skipped: number }> {
+    let saved = 0;
+    let skipped = 0;
+
+    for (const c of candidates) {
+      if (!c.startDate) {
+        // 날짜 미상은 후보로 부적합
+        skipped++;
+        continue;
+      }
+
+      try {
+        if (c.url) {
+          const existing = await this.prisma.conference.findUnique({
+            where: { url: c.url },
+          });
+          if (existing) {
+            skipped++;
+            continue;
+          }
+          await this.prisma.conference.create({
+            data: {
+              name: c.name,
+              url: c.url,
+              startDate: new Date(c.startDate),
+              endDate: c.endDate ? new Date(c.endDate) : null,
+              location: c.location ?? '미정',
+              topics: c.topics ?? [],
+              status: 'PROPOSED',
+              discoveredFromArticleId: sourceArticleId,
+              discoveredAt: new Date(),
+            },
+          });
+          saved++;
+        } else {
+          // URL 없는 후보는 이름 + 날짜로 중복 체크 (간단 dedupe)
+          const dup = await this.prisma.conference.findFirst({
+            where: { name: c.name, startDate: new Date(c.startDate) },
+          });
+          if (dup) {
+            skipped++;
+            continue;
+          }
+          // URL 없는 후보는 임시 unique url (placeholder)
+          await this.prisma.conference.create({
+            data: {
+              name: c.name,
+              url: `proposed://${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              startDate: new Date(c.startDate),
+              endDate: c.endDate ? new Date(c.endDate) : null,
+              location: c.location ?? '미정',
+              topics: c.topics ?? [],
+              status: 'PROPOSED',
+              discoveredFromArticleId: sourceArticleId,
+              discoveredAt: new Date(),
+            },
+          });
+          saved++;
+        }
+      } catch (e) {
+        this.logger.warn(
+          `후보 저장 실패 [${c.name}]: ${(e as Error).message}`,
+        );
+        skipped++;
+      }
+    }
+
+    return { saved, skipped };
+  }
+
+  /**
+   * 최근 N일 글 중 컨퍼런스 관련 키워드 포함된 글을 골라 NER 실행.
+   * 키워드 필터로 LLM 호출 비용을 1차 절감.
+   */
+  async discoverFromRecentArticles(opts: { days?: number; limit?: number } = {}) {
+    const days = opts.days ?? 7;
+    const limit = opts.limit ?? 50;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    // 키워드 1차 필터 — 본문 fetch 안 하고 title + summary로 컨퍼런스 시그널 검출
+    const KEYWORDS = [
+      '컨퍼런스',
+      '콘퍼런스',
+      'conference',
+      'summit',
+      '개최',
+      'meetup',
+      'devcon',
+      'devfest',
+      'feconf',
+      'deview',
+      'slash',
+      'pycon',
+      'if(kakao)',
+    ];
+
+    const articles = await this.prisma.article.findMany({
+      where: {
+        publishedAt: { gte: since },
+        OR: KEYWORDS.flatMap((k) => [
+          { title: { contains: k, mode: 'insensitive' as const } },
+          { summaryOneLine: { contains: k, mode: 'insensitive' as const } },
+        ]),
+      },
+      orderBy: { publishedAt: 'desc' },
+      take: limit,
+      select: { id: true, title: true, summaryThreeLine: true, summaryOneLine: true },
+    });
+
+    this.logger.log(`Discovery 대상 글: ${articles.length}개`);
+
+    let totalSaved = 0;
+    let totalSkipped = 0;
+    let llmCalls = 0;
+
+    for (const a of articles) {
+      try {
+        const snippet =
+          a.summaryThreeLine ?? a.summaryOneLine ?? '';
+        const candidates = await this.extractFromArticle({
+          id: a.id,
+          title: a.title,
+          snippet,
+        });
+        llmCalls++;
+        if (candidates.length === 0) continue;
+        const r = await this.saveProposals(candidates, a.id);
+        totalSaved += r.saved;
+        totalSkipped += r.skipped;
+        if (r.saved > 0) {
+          this.logger.log(
+            `[${a.id}] ${candidates.length}개 후보 → ${r.saved}건 저장`,
+          );
+        }
+      } catch (e) {
+        this.logger.warn(
+          `Discovery [${a.id}] 실패: ${(e as Error).message}`,
+        );
+      }
+    }
+
+    return {
+      scannedArticles: articles.length,
+      llmCalls,
+      proposed: totalSaved,
+      skipped: totalSkipped,
+    };
+  }
+}
