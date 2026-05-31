@@ -148,7 +148,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
             >
               <div
                 className="relative shrink-0 w-32 aspect-video overflow-hidden rounded"
-                style={{ background: '#000' }}
+                style={{ background: 'oklch(92% 0.01 290)' }}
               >
                 {v.thumbnailUrl && (
                   /* eslint-disable-next-line @next/next/no-img-element */

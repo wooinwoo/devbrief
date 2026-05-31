@@ -52,7 +52,7 @@ export function ConferenceCard({ conference: c, index = 0 }: Props) {
           style={{
             borderRadius: 8,
             background: hasImage
-              ? '#000'
+              ? 'oklch(92% 0.01 290)'
               : `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.6)')})`,
           }}
         >

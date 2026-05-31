@@ -75,7 +75,7 @@ export function VideoDetail({ video, related }: Props) {
           style={{
             borderRadius: 8,
             background: isReal
-              ? '#000'
+              ? 'oklch(92% 0.01 290)'
               : `linear-gradient(135deg, ${video.brand ?? 'oklch(45% 0.012 245)'}, ${(video.brand ?? 'oklch(45% 0.012 245)').replace(')', ' / 0.6)')})`,
           }}
         >

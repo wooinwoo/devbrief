@@ -144,7 +144,7 @@ export function ArticlesView({
         className="flex items-end gap-0 mb-0 border-b sticky top-0 z-20 backdrop-blur-md"
         style={{
           borderColor: 'var(--color-line)',
-          background: 'oklch(17% 0.014 285 / 0.85)',
+          background: 'oklch(98.5% 0.006 290 / 0.85)',
         }}
       >
         {TABS.map((t) => {

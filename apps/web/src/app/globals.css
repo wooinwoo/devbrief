@@ -3,23 +3,24 @@
 @import 'tailwindcss';
 
 :root {
-  /* 다크 베이스 + 바이올렛 시그니처 — 차콜에 살짝 보라 틴트 */
-  --bg-base: oklch(17% 0.014 285);
-  --bg-elevated: oklch(21% 0.017 285);
-  --bg-sunken: oklch(14% 0.012 285);
-  --fg-strong: oklch(97% 0.008 285);
-  --fg-default: oklch(84% 0.012 285);
-  --fg-muted: oklch(66% 0.016 285);
-  --fg-subtle: oklch(52% 0.018 285);
-  --line: oklch(28% 0.016 285);
-  --line-strong: oklch(38% 0.02 285);
-  /* 시그니처 — 선명한 바이올렛 (다크 배경 위에서 떠 보이게 밝게) */
-  --accent: oklch(70% 0.18 292);
-  --accent-strong: oklch(62% 0.2 292);
-  --accent-glow: oklch(70% 0.18 292 / 0.16);
-  --warm: oklch(72% 0.16 50);
-  /* 카드 hover/elevated 배경에 얹는 미세 보라 틴트 */
-  --bg-tint: oklch(24% 0.03 290);
+  /* 라이트 — 따뜻한 라벤더 화이트 베이스 + 바이올렛 시그니처.
+     순흑/순백(#000/#fff) 안 씀: 배경은 살짝 라벤더, 텍스트는 짙은 보라회색. */
+  --bg-base: oklch(98.5% 0.006 290);
+  --bg-elevated: oklch(100% 0.003 290);
+  --bg-sunken: oklch(96% 0.008 290);
+  --fg-strong: oklch(28% 0.03 285);
+  --fg-default: oklch(40% 0.025 285);
+  --fg-muted: oklch(55% 0.022 285);
+  --fg-subtle: oklch(68% 0.018 285);
+  --line: oklch(91% 0.01 290);
+  --line-strong: oklch(83% 0.014 290);
+  /* 시그니처 — 바이올렛 (라이트 배경 위 충분히 진하게) */
+  --accent: oklch(54% 0.2 292);
+  --accent-strong: oklch(48% 0.22 292);
+  --accent-glow: oklch(54% 0.2 292 / 0.1);
+  --warm: oklch(58% 0.17 45);
+  /* 카드 hover 배경 미세 보라 틴트 */
+  --bg-tint: oklch(95% 0.02 292);
 }
 
 @theme inline {
@@ -58,7 +59,7 @@ html {
   overflow-x: hidden;
 }
 
-/* 미세한 색감 배경 (다크 — 상단 바이올렛, 하단 인디고/청록 글로우) */
+/* 미세한 색감 배경 (라이트 — 상단 바이올렛, 하단 인디고/청록 은은하게) */
 body::before {
   content: '';
   position: fixed;
@@ -66,9 +67,9 @@ body::before {
   z-index: -10;
   pointer-events: none;
   background-image:
-    radial-gradient(ellipse 90% 55% at 50% -12%, oklch(55% 0.2 292 / 0.16), transparent 62%),
-    radial-gradient(ellipse 55% 45% at 100% 108%, oklch(55% 0.16 260 / 0.12), transparent 58%),
-    radial-gradient(ellipse 45% 35% at 0% 102%, oklch(60% 0.14 200 / 0.08), transparent 60%);
+    radial-gradient(ellipse 85% 50% at 50% -10%, oklch(70% 0.16 292 / 0.09), transparent 64%),
+    radial-gradient(ellipse 55% 45% at 100% 110%, oklch(70% 0.13 260 / 0.06), transparent 58%),
+    radial-gradient(ellipse 45% 35% at 0% 102%, oklch(72% 0.12 200 / 0.05), transparent 60%);
 }
 
 body::after {

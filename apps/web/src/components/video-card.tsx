@@ -43,7 +43,7 @@ export function VideoCard({ video: v, index = 0 }: Props) {
           style={{
             borderRadius: 8,
             background: hasThumb
-              ? '#000'
+              ? 'oklch(92% 0.01 290)'
               : `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.6)')})`,
           }}
         >
