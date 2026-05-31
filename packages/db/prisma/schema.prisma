@@ -38,22 +38,22 @@ model Article {
   id               String   @id @default(cuid())
   sourceId         String
   source           Source   @relation(fields: [sourceId], references: [id])
-  title            String
+  title            String // 원문 제목
+  titleKo          String? // 영문이면 Gemini 자동 번역 (한국어면 null)
   url              String   @unique
   author           String?
   publishedAt      DateTime
-  summaryOneLine   String?
-  summaryThreeLine String?
+  summaryOneLine   String? // 한국어 1줄 요약 (영문이면 요약+번역 같이)
+  summaryThreeLine String? // 한국어 3줄 요약
   tags             String[] @default([])
-  language         String   @default("en")
+  language         String   @default("en") // ko / en / mixed — Gemini 가 추론
   fetchedAt        DateTime @default(now())
 
   // 썸네일: RSS enclosure / media:thumbnail / og:image 순으로 fallback
   imageUrl String?
 
-  // pgvector embedding (1024 차원, Voyage voyage-3 또는 voyage-3-large 기준)
-  // Prisma 6의 vector type 사용
-  embedding  Unsupported("vector(1024)")?
+  // pgvector embedding — Gemini text-embedding-004 기본 768 차원
+  embedding  Unsupported("vector(768)")?
 
   readingEvts ReadingEvent[]
 
@@ -153,4 +153,19 @@ model ChatMessage {
   createdAt DateTime    @default(now())
 
   @@index([sessionId, createdAt])
+}
+
+/**
+ * 매일 09:30 KST 자동 생성. 그 날 들어온 글 중 Gemini 가 선별한 5개 핵심.
+ * date 는 yyyy-mm-dd 자정 기준.
+ */
+model DailyDigest {
+  id          String   @id @default(cuid())
+  date        DateTime @unique
+  // [{ articleId, headline, takeaway }]
+  items       Json
+  intro       String? // 그 날 전반의 한 줄 요약 (선택)
+  generatedAt DateTime @default(now())
+
+  @@index([date])
 }

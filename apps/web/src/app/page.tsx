@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { ArticlesView } from '@/components/articles-view';
 import { SiteNav } from '@/components/site-nav';
 import type { ArticleDto } from '@/components/article-card';
+import type { DigestDto } from '@/components/daily-digest';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
 import { MOCK_CONFERENCES, type ConferenceDto } from '@/lib/mock-conferences';
@@ -71,6 +72,25 @@ async function getConferences(): Promise<ConferenceDto[]> {
   }
 }
 
+async function getDigest(): Promise<DigestDto | null> {
+  try {
+    const res = await fetch(`${API_BASE}/digest/today`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data) return null;
+    return {
+      date:
+        typeof data.date === 'string'
+          ? data.date
+          : new Date(data.date).toISOString(),
+      intro: data.intro ?? null,
+      items: Array.isArray(data.items) ? data.items : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function getVideos(): Promise<VideoDto[]> {
   try {
     const res = await fetch(`${API_BASE}/videos?limit=5`, {
@@ -98,10 +118,11 @@ async function getVideos(): Promise<VideoDto[]> {
 }
 
 export default async function Home() {
-  const [articles, videos, conferences] = await Promise.all([
+  const [articles, videos, conferences, digest] = await Promise.all([
     getArticles(),
     getVideos(),
     getConferences(),
+    getDigest(),
   ]);
 
   return (
@@ -115,6 +136,7 @@ export default async function Home() {
           articles={articles}
           videos={videos}
           conferences={conferences}
+          digest={digest}
         />
       </Suspense>
     </main>

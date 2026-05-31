@@ -11,6 +11,7 @@ import { SectionHeader } from './section-header';
 import { DashboardSidebar } from './dashboard-sidebar';
 import { ConferenceCard } from './conference-card';
 import { VideoCard } from './video-card';
+import { DailyDigest, type DigestDto } from './daily-digest';
 import { PageFooter } from './page-footer';
 import { readTracking } from '@/lib/read-tracking';
 import { extractTopTags, groupByTime } from '@/lib/group-articles';
@@ -19,6 +20,7 @@ interface Props {
   articles: ArticleDto[];
   videos?: VideoDto[];
   conferences?: ConferenceDto[];
+  digest?: DigestDto | null;
 }
 
 type Tab = 'all' | 'articles' | 'conferences' | 'videos';
@@ -41,6 +43,7 @@ export function ArticlesView({
   articles,
   videos = [],
   conferences = [],
+  digest = null,
 }: Props) {
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) ?? 'all';
@@ -181,6 +184,10 @@ export function ArticlesView({
       {/* === 공통 grid: main + sidebar ============================= */}
       <div className="grid gap-x-10 gap-y-8 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px] mt-6">
         <main className="min-w-0">
+          {/* 전체/개발 뉴스 탭 위에만 DailyDigest 노출 */}
+          {(tab === 'all' || tab === 'articles') && (
+            <DailyDigest digest={digest} />
+          )}
           {/* 메인 영역만 탭별로 swap. 헤더/탭/grid는 동일 → 흔들림 X */}
           {(tab === 'all' || tab === 'articles') && (
             <ArticlesPanel

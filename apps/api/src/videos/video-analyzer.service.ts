@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Innertube } from 'youtubei.js';
 import { GoogleGenAI } from '@google/genai';
+import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface Chapter {
@@ -29,17 +29,19 @@ export interface AnalysisResult {
 @Injectable()
 export class VideoAnalyzerService {
   private readonly logger = new Logger(VideoAnalyzerService.name);
-  private readonly geminiKey: string;
-  private gemini?: GoogleGenAI;
   private innertube?: Innertube;
+  // Gemini 영상 분석은 fileData.fileUri 직접 호출이 필요해서 GoogleGenAI 인스턴스 별도 보관.
+  // 텍스트/임베딩은 공용 GeminiService 사용.
+  private rawGemini?: GoogleGenAI;
 
   constructor(
-    config: ConfigService,
+    private gemini: GeminiService,
     private prisma: PrismaService,
   ) {
-    this.geminiKey = config.get<string>('GEMINI_API_KEY') ?? '';
-    if (this.geminiKey) {
-      this.gemini = new GoogleGenAI({ apiKey: this.geminiKey });
+    if (this.gemini.isAvailable()) {
+      // 환경변수는 GeminiService 가 이미 확인 — apiKey 다시 받기 위해 process.env 직접 (생성자 외부 X)
+      const key = process.env.GEMINI_API_KEY ?? '';
+      if (key) this.rawGemini = new GoogleGenAI({ apiKey: key });
     } else {
       this.logger.warn(
         'GEMINI_API_KEY 미설정 — AI 자동 chapter/요약 skip. 공식/description chapter 만 사용.',
@@ -134,7 +136,7 @@ export class VideoAnalyzerService {
     }
 
     // Tier 3: Gemini Flash 로 영상 URL 직접 분석
-    if (this.gemini && this.isRealVideoId(videoId)) {
+    if (this.rawGemini && this.isRealVideoId(videoId)) {
       try {
         const ai = await this.analyzeWithGemini(videoId, durationSec);
         this.logger.log(`[${videoId}] tier=ai chapters=${ai.chapters.length} summary=${ai.summary?.length ?? 0}자`);
@@ -178,7 +180,7 @@ export class VideoAnalyzerService {
     videoId: string,
     durationSec: number,
   ): Promise<Omit<AnalysisResult, 'chapterSource'>> {
-    if (!this.gemini) throw new Error('Gemini not configured');
+    if (!this.rawGemini) throw new Error('Gemini not configured');
 
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const prompt = `이 YouTube 영상을 분석해 다음 JSON 만 출력하세요. JSON 외 텍스트 금지.
@@ -197,7 +199,7 @@ export class VideoAnalyzerService {
 - label 은 한 줄, 30자 내외, 마침표 없음.
 - summary 는 마침표 포함 3 문장.`;
 
-    const response = await this.gemini.models.generateContent({
+    const response = await this.rawGemini.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: [
         {

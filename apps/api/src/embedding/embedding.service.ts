@@ -1,49 +1,38 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
+import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-interface VoyageResponse {
-  data: Array<{ embedding: number[] }>;
-}
-
+/**
+ * Gemini text-embedding-004 — 768 차원.
+ * pgvector 컬럼 Article.embedding 도 vector(768).
+ */
 @Injectable()
 export class EmbeddingService {
   private readonly logger = new Logger(EmbeddingService.name);
-  private readonly apiKey: string;
-  private readonly model = 'voyage-3'; // 1024 차원, 한국어 양호
+  static readonly DIM = GeminiService.EMBED_DIM;
 
   constructor(
-    config: ConfigService,
+    private gemini: GeminiService,
     private prisma: PrismaService,
-  ) {
-    this.apiKey = config.get<string>('VOYAGE_API_KEY') ?? '';
-    if (!this.apiKey) {
-      this.logger.warn('VOYAGE_API_KEY 미설정. 임베딩 / RAG 동작 안 함.');
+  ) {}
+
+  embedDocument(text: string): Promise<number[]> {
+    return this.gemini.embed(text, 'RETRIEVAL_DOCUMENT');
+  }
+
+  embedQuery(text: string): Promise<number[]> {
+    return this.gemini.embed(text, 'RETRIEVAL_QUERY');
+  }
+
+  async storeArticleEmbedding(
+    articleId: string,
+    title: string,
+    snippet: string,
+  ): Promise<void> {
+    if (!this.gemini.isAvailable()) {
+      this.logger.debug(`[${articleId}] embed skip (Gemini 미설정)`);
+      return;
     }
-  }
-
-  private async callVoyage(text: string, inputType: 'document' | 'query'): Promise<number[]> {
-    if (!this.apiKey) throw new Error('VOYAGE_API_KEY not set');
-    const res = await axios.post<VoyageResponse>(
-      'https://api.voyageai.com/v1/embeddings',
-      { input: [text], model: this.model, input_type: inputType },
-      { headers: { Authorization: `Bearer ${this.apiKey}` } },
-    );
-    const vector = res.data.data[0]?.embedding;
-    if (!vector) throw new Error('Voyage returned no embedding');
-    return vector;
-  }
-
-  embedDocument(text: string) {
-    return this.callVoyage(text, 'document');
-  }
-
-  embedQuery(text: string) {
-    return this.callVoyage(text, 'query');
-  }
-
-  async storeArticleEmbedding(articleId: string, title: string, snippet: string) {
     const content = `${title}\n\n${snippet}`.slice(0, 8000);
     const vector = await this.embedDocument(content);
     const literal = `[${vector.join(',')}]`;
@@ -53,6 +42,6 @@ export class EmbeddingService {
       literal,
       articleId,
     );
-    this.logger.log(`Embedded ${articleId}`);
+    this.logger.log(`Embedded ${articleId} (${vector.length} dim)`);
   }
 }

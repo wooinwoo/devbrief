@@ -73,10 +73,19 @@ export function ArticleRow({
           <span
             className="text-[14.5px] tracking-[-0.005em] truncate group-hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
-            title={article.title}
+            title={article.titleKo ?? article.title}
           >
-            {article.title}
+            {article.titleKo ?? article.title}
           </span>
+          {article.titleKo && article.title !== article.titleKo && (
+            <span
+              className="hidden md:inline text-[11.5px] truncate shrink min-w-0"
+              style={{ color: 'var(--color-fg-subtle)' }}
+              title={article.title}
+            >
+              {article.title}
+            </span>
+          )}
           {article.summaryOneLine && (
             <span
               className="hidden lg:inline text-[12.5px] truncate min-w-0"

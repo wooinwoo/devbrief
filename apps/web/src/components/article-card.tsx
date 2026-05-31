@@ -7,12 +7,14 @@ import { Highlight } from './highlight';
 export interface ArticleDto {
   id: string;
   title: string;
+  titleKo?: string | null; // 영문 글이면 한국어 자동 번역, 한국어 글이면 null
   url: string;
   summaryOneLine: string | null;
   summaryThreeLine: string | null;
   publishedAt: string;
   tags: string[];
   imageUrl: string | null;
+  language?: 'ko' | 'en' | 'mixed' | string;
   source: { name: string; provider: string };
 }
 

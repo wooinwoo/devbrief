@@ -57,13 +57,21 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
         >
           <div>
             <h2
-              className="text-[1.5rem] sm:text-[1.875rem] lg:text-[2rem] leading-[1.15] tracking-[-0.012em] break-keep mb-3"
+              className="text-[1.5rem] sm:text-[1.875rem] lg:text-[2rem] leading-[1.15] tracking-[-0.012em] break-keep mb-2"
               style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
             >
               <span className="group-hover:underline underline-offset-[6px] decoration-(--color-accent)">
-                {article.title}
+                {article.titleKo ?? article.title}
               </span>
             </h2>
+            {article.titleKo && article.title !== article.titleKo && (
+              <p
+                className="text-[12.5px] mb-3 tracking-wide"
+                style={{ color: 'var(--color-fg-subtle)' }}
+              >
+                {article.title}
+              </p>
+            )}
 
             {article.summaryOneLine && (
               <p

@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type Anthropic from '@anthropic-ai/sdk';
-import { AnthropicService } from '../ai/anthropic.service';
+import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const SYSTEM_PROMPT = `당신은 한국어 / 영어 기술 글에서 컨퍼런스 이벤트 정보를 추출하는 NER 전문가입니다.
@@ -34,43 +33,30 @@ export class ConferenceDiscoveryService {
   private readonly logger = new Logger(ConferenceDiscoveryService.name);
 
   constructor(
-    private anthropic: AnthropicService,
+    private gemini: GeminiService,
     private prisma: PrismaService,
   ) {}
 
-  /** 글 1개를 Haiku에 NER 요청. 추출 후보 반환. */
+  /** 글 1개를 Gemini Flash 에 NER 요청. 추출 후보 반환. */
   async extractFromArticle(article: {
     id: string;
     title: string;
     snippet: string;
   }): Promise<DiscoveredConference[]> {
-    const response = await this.anthropic.client.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 700,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: `제목: ${article.title}\n\n본문:\n${article.snippet.slice(0, 4000)}`,
-        },
-      ],
-    });
-
-    const text = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('');
+    if (!this.gemini.isAvailable()) return [];
 
     try {
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) return [];
-      const parsed = JSON.parse(match[0]) as {
+      const parsed = await this.gemini.generateJson<{
         conferences?: DiscoveredConference[];
-      };
+      }>({
+        system: SYSTEM_PROMPT,
+        prompt: `제목: ${article.title}\n\n본문:\n${article.snippet.slice(0, 4000)}`,
+        maxTokens: 700,
+      });
       return parsed.conferences ?? [];
     } catch (e) {
       this.logger.debug(
-        `[${article.id}] NER JSON 파싱 실패: ${(e as Error).message}`,
+        `[${article.id}] NER 실패: ${(e as Error).message}`,
       );
       return [];
     }

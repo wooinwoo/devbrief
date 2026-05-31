@@ -1,100 +1,61 @@
 import { Test } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 import { EmbeddingService } from './embedding.service';
+import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('EmbeddingService', () => {
   let service: EmbeddingService;
   let prisma: { $executeRawUnsafe: jest.Mock };
+  let gemini: { isAvailable: jest.Mock; embed: jest.Mock };
 
-  async function build(apiKey: string | undefined) {
+  async function build(available: boolean) {
     prisma = { $executeRawUnsafe: jest.fn() };
+    gemini = {
+      isAvailable: jest.fn().mockReturnValue(available),
+      embed: jest.fn(),
+    };
     const moduleRef = await Test.createTestingModule({
       providers: [
         EmbeddingService,
-        {
-          provide: ConfigService,
-          useValue: { get: jest.fn().mockReturnValue(apiKey) },
-        },
+        { provide: GeminiService, useValue: gemini },
         { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
     service = moduleRef.get(EmbeddingService);
   }
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe('API 키 없을 때', () => {
+  describe('Gemini 미설정', () => {
     beforeEach(async () => {
-      await build(undefined);
+      await build(false);
     });
 
-    it('embedQuery 호출 시 명시 에러', async () => {
-      await expect(service.embedQuery('q')).rejects.toThrow(
-        'VOYAGE_API_KEY not set',
-      );
-      expect(mockedAxios.post).not.toHaveBeenCalled();
+    it('storeArticleEmbedding 호출해도 silent skip (throw X)', async () => {
+      await service.storeArticleEmbedding('a1', 't', 's');
+      expect(gemini.embed).not.toHaveBeenCalled();
+      expect(prisma.$executeRawUnsafe).not.toHaveBeenCalled();
     });
   });
 
-  describe('API 키 있을 때', () => {
+  describe('Gemini 가능', () => {
     beforeEach(async () => {
-      await build('voyage-key');
+      await build(true);
     });
 
-    it('embedDocument는 input_type=document로 호출', async () => {
-      mockedAxios.post.mockResolvedValue({
-        data: { data: [{ embedding: [0.1, 0.2] }] },
-      });
+    it('embedDocument 는 RETRIEVAL_DOCUMENT 로 호출', async () => {
+      gemini.embed.mockResolvedValue([0.1, 0.2, 0.3]);
       const result = await service.embedDocument('text');
-      expect(result).toEqual([0.1, 0.2]);
-      const body = mockedAxios.post.mock.calls[0][1] as {
-        input_type: string;
-        model: string;
-      };
-      expect(body.input_type).toBe('document');
-      expect(body.model).toBe('voyage-3');
+      expect(result).toEqual([0.1, 0.2, 0.3]);
+      expect(gemini.embed).toHaveBeenCalledWith('text', 'RETRIEVAL_DOCUMENT');
     });
 
-    it('embedQuery는 input_type=query로 호출', async () => {
-      mockedAxios.post.mockResolvedValue({
-        data: { data: [{ embedding: [1] }] },
-      });
+    it('embedQuery 는 RETRIEVAL_QUERY 로 호출', async () => {
+      gemini.embed.mockResolvedValue([1]);
       await service.embedQuery('q');
-      const body = mockedAxios.post.mock.calls[0][1] as { input_type: string };
-      expect(body.input_type).toBe('query');
+      expect(gemini.embed).toHaveBeenCalledWith('q', 'RETRIEVAL_QUERY');
     });
 
-    it('Authorization Bearer 헤더 첨부', async () => {
-      mockedAxios.post.mockResolvedValue({
-        data: { data: [{ embedding: [0] }] },
-      });
-      await service.embedQuery('q');
-      const headers = mockedAxios.post.mock.calls[0][2]?.headers as Record<
-        string,
-        string
-      >;
-      expect(headers.Authorization).toBe('Bearer voyage-key');
-    });
-
-    it('Voyage 응답 비어 있으면 throw', async () => {
-      mockedAxios.post.mockResolvedValue({ data: { data: [] } });
-      await expect(service.embedQuery('q')).rejects.toThrow(
-        'Voyage returned no embedding',
-      );
-    });
-
-    it('storeArticleEmbedding은 vector literal로 UPDATE 호출', async () => {
-      mockedAxios.post.mockResolvedValue({
-        data: { data: [{ embedding: [0.5, 0.6, 0.7] }] },
-      });
-
+    it('storeArticleEmbedding 은 vector literal 로 UPDATE 호출', async () => {
+      gemini.embed.mockResolvedValue([0.5, 0.6, 0.7]);
       await service.storeArticleEmbedding('art-1', 'title', 'snippet');
 
       const sql = prisma.$executeRawUnsafe.mock.calls[0][0] as string;
@@ -104,15 +65,12 @@ describe('EmbeddingService', () => {
       expect(prisma.$executeRawUnsafe.mock.calls[0][2]).toBe('art-1');
     });
 
-    it('storeArticleEmbedding은 8000자로 truncate', async () => {
-      mockedAxios.post.mockResolvedValue({
-        data: { data: [{ embedding: [0] }] },
-      });
+    it('storeArticleEmbedding 은 8000자로 truncate', async () => {
+      gemini.embed.mockResolvedValue([0]);
       const huge = 'x'.repeat(20_000);
       await service.storeArticleEmbedding('a', 'T', huge);
-
-      const body = mockedAxios.post.mock.calls[0][1] as { input: string[] };
-      expect(body.input[0].length).toBeLessThanOrEqual(8000);
+      const input = gemini.embed.mock.calls[0][0] as string;
+      expect(input.length).toBeLessThanOrEqual(8000);
     });
   });
 });
