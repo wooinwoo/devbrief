@@ -27,7 +27,7 @@ export default async function AdminLoginPage({ searchParams }: Props) {
               className="text-[13px] tracking-[0.28em] uppercase"
               style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
             >
-              Pulse
+              Devbrief
             </span>
             <span
               className="text-[9px] tracking-[0.18em] uppercase px-1.5 py-0.5 rounded"

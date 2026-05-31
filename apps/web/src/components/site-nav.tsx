@@ -18,7 +18,7 @@ export function SiteNav() {
         className="text-[11px] mr-4 tracking-[0.25em] uppercase"
         style={{ color: 'var(--color-fg-subtle)' }}
       >
-        Pulse
+        Devbrief
       </Link>
       {ITEMS.map((item) => {
         const active =

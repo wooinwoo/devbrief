@@ -96,7 +96,7 @@ export function AdminSidebar() {
           className="text-[14px] tracking-[0.26em] uppercase"
           style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
         >
-          Pulse
+          Devbrief
         </span>
         <span
           className="text-[9px] tracking-[0.16em] uppercase px-1.5 py-0.5 rounded"

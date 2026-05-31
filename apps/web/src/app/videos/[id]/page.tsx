@@ -76,7 +76,7 @@ export async function generateMetadata({ params }: Props) {
   const fromApi = await getOne(id);
   const video = fromApi ?? MOCK_VIDEOS.find((v) => v.id === id);
   return {
-    title: video ? `${video.title} · Pulse` : 'Pulse',
+    title: video ? `${video.title} · Devbrief` : 'Devbrief',
     description: video?.channel,
   };
 }

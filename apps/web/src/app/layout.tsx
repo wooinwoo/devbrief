@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Pulse',
-  description: '매일의 기술 흐름. AI가 정리하고 챗봇이 답한다.',
+  title: 'Devbrief — 매일의 개발 브리핑',
+  description:
+    '한국 개발자를 위한 기술 큐레이션. 매일 09시 RSS 수집, AI 요약·번역, 컨퍼런스·발표 영상까지 한눈에.',
 };
 
 export default function RootLayout({

@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const article = MOCK_ARTICLES.find((a) => a.id === id);
   return {
-    title: article ? `${article.title} · Pulse` : 'Pulse',
+    title: article ? `${article.title} · Devbrief` : 'Devbrief',
     description: article?.summaryOneLine ?? undefined,
   };
 }
