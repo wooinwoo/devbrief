@@ -102,6 +102,17 @@ model Video {
   publishedAt  DateTime
   topics       String[]    @default([])
   description  String? // YouTube snippet.description (chapters 파싱 소스)
+
+  // AI 분석 결과 (VideoAnalyzerService 가 채움)
+  // chapterSource: 'official' (youtubei.js info.chapters)
+  //              | 'description' (parseChapters 결과)
+  //              | 'ai' (Gemini Flash 자동 생성)
+  //              | null (둘 다 없고 분석 skip)
+  chapters       Json? // [{ time: number, label: string }]
+  chapterSource  String?
+  summary        String? // Gemini 가 만든 3줄 요약
+  analyzedAt     DateTime?
+
   conferenceId String?
   conference   Conference? @relation(fields: [conferenceId], references: [id])
   fetchedAt    DateTime    @default(now())

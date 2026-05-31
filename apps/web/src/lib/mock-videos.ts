@@ -10,6 +10,10 @@ export interface VideoDto {
   publishedAt: string;
   topics: string[];
   description?: string | null; // YouTube snippet.description (chapters 파싱용)
+  // AI 분석 결과 (VideoAnalyzerService 가 채움)
+  summary?: string | null;
+  chapters?: Array<{ time: number; label: string }> | null;
+  chapterSource?: 'official' | 'description' | 'ai' | null;
   brand?: string; // 채널/컨퍼런스 brand 색
 }
 

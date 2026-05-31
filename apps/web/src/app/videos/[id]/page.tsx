@@ -21,6 +21,9 @@ interface DbVideo {
   publishedAt: string;
   topics: string[];
   description: string | null;
+  summary: string | null;
+  chapters: Array<{ time: number; label: string }> | null;
+  chapterSource: 'official' | 'description' | 'ai' | null;
   conference?: { name: string; brandColor: string | null } | null;
 }
 
@@ -61,6 +64,9 @@ function mapDbToDto(d: DbVideo): VideoDto {
     publishedAt: d.publishedAt,
     topics: d.topics,
     description: d.description,
+    summary: d.summary,
+    chapters: d.chapters,
+    chapterSource: d.chapterSource,
     brand: d.conference?.brandColor ?? undefined,
   };
 }

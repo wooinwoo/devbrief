@@ -25,8 +25,22 @@ function isYouTubeId(id: string): boolean {
   return /^[A-Za-z0-9_-]{8,15}$/.test(id) && !id.startsWith('mock-');
 }
 
+const SOURCE_LABEL: Record<NonNullable<VideoDto['chapterSource']>, { ko: string; en: string }> = {
+  official: { ko: '유튜버 직접 표시', en: 'official' },
+  description: { ko: '영상 설명에서 추출', en: 'from description' },
+  ai: { ko: 'AI 자동 생성 (Gemini)', en: 'AI generated' },
+};
+
 export function VideoDetail({ video, related }: Props) {
-  const chapters: Chapter[] = parseChapters(video.description, video.durationSec);
+  // DB 분석 결과가 있으면 그것을 우선, 없으면 description fallback
+  const chapters: Chapter[] =
+    video.chapters && video.chapters.length > 0
+      ? video.chapters
+      : parseChapters(video.description, video.durationSec);
+  const chapterSource =
+    video.chapterSource ??
+    (chapters.length > 0 ? ('description' as const) : null);
+
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(
     chapters[0] ?? null,
   );
@@ -149,6 +163,36 @@ export function VideoDetail({ video, related }: Props) {
         </header>
       </motion.div>
 
+      {/* === AI 요약 ========================================= */}
+      {video.summary && (
+        <section className="mb-10">
+          <div
+            className="flex items-baseline gap-3 mb-3 pt-1 border-t-2"
+            style={{ borderColor: 'var(--color-fg-strong)' }}
+          >
+            <span
+              className="text-[14px] tracking-[-0.005em]"
+              style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+            >
+              한눈에 요약
+            </span>
+            <span className="flex-1" />
+            <span
+              className="text-[10px] tracking-[0.22em] uppercase"
+              style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
+            >
+              AI summary · Gemini
+            </span>
+          </div>
+          <p
+            className="text-[14.5px] leading-[1.7]"
+            style={{ color: 'var(--color-fg-default)' }}
+          >
+            {video.summary}
+          </p>
+        </section>
+      )}
+
       {/* === 타임라인 (chapters) ============================== */}
       {chapters.length > 0 ? (
         <section className="mb-12">
@@ -168,6 +212,19 @@ export function VideoDetail({ video, related }: Props) {
             >
               {chapters.length}
             </span>
+            {chapterSource && (
+              <span
+                className="text-[10px] tracking-wide px-1.5 py-px"
+                style={{
+                  color: 'var(--color-fg-muted)',
+                  background: 'var(--color-bg-subtle)',
+                  borderRadius: 2,
+                  fontWeight: 600,
+                }}
+              >
+                {SOURCE_LABEL[chapterSource].ko}
+              </span>
+            )}
             <span className="flex-1" />
             <span
               className="text-[10px] tracking-[0.22em] uppercase"
