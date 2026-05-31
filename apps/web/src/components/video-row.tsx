@@ -1,7 +1,14 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { MOCK_VIDEOS } from '@/lib/mock-videos';
+import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
+import { formatDuration } from '@/lib/format-duration';
+
+function formatViews(n: number): string {
+  if (n >= 10_000) return `${(n / 1000).toFixed(0)}K`;
+  if (n >= 1_000) return `${(n / 1000).toFixed(1)}K`;
+  return n.toString();
+}
 
 function relativeShort(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -12,8 +19,14 @@ function relativeShort(iso: string): string {
   return `${Math.floor(day / 30)}개월 전`;
 }
 
-export function VideoRow() {
-  const [hero, ...rest] = MOCK_VIDEOS;
+interface Props {
+  videos?: VideoDto[];
+}
+
+export function VideoRow({ videos }: Props = {}) {
+  const list = videos && videos.length > 0 ? videos : MOCK_VIDEOS;
+  const [hero, ...rest] = list;
+  if (!hero) return null;
   const sideList = rest.slice(0, 4);
 
   return (
@@ -34,7 +47,7 @@ export function VideoRow() {
           <p className="mt-2 text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
             이번 주 컨퍼런스 영상{' '}
             <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}>
-              {MOCK_VIDEOS.length}
+              {list.length}
             </span>
             개를 모아놨어요.
           </p>
@@ -91,7 +104,7 @@ export function VideoRow() {
                   fontWeight: 700,
                 }}
               >
-                {hero.duration}
+                {formatDuration(hero.durationSec)}
               </span>
             </div>
           </div>
@@ -103,7 +116,7 @@ export function VideoRow() {
           </h3>
           <div className="mt-3 flex items-center gap-2 text-[12.5px]">
             <span style={{ color: 'var(--color-fg-muted)' }}>
-              조회수 {hero.views}
+              조회수 {formatViews(hero.views)}
             </span>
             <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
             <span style={{ color: 'var(--color-fg-muted)' }}>
@@ -143,7 +156,7 @@ export function VideoRow() {
                     className="text-[1.05rem] tabular-nums tracking-[-0.015em]"
                     style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
                   >
-                    {v.duration}
+                    {formatDuration(v.durationSec)}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">

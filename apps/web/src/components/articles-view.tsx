@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
 import type { ArticleDto } from './article-card';
+import type { VideoDto } from '@/lib/mock-videos';
 import { ArticleCard } from './article-card';
 import { TopStoryCard } from './top-story-card';
 import { HeroStrip } from './hero-strip';
@@ -19,9 +20,10 @@ import { groupByTime, extractTopTags } from '@/lib/group-articles';
 
 interface Props {
   articles: ArticleDto[];
+  videos?: VideoDto[];
 }
 
-export function ArticlesView({ articles }: Props) {
+export function ArticlesView({ articles, videos }: Props) {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [activeSource, setActiveSource] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export function ArticlesView({ articles }: Props) {
 
       <UpcomingRow />
 
-      <VideoRow />
+      <VideoRow videos={videos} />
 
       <div className="flex items-end justify-between mb-7 pb-4 border-b" style={{ borderColor: 'var(--color-line)' }}>
         <div>
