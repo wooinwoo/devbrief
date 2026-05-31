@@ -2,15 +2,16 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import type { ArticleDto } from './article-card';
 import type { VideoDto } from '@/lib/mock-videos';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import { ArticleRow } from './article-row';
+import { FeaturedArticle } from './featured-article';
+import { SectionHeader } from './section-header';
 import { DashboardSidebar } from './dashboard-sidebar';
 import { PageFooter } from './page-footer';
 import { readTracking } from '@/lib/read-tracking';
-import { extractTopTags } from '@/lib/group-articles';
+import { extractTopTags, groupByTime } from '@/lib/group-articles';
 import { formatDuration } from '@/lib/format-duration';
 
 interface Props {
@@ -25,7 +26,7 @@ const TABS: Array<{ id: Tab; label: string; hint: string }> = [
   { id: 'all', label: '전체', hint: 'feed' },
   { id: 'articles', label: '개발 뉴스', hint: '글' },
   { id: 'conferences', label: '컨퍼런스', hint: '일정' },
-  { id: 'videos', label: '발표 영상', hint: 'YouTube' },
+  { id: 'videos', label: '발표 영상', hint: 'youtube' },
 ];
 
 function daysUntil(iso: string): number {
@@ -35,7 +36,11 @@ function daysUntil(iso: string): number {
   return Math.ceil((target - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function ArticlesView({ articles, videos = [], conferences = [] }: Props) {
+export function ArticlesView({
+  articles,
+  videos = [],
+  conferences = [],
+}: Props) {
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) ?? 'all';
   const [tab, setTab] = useState<Tab>(
@@ -68,7 +73,8 @@ export function ArticlesView({ articles, videos = [], conferences = [] }: Props)
       if (activeSource && a.source.provider !== activeSource) return false;
       if (hideRead && readSet.has(a.id)) return false;
       if (q) {
-        const hay = `${a.title} ${a.summaryOneLine ?? ''} ${a.tags.join(' ')}`.toLowerCase();
+        const hay =
+          `${a.title} ${a.summaryOneLine ?? ''} ${a.tags.join(' ')}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -95,39 +101,47 @@ export function ArticlesView({ articles, videos = [], conferences = [] }: Props)
 
   return (
     <div>
-      {/* 작은 헤더 — Pulse 정체성 + 메타 한 줄 */}
+      {/* === 공통 헤더 ============================================ */}
       <header className="mb-6 pt-2">
-        <div className="flex items-baseline gap-3 flex-wrap">
+        <div className="flex items-baseline gap-4 flex-wrap">
           <h1
             className="text-[1.5rem] sm:text-[1.875rem] leading-none tracking-[-0.025em] break-keep"
-            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+            style={{
+              color: 'var(--color-fg-strong)',
+              fontWeight: 700,
+            }}
           >
             오늘의 흐름
           </h1>
           <span
-            className="text-[12.5px]"
+            className="text-[12.5px] flex items-baseline gap-1.5"
             style={{ color: 'var(--color-fg-muted)' }}
           >
             새 글{' '}
             <span
+              className="px-1.5 py-px text-[12px] tabular-nums"
               style={{
-                color: 'var(--color-fg-strong)',
-                fontWeight: 600,
+                color: 'oklch(99% 0 0)',
+                background: 'var(--color-accent)',
+                fontWeight: 700,
+                borderRadius: 2,
               }}
             >
               {unreadCount}
             </span>
-            {' '}/ 전체 {articles.length} · 소스 {sourceCounts.length} · 컨퍼런스{' '}
-            {upcomingConfs.length} · 영상 {videos.length}
+            · 소스 {sourceCounts.length} · 컨퍼런스 {upcomingConfs.length} ·
+            영상 {videos.length}
           </span>
-          <span className="flex-1" />
         </div>
       </header>
 
-      {/* 탭 nav */}
+      {/* === 공통 탭 nav ========================================== */}
       <nav
-        className="flex items-end gap-1 mb-1 border-b"
-        style={{ borderColor: 'var(--color-line)' }}
+        className="flex items-end gap-0 mb-0 border-b sticky top-0 z-20 backdrop-blur-md"
+        style={{
+          borderColor: 'var(--color-line)',
+          background: 'oklch(98% 0.004 80 / 0.88)',
+        }}
       >
         {TABS.map((t) => {
           const isActive = tab === t.id;
@@ -136,7 +150,7 @@ export function ArticlesView({ articles, videos = [], conferences = [] }: Props)
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className="relative px-3 py-2.5 text-[13px] tracking-[-0.005em] transition-colors"
+              className="relative px-3.5 py-3 text-[13px] tracking-[-0.005em] transition-colors"
               style={{
                 color: isActive
                   ? 'var(--color-fg-strong)'
@@ -146,8 +160,8 @@ export function ArticlesView({ articles, videos = [], conferences = [] }: Props)
             >
               {t.label}
               <span
-                className="ml-1.5 text-[10px] tabular-nums tracking-wide uppercase"
-                style={{ color: 'var(--color-fg-subtle)', fontWeight: 500 }}
+                className="ml-1.5 text-[9.5px] tabular-nums tracking-[0.18em] uppercase"
+                style={{ color: 'var(--color-fg-subtle)', fontWeight: 600 }}
               >
                 {t.hint}
               </span>
@@ -163,12 +177,14 @@ export function ArticlesView({ articles, videos = [], conferences = [] }: Props)
         })}
       </nav>
 
-      {/* 좌메인 + 우사이드 */}
-      <div className="grid gap-x-10 gap-y-6 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px] mt-6">
+      {/* === 공통 grid: main + sidebar ============================= */}
+      <div className="grid gap-x-10 gap-y-8 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px] mt-6">
         <main className="min-w-0">
-          {tab === 'all' && (
-            <AllTabContent
+          {/* 메인 영역만 탭별로 swap. 헤더/탭/grid는 동일 → 흔들림 X */}
+          {(tab === 'all' || tab === 'articles') && (
+            <ArticlesPanel
               filtered={filtered}
+              all={articles}
               sourceCounts={sourceCounts}
               activeSource={activeSource}
               setActiveSource={setActiveSource}
@@ -178,23 +194,7 @@ export function ArticlesView({ articles, videos = [], conferences = [] }: Props)
               setQuery={setQuery}
               readSet={readSet}
               onOpen={handleArticleOpen}
-              onTagClick={(t) => setQuery(t)}
-            />
-          )}
-
-          {tab === 'articles' && (
-            <ArticlesTab
-              filtered={filtered}
-              sourceCounts={sourceCounts}
-              activeSource={activeSource}
-              setActiveSource={setActiveSource}
-              hideRead={hideRead}
-              setHideRead={setHideRead}
-              query={query}
-              setQuery={setQuery}
-              readSet={readSet}
-              onOpen={handleArticleOpen}
-              onTagClick={(t) => setQuery(t)}
+              onTagClick={(t) => setQuery(t === query ? '' : t)}
             />
           )}
 
@@ -205,13 +205,16 @@ export function ArticlesView({ articles, videos = [], conferences = [] }: Props)
           {tab === 'videos' && <VideosTab videos={videos} />}
         </main>
 
-        <DashboardSidebar
-          conferences={conferences}
-          videos={videos}
-          topTags={topTags}
-          activeTag={query}
-          onTagClick={(t) => setQuery(t === query ? '' : t)}
-        />
+        {/* sticky sidebar */}
+        <div className="lg:sticky lg:top-14 lg:self-start lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto pr-1">
+          <DashboardSidebar
+            conferences={conferences}
+            videos={videos}
+            topTags={topTags}
+            activeTag={query}
+            onTagClick={(t) => setQuery(t === query ? '' : t)}
+          />
+        </div>
       </div>
 
       <PageFooter total={articles.length} sourceCount={sourceCounts.length} />
@@ -219,18 +222,10 @@ export function ArticlesView({ articles, videos = [], conferences = [] }: Props)
   );
 }
 
-// ─── 전체 탭 (글 위주, 상단 quick 컨퍼런스 1줄)
-function AllTabContent(props: ArticlesPanelProps) {
-  return <ArticlesPanel {...props} />;
-}
-
-// ─── 글 탭
-function ArticlesTab(props: ArticlesPanelProps) {
-  return <ArticlesPanel {...props} />;
-}
-
+// ── ArticlesPanel ──────────────────────────────────────────────────────────
 interface ArticlesPanelProps {
   filtered: ArticleDto[];
+  all: ArticleDto[];
   sourceCounts: Array<[string, { name: string; count: number }]>;
   activeSource: string | null;
   setActiveSource: (s: string | null) => void;
@@ -256,15 +251,23 @@ function ArticlesPanel({
   onOpen,
   onTagClick,
 }: ArticlesPanelProps) {
+  // filtered 첫 글 = featured, 그 외는 시간 그룹
+  const [featured, ...rest] = filtered;
+  const grouped = useMemo(() => groupByTime(rest), [rest]);
+
+  const isFiltering =
+    query.trim() !== '' || activeSource !== null || hideRead;
+
   return (
     <>
-      {/* 필터 바 */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-4 text-[12px]">
+      {/* 필터 chip + 검색 — sticky 탭 아래 */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-6 text-[12px]">
         <FilterChip
           active={activeSource === null}
           onClick={() => setActiveSource(null)}
         >
-          전체 <span className="ml-1 tabular-nums opacity-60">{filtered.length}</span>
+          전체{' '}
+          <span className="ml-1 tabular-nums opacity-60">{filtered.length}</span>
         </FilterChip>
         {sourceCounts.map(([provider, { name, count }]) => (
           <FilterChip
@@ -302,32 +305,86 @@ function ArticlesPanel({
         />
       </div>
 
-      {/* dense list */}
-      <ul>
-        {filtered.length === 0 ? (
-          <li
-            className="py-10 text-center text-[13px]"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
-            조건에 맞는 글이 없어요.
-          </li>
-        ) : (
-          filtered.map((a, i) => (
-            <ArticleRow
-              key={a.id}
-              article={a}
-              read={readSet.has(a.id)}
-              onOpen={() => onOpen(a.id)}
-              onTagClick={onTagClick}
-              index={i}
+      {filtered.length === 0 ? (
+        <p
+          className="py-10 text-center text-[13px]"
+          style={{ color: 'var(--color-fg-muted)' }}
+        >
+          조건에 맞는 글이 없어요.
+        </p>
+      ) : isFiltering ? (
+        // 필터링 시: featured 없이 dense list만 (정보 밀도 ↑)
+        <>
+          <SectionHeader
+            label="검색 결과"
+            count={filtered.length}
+            hint={`matched · ${query.trim() || activeSource || 'filter'}`}
+          />
+          <ul>
+            {filtered.map((a, i) => (
+              <ArticleRow
+                key={a.id}
+                article={a}
+                read={readSet.has(a.id)}
+                onOpen={() => onOpen(a.id)}
+                onTagClick={onTagClick}
+                index={i}
+              />
+            ))}
+          </ul>
+        </>
+      ) : (
+        // 기본: featured + 시간 그룹별 dense list
+        <>
+          {featured && (
+            <FeaturedArticle
+              article={featured}
+              read={readSet.has(featured.id)}
+              onOpen={() => onOpen(featured.id)}
             />
-          ))
-        )}
-      </ul>
+          )}
+
+          {grouped.map((group, gi) => {
+            const baseIdx = grouped
+              .slice(0, gi)
+              .reduce((s, g) => s + g.articles.length, 0);
+            return (
+              <section key={group.label} className="mb-8">
+                <SectionHeader
+                  label={group.label}
+                  count={group.articles.length}
+                  hint={SECTION_HINT[group.label] ?? 'today'}
+                />
+                <ul>
+                  {group.articles.map((a, i) => (
+                    <ArticleRow
+                      key={a.id}
+                      article={a}
+                      read={readSet.has(a.id)}
+                      onOpen={() => onOpen(a.id)}
+                      onTagClick={onTagClick}
+                      index={baseIdx + i}
+                    />
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </>
+      )}
     </>
   );
 }
 
+const SECTION_HINT: Record<string, string> = {
+  방금: 'just in',
+  오늘: 'today',
+  어제: 'yesterday',
+  '이번 주': 'this week',
+  '그 외': 'older',
+};
+
+// ── FilterChip ─────────────────────────────────────────────────────────────
 function FilterChip({
   active,
   onClick,
@@ -354,7 +411,7 @@ function FilterChip({
   );
 }
 
-// ─── 컨퍼런스 탭 — 표 형태
+// ── 컨퍼런스 탭 ─────────────────────────────────────────────────────────────
 function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }) {
   if (conferences.length === 0) {
     return (
@@ -366,83 +423,129 @@ function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }) {
       </p>
     );
   }
+
+  // 시간 버킷: 이번 달 / 다음 달 / 그 이후
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const buckets: Record<string, ConferenceDto[]> = {
+    '이번 달': [],
+    '다음 달': [],
+    '그 이후': [],
+  };
+  for (const c of conferences) {
+    const d = new Date(c.startDate);
+    if (d.getFullYear() === thisYear && d.getMonth() === thisMonth)
+      buckets['이번 달'].push(c);
+    else if (
+      (d.getFullYear() === thisYear && d.getMonth() === thisMonth + 1) ||
+      (thisMonth === 11 &&
+        d.getFullYear() === thisYear + 1 &&
+        d.getMonth() === 0)
+    )
+      buckets['다음 달'].push(c);
+    else buckets['그 이후'].push(c);
+  }
+
   return (
-    <ul>
-      {conferences.map((c) => {
-        const d = daysUntil(c.startDate);
-        const brand = c.brand ?? 'oklch(50% 0.012 245)';
-        return (
-          <li
-            key={c.id}
-            className="grid grid-cols-[auto_auto_1fr_auto] gap-4 items-baseline py-3 border-b transition-colors hover:bg-(--color-bg-elevated)/40"
-            style={{ borderColor: 'var(--color-line)' }}
-          >
-            <span
-              className="tabular-nums text-[12.5px] shrink-0 px-2 py-0.5 self-baseline"
-              style={{
-                background: brand,
-                color: 'oklch(99% 0 0)',
-                fontWeight: 600,
-                borderRadius: 2,
-                minWidth: 44,
-                textAlign: 'center',
-              }}
-            >
-              D-{d}
-            </span>
-            <span
-              className="text-[12px] tabular-nums shrink-0"
-              style={{ color: 'var(--color-fg-muted)' }}
-            >
-              {new Date(c.startDate).toLocaleDateString('ko-KR', {
-                month: 'short',
-                day: 'numeric',
+    <>
+      {Object.entries(buckets)
+        .filter(([, list]) => list.length > 0)
+        .map(([label, list]) => (
+          <section key={label} className="mb-8">
+            <SectionHeader
+              label={label}
+              count={list.length}
+              hint={
+                label === '이번 달'
+                  ? 'this month'
+                  : label === '다음 달'
+                    ? 'next month'
+                    : 'later'
+              }
+            />
+            <ul>
+              {list.map((c) => {
+                const d = daysUntil(c.startDate);
+                const brand = c.brand ?? 'oklch(50% 0.012 245)';
+                return (
+                  <li
+                    key={c.id}
+                    className="grid grid-cols-[auto_auto_1fr_auto] gap-4 items-baseline py-3 px-2 -mx-2 border-b transition-colors hover:bg-(--color-bg-elevated)/40"
+                    style={{ borderColor: 'var(--color-line)' }}
+                  >
+                    <span
+                      className="tabular-nums text-[12.5px] shrink-0 px-2 py-0.5 self-baseline"
+                      style={{
+                        background: brand,
+                        color: 'oklch(99% 0 0)',
+                        fontWeight: 700,
+                        borderRadius: 2,
+                        minWidth: 48,
+                        textAlign: 'center',
+                      }}
+                    >
+                      D-{d}
+                    </span>
+                    <span
+                      className="text-[12px] tabular-nums shrink-0 w-20"
+                      style={{ color: 'var(--color-fg-muted)' }}
+                    >
+                      {new Date(c.startDate).toLocaleDateString('ko-KR', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                    <a
+                      href={c.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-w-0 block"
+                    >
+                      <span
+                        className="text-[14.5px] tracking-[-0.005em] hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
+                        style={{
+                          color: 'var(--color-fg-strong)',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {c.name}
+                      </span>
+                      <span
+                        className="ml-3 text-[12px]"
+                        style={{ color: 'var(--color-fg-muted)' }}
+                      >
+                        {c.location}
+                      </span>
+                      {c.topics.length > 0 && (
+                        <span
+                          className="ml-2 text-[11.5px]"
+                          style={{ color: 'var(--color-fg-subtle)' }}
+                        >
+                          {c.topics
+                            .slice(0, 3)
+                            .map((t) => `#${t}`)
+                            .join(' ')}
+                        </span>
+                      )}
+                    </a>
+                    <span
+                      className="text-[11.5px] tracking-wide"
+                      style={{ color: 'var(--color-fg-subtle)' }}
+                    >
+                      사이트 ↗
+                    </span>
+                  </li>
+                );
               })}
-            </span>
-            <a
-              href={c.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="min-w-0 block"
-            >
-              <span
-                className="text-[14.5px] tracking-[-0.005em] hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
-                style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
-              >
-                {c.name}
-              </span>
-              <span
-                className="ml-3 text-[12px]"
-                style={{ color: 'var(--color-fg-muted)' }}
-              >
-                {c.location}
-              </span>
-              {c.topics.length > 0 && (
-                <span
-                  className="ml-2 text-[11.5px]"
-                  style={{ color: 'var(--color-fg-subtle)' }}
-                >
-                  {c.topics.slice(0, 3).map((t) => `#${t}`).join(' ')}
-                </span>
-              )}
-            </a>
-            <Link
-              href={c.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11.5px] tracking-wide"
-              style={{ color: 'var(--color-fg-muted)' }}
-            >
-              사이트 →
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+            </ul>
+          </section>
+        ))}
+    </>
   );
 }
 
-// ─── 영상 탭
+// ── 영상 탭 ────────────────────────────────────────────────────────────────
 function VideosTab({ videos }: { videos: VideoDto[] }) {
   if (videos.length === 0) {
     return (
@@ -455,51 +558,61 @@ function VideosTab({ videos }: { videos: VideoDto[] }) {
     );
   }
   return (
-    <ul>
-      {videos.map((v) => (
-        <li
-          key={v.id}
-          className="grid grid-cols-[auto_auto_1fr_auto] gap-4 items-baseline py-3 border-b transition-colors hover:bg-(--color-bg-elevated)/40"
-          style={{ borderColor: 'var(--color-line)' }}
-        >
-          <span
-            className="tabular-nums text-[11.5px] shrink-0 px-2 py-0.5"
-            style={{
-              color: 'var(--color-fg-muted)',
-              border: '1px solid var(--color-line-strong)',
-              borderRadius: 2,
-              minWidth: 50,
-              textAlign: 'center',
-              fontWeight: 600,
-            }}
+    <>
+      <SectionHeader
+        label="이번 주 발표"
+        count={videos.length}
+        hint="recent talks"
+      />
+      <ul>
+        {videos.map((v) => (
+          <li
+            key={v.id}
+            className="grid grid-cols-[auto_auto_1fr_auto] gap-4 items-baseline py-3 px-2 -mx-2 border-b transition-colors hover:bg-(--color-bg-elevated)/40"
+            style={{ borderColor: 'var(--color-line)' }}
           >
-            {formatDuration(v.durationSec)}
-          </span>
-          <span
-            className="text-[12px] shrink-0 truncate w-32"
-            style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}
-            title={v.channel}
-          >
-            {v.channel}
-          </span>
-          <a
-            href={v.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="min-w-0 block truncate text-[14.5px] tracking-[-0.005em] hover:underline underline-offset-2"
-            style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
-            title={v.title}
-          >
-            {v.title}
-          </a>
-          <span
-            className="tabular-nums text-[11.5px] shrink-0"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
-            {Math.round(v.views / 1000)}K views
-          </span>
-        </li>
-      ))}
-    </ul>
+            <span
+              className="tabular-nums text-[11.5px] shrink-0 px-2 py-0.5"
+              style={{
+                color: 'var(--color-fg-muted)',
+                border: '1px solid var(--color-line-strong)',
+                borderRadius: 2,
+                minWidth: 52,
+                textAlign: 'center',
+                fontWeight: 600,
+              }}
+            >
+              {formatDuration(v.durationSec)}
+            </span>
+            <span
+              className="text-[12px] shrink-0 truncate w-28"
+              style={{
+                color: 'var(--color-fg-default)',
+                fontWeight: 600,
+              }}
+              title={v.channel}
+            >
+              {v.channel}
+            </span>
+            <a
+              href={v.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="min-w-0 block truncate text-[14.5px] tracking-[-0.005em] hover:underline underline-offset-2"
+              style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
+              title={v.title}
+            >
+              {v.title}
+            </a>
+            <span
+              className="tabular-nums text-[11.5px] shrink-0"
+              style={{ color: 'var(--color-fg-muted)' }}
+            >
+              {Math.round(v.views / 1000)}K
+            </span>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
