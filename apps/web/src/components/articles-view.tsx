@@ -101,7 +101,7 @@ export function ArticlesView({
   };
 
   return (
-    <div>
+    <div className="w-full">
       {/* === 공통 헤더 ============================================ */}
       <header className="mb-6 pt-2">
         <div className="flex items-baseline gap-4 flex-wrap">
