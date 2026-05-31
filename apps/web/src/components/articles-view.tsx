@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
 import type { ArticleDto } from './article-card';
 import type { VideoDto } from '@/lib/mock-videos';
+import type { ConferenceDto } from '@/lib/mock-conferences';
 import { ArticleCard } from './article-card';
 import { TopStoryCard } from './top-story-card';
 import { HeroStrip } from './hero-strip';
@@ -17,9 +18,10 @@ import { groupByTime, extractTopTags } from '@/lib/group-articles';
 interface Props {
   articles: ArticleDto[];
   videos?: VideoDto[];
+  conferences?: ConferenceDto[];
 }
 
-export function ArticlesView({ articles, videos }: Props) {
+export function ArticlesView({ articles, videos, conferences }: Props) {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [activeSource, setActiveSource] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export function ArticlesView({ articles, videos }: Props) {
         onTagClick={(t) => setQuery(t)}
       />
 
-      <UpcomingRow />
+      <UpcomingRow conferences={conferences} />
 
       <VideoRow videos={videos} />
 

@@ -14,7 +14,7 @@ function daysUntil(iso: string): number {
   return Math.ceil((target - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function formatDate(iso: string, end?: string): string {
+function formatDate(iso: string, end?: string | null): string {
   const s = new Date(iso);
   const fmt = (d: Date) =>
     d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });

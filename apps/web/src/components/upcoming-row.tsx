@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { MOCK_CONFERENCES } from '@/lib/mock-conferences';
+import { MOCK_CONFERENCES, type ConferenceDto } from '@/lib/mock-conferences';
 
 function daysUntil(iso: string): number {
   const target = new Date(iso).getTime();
@@ -11,7 +11,7 @@ function daysUntil(iso: string): number {
   return Math.ceil((target - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function formatDate(iso: string, end?: string): string {
+function formatDate(iso: string, end?: string | null): string {
   const fmt = (d: Date) =>
     d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   const s = new Date(iso);
@@ -19,8 +19,15 @@ function formatDate(iso: string, end?: string): string {
   return `${fmt(s)} ~ ${fmt(new Date(end))}`;
 }
 
-export function UpcomingRow() {
-  const upcoming = MOCK_CONFERENCES.filter((c) => daysUntil(c.startDate) >= 0)
+interface Props {
+  conferences?: ConferenceDto[];
+}
+
+export function UpcomingRow({ conferences }: Props = {}) {
+  const list =
+    conferences && conferences.length > 0 ? conferences : MOCK_CONFERENCES;
+  const upcoming = list
+    .filter((c) => daysUntil(c.startDate) >= 0)
     .sort(
       (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
     )

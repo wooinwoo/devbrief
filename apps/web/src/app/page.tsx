@@ -4,6 +4,7 @@ import { SiteNav } from '@/components/site-nav';
 import type { ArticleDto } from '@/components/article-card';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
+import { MOCK_CONFERENCES, type ConferenceDto } from '@/lib/mock-conferences';
 
 const API_BASE = 'http://localhost:4000/api/v1';
 
@@ -34,6 +35,42 @@ interface DbVideo {
   conference?: { name: string; brandColor: string | null } | null;
 }
 
+interface DbConference {
+  id: string;
+  name: string;
+  url: string;
+  startDate: string;
+  endDate: string | null;
+  location: string;
+  topics: string[];
+  description: string | null;
+  imageUrl: string | null;
+  brandColor: string | null;
+}
+
+async function getConferences(): Promise<ConferenceDto[]> {
+  try {
+    const res = await fetch(`${API_BASE}/conferences`, { cache: 'no-store' });
+    if (!res.ok) return MOCK_CONFERENCES;
+    const data = (await res.json()) as DbConference[];
+    if (data.length === 0) return MOCK_CONFERENCES;
+    return data.map((d) => ({
+      id: d.id,
+      name: d.name,
+      url: d.url,
+      startDate: d.startDate,
+      endDate: d.endDate,
+      location: d.location,
+      topics: d.topics,
+      description: d.description,
+      imageUrl: d.imageUrl,
+      brand: d.brandColor ?? undefined,
+    }));
+  } catch {
+    return MOCK_CONFERENCES;
+  }
+}
+
 async function getVideos(): Promise<VideoDto[]> {
   try {
     const res = await fetch(`${API_BASE}/videos?limit=5`, {
@@ -61,7 +98,11 @@ async function getVideos(): Promise<VideoDto[]> {
 }
 
 export default async function Home() {
-  const [articles, videos] = await Promise.all([getArticles(), getVideos()]);
+  const [articles, videos, conferences] = await Promise.all([
+    getArticles(),
+    getVideos(),
+    getConferences(),
+  ]);
 
   return (
     <main
@@ -70,7 +111,11 @@ export default async function Home() {
     >
       <SiteNav />
       <Suspense fallback={null}>
-        <ArticlesView articles={articles} videos={videos} />
+        <ArticlesView
+          articles={articles}
+          videos={videos}
+          conferences={conferences}
+        />
       </Suspense>
     </main>
   );

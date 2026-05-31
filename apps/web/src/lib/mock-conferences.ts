@@ -3,11 +3,12 @@ export interface ConferenceDto {
   name: string;
   url: string;
   startDate: string;
-  endDate?: string;
+  endDate?: string | null;
   location: string;
   topics: string[];
-  description?: string;
-  brand?: string; // 브랜드 oklch 색 (이미지 X — 타이포 중심 매거진 톤)
+  description?: string | null;
+  brand?: string | null; // 브랜드 oklch 색
+  imageUrl?: string | null; // og:image 자동 추출 결과
 }
 
 // 한국 주요 개발자 컨퍼런스 mock (V1.5에서 자동 수집으로 교체)

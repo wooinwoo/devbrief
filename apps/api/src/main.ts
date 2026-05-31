@@ -1,3 +1,5 @@
+// dotenv 강제 로드 — Prisma Client 가 ConfigModule 초기화 전에 process.env 를 읽기 때문
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
