@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
 import type { ArticleDto } from './article-card';
@@ -9,10 +9,6 @@ import { ArticleCard } from './article-card';
 import { TopStoryCard } from './top-story-card';
 import { HeroStrip } from './hero-strip';
 import { PageFooter } from './page-footer';
-import { type InlineChatHandle } from './inline-chat';
-import { ChatProvider } from './chat-context';
-import { ChatDrawer } from './chat-drawer';
-import { FloatingChatButton } from './floating-chat-button';
 import { UpcomingRow } from './upcoming-row';
 import { VideoRow } from './video-row';
 import { readTracking } from '@/lib/read-tracking';
@@ -32,15 +28,6 @@ export function ArticlesView({ articles, videos }: Props) {
 
   useEffect(() => {
     setReadSet(readTracking.load());
-  }, []);
-
-  const chatRef = useRef<InlineChatHandle>(null);
-  const [chatOpen, setChatOpen] = useState(false);
-  const openChat = useCallback(() => setChatOpen(true), []);
-  const closeChat = useCallback(() => setChatOpen(false), []);
-  const ask = useCallback((text: string) => {
-    setChatOpen(true);
-    requestAnimationFrame(() => chatRef.current?.ask(text));
   }, []);
 
   const sourceCounts = useMemo(() => {
@@ -81,7 +68,6 @@ export function ArticlesView({ articles, videos }: Props) {
   const isFiltering = query.trim() !== '' || activeSource !== null || hideRead;
 
   return (
-    <ChatProvider ask={ask} open={openChat} close={closeChat} isOpen={chatOpen}>
     <div>
       <HeroStrip
         total={articles.length}
@@ -208,25 +194,6 @@ export function ArticlesView({ articles, videos }: Props) {
           </span>
 
           <span className="flex-1 min-w-2" />
-
-          {query.trim() && filtered.length > 0 && (
-            <button
-              type="button"
-              onClick={() => ask(`"${query.trim()}" 관련해서 정리해줘`)}
-              className="text-[11px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-colors"
-              style={{
-                color: 'var(--color-accent)',
-                border: '1px solid var(--color-line-strong)',
-              }}
-            >
-              <span
-                aria-hidden
-                className="inline-block w-1 h-1 rounded-full"
-                style={{ background: 'var(--color-accent)' }}
-              />
-              이 결과로 챗봇에 묻기
-            </button>
-          )}
 
           <button
             type="button"
@@ -434,8 +401,5 @@ export function ArticlesView({ articles, videos }: Props) {
 
       <PageFooter total={articles.length} sourceCount={sourceCounts.length} />
     </div>
-    <ChatDrawer ref={chatRef} />
-    <FloatingChatButton />
-    </ChatProvider>
   );
 }

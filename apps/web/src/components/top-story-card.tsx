@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import type { ArticleDto } from './article-card';
 import { relativeTime } from '@/lib/relative-time';
-import { useChat } from './chat-context';
 
 const SOURCE_GLOW: Record<string, string> = {
   geeknews: 'oklch(60% 0.16 160 / 0.12)',
@@ -37,7 +36,6 @@ interface Props {
 export function TopStoryCard({ article, read = false, onOpen }: Props) {
   const glow = SOURCE_GLOW[article.source.provider] ?? SOURCE_GLOW.rss_generic;
   const bar = SOURCE_BAR[article.source.provider] ?? SOURCE_BAR.rss_generic;
-  const chat = useChat();
 
   return (
     <motion.article
@@ -131,24 +129,6 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
             #{t}
           </span>
         ))}
-        <span className="flex-1" />
-        <button
-          type="button"
-          onClick={() => chat?.ask(`${article.title} 에 대해 설명해줘`)}
-          className="text-[13px] inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full transition-all"
-          style={{
-            color: bar,
-            border: `1px solid ${bar.replace(' / 0.', ' / 0.3 / 0.')}`,
-            background: `linear-gradient(to right, ${glow.replace(' / 0.', ' / 0.08 / 0.')}, transparent)`,
-          }}
-        >
-          <span
-            aria-hidden
-            className="inline-block w-1 h-1 rounded-full"
-            style={{ background: bar }}
-          />
-          이 글로 챗봇에 묻기
-        </button>
       </div>
     </motion.article>
   );

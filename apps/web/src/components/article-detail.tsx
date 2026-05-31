@@ -43,7 +43,6 @@ export function ArticleDetail({ article, related }: Props) {
   const bar = SOURCE_BAR[article.source.provider] ?? SOURCE_BAR.rss_generic;
   const glow = SOURCE_GLOW[article.source.provider] ?? SOURCE_GLOW.rss_generic;
   const minutes = readingMinutes(article);
-  const askUrl = `/?q=${encodeURIComponent(`${article.title} 에 대해 설명해줘`)}#chat`;
 
   useEffect(() => {
     readTracking.add(article.id);
@@ -145,30 +144,15 @@ export function ArticleDetail({ article, related }: Props) {
       )}
 
       <section className="mb-14 flex flex-wrap gap-3">
-        <Link
-          href={askUrl}
-          className="text-[13px] inline-flex items-center gap-2 px-4 py-2.5 rounded-full transition-all"
-          style={{
-            color: bar,
-            border: `1px solid ${bar}`,
-            background: `linear-gradient(to right, ${bar.replace(')', ' / 0.06)')}, transparent)`,
-          }}
-        >
-          <span
-            aria-hidden
-            className="inline-block w-1 h-1 rounded-full"
-            style={{ background: bar }}
-          />
-          이 글로 챗봇에 묻기
-        </Link>
         <a
           href={article.url}
           target="_blank"
           rel="noopener noreferrer"
           className="text-[13px] inline-flex items-center gap-2 px-4 py-2.5 rounded-full transition-colors"
           style={{
-            color: 'var(--color-fg-muted)',
-            border: '1px solid var(--color-line-strong)',
+            color: 'var(--color-fg-default)',
+            border: `1px solid ${bar}`,
+            background: `linear-gradient(to right, ${bar.replace(')', ' / 0.06)')}, transparent)`,
           }}
         >
           <span>원문 보기</span>

@@ -40,6 +40,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           >
             RSS 소스
           </Link>
+          <Link
+            href="/admin/chat"
+            className="hover:text-(--color-fg-strong)"
+            style={{ color: 'var(--color-fg-default)' }}
+          >
+            RAG 챗봇
+          </Link>
         </div>
         <span className="flex-1" />
         <Link

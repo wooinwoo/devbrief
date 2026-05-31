@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { relativeTime } from '@/lib/relative-time';
 import { Highlight } from './highlight';
-import { useChat } from './chat-context';
 
 export interface ArticleDto {
   id: string;
@@ -52,7 +51,6 @@ export function ArticleCard({
 }: Props) {
   const bar = SOURCE_BAR[article.source.provider] ?? SOURCE_BAR.rss_generic;
   const summary = article.summaryOneLine;
-  const chat = useChat();
   const minutes = readingMinutes(article);
 
   const isFeatured = variant === 'featured';
@@ -149,20 +147,6 @@ export function ArticleCard({
               <span className="hover:text-(--color-fg-strong)">#{t}</span>
             </button>
           ))}
-          <span className="flex-1" />
-          <button
-            type="button"
-            onClick={() => chat?.ask(`${article.title} 에 대해 설명해줘`)}
-            className="text-[12px] inline-flex items-center gap-1.5 transition-opacity opacity-70 group-hover:opacity-100"
-            style={{ color: bar, fontWeight: 500 }}
-          >
-            <span
-              aria-hidden
-              className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{ background: bar, boxShadow: `0 0 4px ${bar}` }}
-            />
-            챗봇에 묻기
-          </button>
         </div>
       )}
     </article>
