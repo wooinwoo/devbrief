@@ -5,18 +5,9 @@ import { motion } from 'motion/react';
 import type { ArticleDto } from './article-card';
 import { relativeTime } from '@/lib/relative-time';
 
-const SOURCE_GLOW: Record<string, string> = {
-  geeknews: 'oklch(60% 0.16 160 / 0.12)',
-  hackernews: 'oklch(60% 0.18 45 / 0.12)',
-  devto: 'oklch(60% 0.18 290 / 0.12)',
-  techcrunch: 'oklch(60% 0.21 15 / 0.12)',
-  anthropic: 'oklch(65% 0.17 60 / 0.15)',
-  openai: 'oklch(60% 0.15 220 / 0.12)',
-  producthunt: 'oklch(60% 0.20 340 / 0.12)',
-  rss_generic: 'oklch(60% 0.012 250 / 0.08)',
-};
-
-const SOURCE_BAR: Record<string, string> = {
+// 잭 톤 정돈: source 별 무지개 glow / bar 제거. 모든 Top Story 동일 회색 톤.
+// 소스 구분은 dot 한 개로만 (글 카드와 동일 규약).
+const SOURCE_DOT: Record<string, string> = {
   geeknews: 'oklch(48% 0.16 160)',
   hackernews: 'oklch(55% 0.18 45)',
   devto: 'oklch(48% 0.18 290)',
@@ -24,8 +15,10 @@ const SOURCE_BAR: Record<string, string> = {
   anthropic: 'oklch(55% 0.17 60)',
   openai: 'oklch(50% 0.15 220)',
   producthunt: 'oklch(54% 0.20 340)',
-  rss_generic: 'oklch(45% 0.012 250)',
+  rss_generic: 'oklch(50% 0.012 250)',
 };
+
+const BAR_GRAY = 'oklch(75% 0.008 250)';
 
 interface Props {
   article: ArticleDto;
@@ -34,8 +27,7 @@ interface Props {
 }
 
 export function TopStoryCard({ article, read = false, onOpen }: Props) {
-  const glow = SOURCE_GLOW[article.source.provider] ?? SOURCE_GLOW.rss_generic;
-  const bar = SOURCE_BAR[article.source.provider] ?? SOURCE_BAR.rss_generic;
+  const dot = SOURCE_DOT[article.source.provider] ?? SOURCE_DOT.rss_generic;
 
   return (
     <motion.article
@@ -44,21 +36,10 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
       transition={{ duration: 0.6, ease: [0.2, 0, 0, 1] }}
       className={`relative mb-16 pl-6 ${read ? 'opacity-60' : ''}`}
     >
-      {/* 좌측 source 색 vertical bar */}
       <span
         aria-hidden
-        className="pulse-bar absolute left-0 top-2 bottom-8 w-px"
-        style={{
-          background: `linear-gradient(to bottom, ${bar} 0%, ${bar} 40%, transparent 100%)`,
-          boxShadow: `0 0 12px ${bar}`,
-        }}
-      />
-
-      {/* glow halo */}
-      <div
-        aria-hidden
-        className="absolute -left-8 -top-12 -right-8 h-64 -z-10 rounded-3xl blur-3xl pointer-events-none"
-        style={{ background: glow }}
+        className="absolute left-0 top-2 bottom-8 w-px"
+        style={{ background: BAR_GRAY }}
       />
 
       <p
@@ -76,18 +57,18 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
         <div className={`grid gap-x-10 gap-y-6 ${article.imageUrl ? 'lg:grid-cols-[1.3fr_1fr] items-center' : ''}`}>
           <div>
             <div className="flex items-center gap-2 mb-4 text-[13.5px]">
-              <span style={{ color: bar, fontWeight: 600 }} className="tracking-wide">
+              {!read && (
+                <span
+                  aria-label="안 본 글"
+                  className="inline-block h-1.5 w-1.5 rounded-full"
+                  style={{ background: dot }}
+                />
+              )}
+              <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }} className="tracking-wide">
                 {article.source.name}
               </span>
               <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
               <span style={{ color: 'var(--color-fg-muted)' }}>{relativeTime(article.publishedAt)}</span>
-              {!read && (
-                <span
-                  aria-label="안 본 글"
-                  className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full"
-                  style={{ background: bar }}
-                />
-              )}
             </div>
 
             <h2

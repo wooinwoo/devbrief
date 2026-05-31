@@ -92,7 +92,7 @@ export function UpcomingRow({ conferences }: Props = {}) {
                 rel="noopener noreferrer"
                 className="group block transition-all motion-safe:hover:-translate-y-0.5"
               >
-                {/* 이미지 대신 brand 색 + 큰 D-day 타이포 */}
+                {/* brand 색 박스 + 잡지 매거진 1면 톤 */}
                 <div
                   className="relative aspect-[16/10] overflow-hidden mb-4 flex flex-col justify-between p-5"
                   style={{
@@ -100,30 +100,54 @@ export function UpcomingRow({ conferences }: Props = {}) {
                     background: brand,
                   }}
                 >
-                  <span
-                    className="text-[11px] tracking-[0.25em] uppercase"
-                    style={{ color: 'oklch(99% 0 0 / 0.7)', fontWeight: 500 }}
-                  >
-                    D-{d}
-                  </span>
-                  <div className="flex items-end justify-between">
-                    <span
-                      className="text-[11px] tabular-nums"
-                      style={{ color: 'oklch(99% 0 0 / 0.7)' }}
+                  {/* 좌상단 D-day 라벨 + 날짜 */}
+                  <div>
+                    <div
+                      className="text-[10px] tracking-[0.25em] uppercase mb-1"
+                      style={{ color: 'oklch(99% 0 0 / 0.65)', fontWeight: 500 }}
+                    >
+                      D-{d}
+                    </div>
+                    <div
+                      className="text-[12px] tabular-nums"
+                      style={{ color: 'oklch(99% 0 0 / 0.85)', fontWeight: 500 }}
                     >
                       {formatDate(c.startDate, c.endDate)}
-                    </span>
-                    <span
-                      className="text-[3.5rem] leading-none tabular-nums tracking-[-0.04em]"
-                      style={{
-                        fontWeight: 700,
-                        color: 'oklch(99% 0 0)',
-                      }}
-                    >
-                      {d}
-                    </span>
+                    </div>
                   </div>
+
+                  {/* 우하단 큰 D-day 숫자 */}
+                  <div className="self-end leading-none tabular-nums tracking-[-0.04em]"
+                    style={{
+                      fontSize: '4rem',
+                      fontWeight: 700,
+                      color: 'oklch(99% 0 0)',
+                    }}
+                  >
+                    {d}
+                  </div>
+
+                  {/* 우상단 topic 작게 */}
+                  {c.topics.length > 0 && (
+                    <div className="absolute top-5 right-5 flex flex-wrap justify-end gap-1.5 max-w-[55%]">
+                      {c.topics.slice(0, 2).map((t) => (
+                        <span
+                          key={t}
+                          className="text-[10px] px-1.5 py-0.5 tracking-wide"
+                          style={{
+                            background: 'oklch(99% 0 0 / 0.15)',
+                            color: 'oklch(99% 0 0 / 0.9)',
+                            borderRadius: 2,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
                 <h3
                   className="text-[15px] leading-snug tracking-[-0.005em] transition-colors break-keep"
                   style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}

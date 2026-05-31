@@ -46,17 +46,7 @@ export function HeroStrip({
           >
             오늘은 무엇이
             <br />
-            <span
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--color-accent), oklch(50% 0.18 60))',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              궁금한가요?
-            </span>
+            <span style={{ color: 'var(--color-accent)' }}>궁금한가요?</span>
           </h2>
         </div>
 

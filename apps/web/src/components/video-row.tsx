@@ -69,17 +69,24 @@ export function VideoRow({ videos }: Props = {}) {
               background: hero.brand ?? 'oklch(45% 0.012 245)',
             }}
           >
-            <div className="flex items-center justify-between">
-              <span
-                className="text-[11px] tracking-wide"
-                style={{ color: 'oklch(98% 0 0 / 0.8)', fontWeight: 600 }}
-              >
-                {hero.channel}
-              </span>
-              {/* 재생 표시 — 작게 */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div
+                  className="text-[10px] tracking-[0.25em] uppercase mb-1"
+                  style={{ color: 'oklch(99% 0 0 / 0.65)', fontWeight: 500 }}
+                >
+                  지금 보는 발표
+                </div>
+                <div
+                  className="text-[12.5px] tracking-wide"
+                  style={{ color: 'oklch(99% 0 0 / 0.92)', fontWeight: 600 }}
+                >
+                  {hero.channel}
+                </div>
+              </div>
               <span
                 aria-hidden
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full shrink-0"
                 style={{ background: 'oklch(99% 0 0 / 0.15)' }}
               >
                 <svg width="12" height="14" viewBox="0 0 14 16" fill="none">
@@ -90,12 +97,33 @@ export function VideoRow({ videos }: Props = {}) {
                 </svg>
               </span>
             </div>
+
+            {/* 중간 — topic chip */}
+            {hero.topics.length > 0 && (
+              <div className="absolute top-1/2 left-6 -translate-y-1/2 flex flex-wrap gap-1.5 max-w-[60%]">
+                {hero.topics.slice(0, 3).map((t) => (
+                  <span
+                    key={t}
+                    className="text-[11px] px-2 py-0.5 tracking-wide"
+                    style={{
+                      background: 'oklch(99% 0 0 / 0.12)',
+                      color: 'oklch(99% 0 0 / 0.92)',
+                      borderRadius: 2,
+                      fontWeight: 500,
+                    }}
+                  >
+                    #{t}
+                  </span>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-end justify-between">
               <span
-                className="text-[12px]"
-                style={{ color: 'oklch(98% 0 0 / 0.65)' }}
+                className="text-[11px]"
+                style={{ color: 'oklch(99% 0 0 / 0.6)' }}
               >
-                재생 시간
+                조회수 {formatViews(hero.views)} · {relativeShort(hero.publishedAt)}
               </span>
               <span
                 className="text-[3.25rem] leading-none tabular-nums tracking-[-0.04em]"

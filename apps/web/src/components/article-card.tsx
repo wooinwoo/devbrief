@@ -16,7 +16,9 @@ export interface ArticleDto {
   source: { name: string; provider: string };
 }
 
-const SOURCE_BAR: Record<string, string> = {
+// 소스마다 다른 색을 쓰던 V1 → 잭 톤 정돈: 모든 카드 회색 톤으로 통일,
+// 소스 이름 옆 작은 점(dot)에만 brand 색을 남겨 구분.
+const SOURCE_DOT: Record<string, string> = {
   geeknews: 'oklch(48% 0.16 160)',
   hackernews: 'oklch(55% 0.18 45)',
   devto: 'oklch(48% 0.18 290)',
@@ -24,8 +26,11 @@ const SOURCE_BAR: Record<string, string> = {
   anthropic: 'oklch(55% 0.17 60)',
   openai: 'oklch(50% 0.15 220)',
   producthunt: 'oklch(54% 0.20 340)',
-  rss_generic: 'oklch(45% 0.012 250)',
+  rss_generic: 'oklch(50% 0.012 250)',
 };
+
+// 좌측 vertical bar 는 회색 단색 (모든 카드 동일)
+const BAR_GRAY = 'oklch(75% 0.008 250)';
 
 function readingMinutes(article: { title: string; summaryOneLine: string | null }): number {
   const length = (article.title?.length ?? 0) + (article.summaryOneLine?.length ?? 0) * 8;
@@ -49,7 +54,7 @@ export function ArticleCard({
   query = '',
   variant = 'default',
 }: Props) {
-  const bar = SOURCE_BAR[article.source.provider] ?? SOURCE_BAR.rss_generic;
+  const dot = SOURCE_DOT[article.source.provider] ?? SOURCE_DOT.rss_generic;
   const summary = article.summaryOneLine;
   const minutes = readingMinutes(article);
 
@@ -62,34 +67,18 @@ export function ArticleCard({
       ? 'text-[15.5px] leading-[1.35] tracking-[-0.003em]'
       : 'text-[1.25rem] sm:text-[1.4375rem] leading-[1.3] tracking-[-0.007em]';
 
-  const cardBg = isFeatured
-    ? `linear-gradient(to right, ${bar.replace(')', ' / 0.07)')}, transparent 60%)`
-    : `linear-gradient(to right, ${bar.replace(')', ' / 0.025)')}, transparent 40%)`;
-
   return (
     <article
       className={`group relative pl-5 -ml-5 min-w-0 transition-all duration-300 motion-safe:hover:-translate-y-px
         ${isCompact ? 'pb-5' : 'pb-7'}
         ${read ? 'opacity-55 hover:opacity-90' : ''}
       `}
-      style={{
-        background: cardBg,
-        borderRadius: isFeatured ? 8 : undefined,
-      }}
     >
       <span
         aria-hidden
-        className="absolute left-0 top-1 bottom-5 w-[2px]"
+        className="absolute left-0 top-1 bottom-5 w-px transition-colors"
         style={{
-          background: `linear-gradient(to bottom, ${bar} 0%, ${bar.replace(')', ' / 0.4)')} 70%, transparent 100%)`,
-        }}
-      />
-      <span
-        aria-hidden
-        className="absolute left-0 top-1 bottom-5 w-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{
-          background: bar,
-          boxShadow: `0 0 12px ${bar}, 0 0 4px ${bar}`,
+          background: BAR_GRAY,
         }}
       />
 
@@ -102,11 +91,11 @@ export function ArticleCard({
           {!read && (
             <span
               aria-label="안 본 글"
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ background: bar, boxShadow: `0 0 8px ${bar}` }}
+              className="inline-block h-1.5 w-1.5 rounded-full"
+              style={{ background: dot }}
             />
           )}
-          <span style={{ color: bar, fontWeight: 600 }} className="tracking-wide">
+          <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }} className="tracking-wide">
             {article.source.name}
           </span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
