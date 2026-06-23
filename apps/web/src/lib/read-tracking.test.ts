@@ -75,4 +75,22 @@ describe('readTracking', () => {
     const second = readTracking.toggle('b');
     expect(first).not.toBe(second);
   });
+
+  it('add는 갱신된 Set 을 반환 (toggle 과 일관)', () => {
+    const set = readTracking.add('art-1');
+    expect(set.has('art-1')).toBe(true);
+    // 반환된 Set 변형이 저장소에 새지 않도록 새 인스턴스여야 한다
+    const next = readTracking.add('art-2');
+    expect(next).not.toBe(set);
+    expect(next.has('art-1')).toBe(true);
+    expect(next.has('art-2')).toBe(true);
+  });
+
+  it('remove는 갱신된 Set 을 반환 (toggle 과 일관)', () => {
+    readTracking.add('art-1');
+    readTracking.add('art-2');
+    const set = readTracking.remove('art-1');
+    expect(set.has('art-1')).toBe(false);
+    expect(set.has('art-2')).toBe(true);
+  });
 });

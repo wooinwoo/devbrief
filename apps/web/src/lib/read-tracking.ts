@@ -22,15 +22,17 @@ function persist(set: Set<string>) {
 
 export const readTracking = {
   load,
-  add(id: string) {
+  add(id: string): Set<string> {
     const set = load();
     set.add(id);
     persist(set);
+    return new Set(set);
   },
-  remove(id: string) {
+  remove(id: string): Set<string> {
     const set = load();
     set.delete(id);
     persist(set);
+    return new Set(set);
   },
   toggle(id: string): Set<string> {
     const set = load();
