@@ -1,5 +1,5 @@
 {
-  "name": "@pulse/api",
+  "name": "@devbrief/api",
   "version": "0.0.1",
   "description": "Devbrief backend: 수집 파이프라인 + 챗봇 RAG",
   "author": "",
@@ -29,8 +29,8 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^5.0.1",
-    "@pulse/db": "workspace:*",
-    "@pulse/shared": "workspace:*",
+    "@devbrief/db": "workspace:*",
+    "@devbrief/shared": "workspace:*",
     "axios": "^1.7.9",
     "bullmq": "^5.34.10",
     "cheerio": "^1.2.0",
@@ -77,7 +77,7 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "moduleNameMapper": {
-      "^@pulse/db$": "<rootDir>/../test/__mocks__/pulse-db.ts"
+      "^@devbrief/db$": "<rootDir>/../test/__mocks__/pulse-db.ts"
     },
     "collectCoverageFrom": ["**/*.(t|j)s"],
     "coverageDirectory": "../coverage",

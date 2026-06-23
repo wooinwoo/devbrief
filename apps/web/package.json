@@ -1,5 +1,5 @@
 {
-  "name": "@pulse/web",
+  "name": "@devbrief/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,8 +11,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@pulse/db": "workspace:*",
-    "@pulse/shared": "workspace:*",
+    "@devbrief/db": "workspace:*",
+    "@devbrief/shared": "workspace:*",
     "clsx": "^2.1.1",
     "motion": "^12.40.0",
     "next": "16.2.6",

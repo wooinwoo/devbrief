@@ -17,6 +17,12 @@ importers:
 
   apps/api:
     dependencies:
+      '@devbrief/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@devbrief/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@google/genai':
         specifier: ^2.7.0
         version: 2.7.0
@@ -38,12 +44,6 @@ importers:
       '@nestjs/schedule':
         specifier: ^5.0.1
         version: 5.0.1(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)
-      '@pulse/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@pulse/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       axios:
         specifier: ^1.7.9
         version: 1.16.1
@@ -153,10 +153,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@pulse/db':
+      '@devbrief/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@pulse/shared':
+      '@devbrief/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       clsx:

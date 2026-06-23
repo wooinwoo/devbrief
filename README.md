@@ -113,9 +113,9 @@ flowchart LR
 
 ### 모노레포 구조
 
-`pnpm workspace`로 4개 패키지를 묶습니다. (내부 패키지 스코프는 `@pulse/*`)
+`pnpm workspace`로 4개 패키지를 묶습니다. (내부 패키지 스코프는 `@devbrief/*`)
 
-> 내부 npm 패키지 스코프 `@pulse/*`는 구 코드네임입니다. 서비스명은 Devbrief이며, 스코프 변경은 빌드 영향 범위가 커서 의도적으로 유지합니다.
+> 내부 npm 패키지 스코프는 서비스명에 맞춰 `@devbrief/*`로 통일했습니다. (구 코드네임 `@pulse/*`에서 변경)
 
 - **apps/web** — Next.js 사용자 UI + 어드민 대시보드 (RAG 챗봇은 어드민 화면에 포함)
 - **apps/api** — NestJS 수집 파이프라인, RAG, cron, BullMQ 워커

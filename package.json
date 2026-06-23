@@ -9,9 +9,9 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "typecheck": "pnpm -r run typecheck",
-    "db:generate": "pnpm --filter @pulse/db run generate",
-    "db:migrate": "pnpm --filter @pulse/db run migrate",
-    "db:studio": "pnpm --filter @pulse/db run studio"
+    "db:generate": "pnpm --filter @devbrief/db run generate",
+    "db:migrate": "pnpm --filter @devbrief/db run migrate",
+    "db:studio": "pnpm --filter @devbrief/db run studio"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
