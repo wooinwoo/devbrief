@@ -40,8 +40,19 @@ function mapDbToDto(d: DbArticle): ArticleDto {
 
 type Status = 'idle' | 'loading' | 'error';
 
+/** 배치 조회 API 의 ids 상한 (서버와 동일). 초과 시 청크로 나눠 호출. */
+const BATCH_CHUNK = 100;
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
+  }
+  return out;
+}
+
 /**
- * 북마크 모아보기 — localStorage 의 북마크 id 를 읽어 글 단건 API 로 조회한다.
+ * 북마크 모아보기 — localStorage 의 북마크 id 를 읽어 글 배치 API 로 한 번에 조회한다.
  * 메인 목록과 달리 전체 글 로드에 의존하지 않으므로, 목록에서 사라진 과거 글도
  * 저장돼 있으면 그대로 불러온다. 클라이언트 전용 (localStorage 접근).
  */
@@ -65,20 +76,26 @@ export function BookmarksView() {
 
     setStatus('loading');
     try {
-      const results = await Promise.all(
-        ids.map(async (id) => {
-          const res = await fetch(`${API_BASE}/articles/${id}`, { cache: 'no-store' });
-          if (!res.ok) return { id, article: null as ArticleDto | null };
-          const data = (await res.json()) as DbArticle;
-          return { id, article: mapDbToDto(data) };
+      // 상한(BATCH_CHUNK) 단위로 나눠 배치 엔드포인트를 호출한다.
+      // 단건 N회 → 청크 1회로 줄여 N+1 호출을 피한다.
+      const chunks = chunk(ids, BATCH_CHUNK);
+      const responses = await Promise.all(
+        chunks.map(async (group) => {
+          const qs = group.map(encodeURIComponent).join(',');
+          const res = await fetch(`${API_BASE}/articles/batch?ids=${qs}`, { cache: 'no-store' });
+          if (!res.ok) throw new Error(`batch fetch failed: ${res.status}`);
+          return (await res.json()) as DbArticle[];
         }),
       );
 
-      const found = results
-        .filter((r): r is { id: string; article: ArticleDto } => r.article !== null)
-        .map((r) => r.article)
+      const fetched = responses.flat();
+      const found = fetched
+        .map(mapDbToDto)
         .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-      const missing = results.filter((r) => r.article === null).map((r) => r.id);
+
+      // 조회된 id 집합에 없는 북마크 id 는 "해제만 가능"으로 노출.
+      const foundIds = new Set(fetched.map((d) => d.id));
+      const missing = ids.filter((id) => !foundIds.has(id));
 
       setArticles(found);
       setMissingIds(missing);
