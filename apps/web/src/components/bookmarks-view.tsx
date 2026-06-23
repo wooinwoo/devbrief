@@ -75,34 +75,39 @@ export function BookmarksView() {
     }
 
     setStatus('loading');
-    try {
-      // 상한(BATCH_CHUNK) 단위로 나눠 배치 엔드포인트를 호출한다.
-      // 단건 N회 → 청크 1회로 줄여 N+1 호출을 피한다.
-      const chunks = chunk(ids, BATCH_CHUNK);
-      const responses = await Promise.all(
-        chunks.map(async (group) => {
-          const qs = group.map(encodeURIComponent).join(',');
-          const res = await fetch(`${API_BASE}/articles/batch?ids=${qs}`, { cache: 'no-store' });
-          if (!res.ok) throw new Error(`batch fetch failed: ${res.status}`);
-          return (await res.json()) as DbArticle[];
-        }),
-      );
+    // 상한(BATCH_CHUNK) 단위로 나눠 배치 엔드포인트를 호출한다.
+    // 단건 N회 → 청크 1회로 줄여 N+1 호출을 피한다.
+    // allSettled 로 일부 청크가 실패해도 성공분은 렌더하고, 전부 실패할 때만 에러.
+    const chunks = chunk(ids, BATCH_CHUNK);
+    const settled = await Promise.allSettled(
+      chunks.map(async (group) => {
+        const qs = group.map(encodeURIComponent).join(',');
+        const res = await fetch(`${API_BASE}/articles/batch?ids=${qs}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`batch fetch failed: ${res.status}`);
+        return (await res.json()) as DbArticle[];
+      }),
+    );
 
-      const fetched = responses.flat();
-      const found = fetched
-        .map(mapDbToDto)
-        .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-
-      // 조회된 id 집합에 없는 북마크 id 는 "해제만 가능"으로 노출.
-      const foundIds = new Set(fetched.map((d) => d.id));
-      const missing = ids.filter((id) => !foundIds.has(id));
-
-      setArticles(found);
-      setMissingIds(missing);
-      setStatus('idle');
-    } catch {
+    const anyFulfilled = settled.some((r) => r.status === 'fulfilled');
+    // 청크가 전부 실패하면 부분 데이터가 없으므로 에러 상태로.
+    if (!anyFulfilled) {
       setStatus('error');
+      return;
     }
+
+    const fetched = settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+    const found = fetched
+      .map(mapDbToDto)
+      .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+
+    // 조회된 id 집합에 없는 북마크 id 는 "해제만 가능"으로 노출.
+    // 실패한 청크의 id 도 found 에 없으므로 자연스럽게 missing 으로 처리된다.
+    const foundIds = new Set(fetched.map((d) => d.id));
+    const missing = ids.filter((id) => !foundIds.has(id));
+
+    setArticles(found);
+    setMissingIds(missing);
+    setStatus('idle');
   }, []);
 
   useEffect(() => {

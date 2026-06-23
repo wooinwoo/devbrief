@@ -102,4 +102,39 @@ describe('BookmarksView (배치 조회)', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
+
+  it('일부 청크가 실패해도 성공분은 렌더하고 실패분은 missing 처리', async () => {
+    // 2개 청크 → 첫 청크 성공, 둘째 청크 실패
+    const first = Array.from({ length: 100 }, (_, i) => `ok${i}`);
+    const ids = [...first, 'fail0'];
+    localStorage.setItem(BOOKMARK_KEY, JSON.stringify(ids));
+
+    const fetchMock = vi
+      .fn()
+      // 첫 호출: 성공 (ok0 만 본문 반환)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [dbArticle('ok0', '2026-01-02')],
+      })
+      // 둘째 호출: 네트워크 실패
+      .mockRejectedValueOnce(new Error('network down'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { findByText, findAllByText, getAllByText } = render(<BookmarksView />);
+
+    // 성공한 청크의 글은 렌더된다
+    expect(await findByText('Title ok0')).toBeTruthy();
+    // 실패한 청크의 id 는 missing 으로 노출 (해제 버튼)
+    expect((await findAllByText('더 이상 불러올 수 없는 글이에요.')).length).toBeGreaterThan(0);
+    expect(getAllByText('해제', { selector: 'button' }).length).toBeGreaterThan(0);
+  });
+
+  it('모든 청크가 실패하면 에러 상태', async () => {
+    localStorage.setItem(BOOKMARK_KEY, JSON.stringify(['a']));
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+    const { findByText } = render(<BookmarksView />);
+
+    expect(await findByText(/글을 불러오지 못했어요/)).toBeTruthy();
+  });
 });
