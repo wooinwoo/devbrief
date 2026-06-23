@@ -84,6 +84,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onAdd()}
             placeholder="https://www.youtube.com/watch?v=..."
+            aria-label="YouTube 영상 URL"
             className="flex-1 px-3 py-2 text-[13px] outline-none border rounded focus:border-(--color-accent) transition-colors"
             style={{ borderColor: 'var(--color-line-strong)' }}
           />

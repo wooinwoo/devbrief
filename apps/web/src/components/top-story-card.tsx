@@ -60,11 +60,14 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
           <div>
             <div className="flex items-center gap-2 mb-4 text-[13.5px]">
               {!read && (
-                <span
-                  aria-label="안 본 글"
-                  className="inline-block h-1.5 w-1.5 rounded-full"
-                  style={{ background: dot }}
-                />
+                <>
+                  <span className="sr-only">안 본 글</span>
+                  <span
+                    aria-hidden
+                    className="inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ background: dot }}
+                  />
+                </>
               )}
               <span
                 style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}

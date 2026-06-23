@@ -64,8 +64,11 @@ export default async function AdminLoginPage({ searchParams }: Props) {
             <input
               type="password"
               name="password"
+              autoComplete="current-password"
               placeholder="••••••••"
               required
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'login-error' : undefined}
               className="px-3.5 py-3 text-[14px] rounded-lg border outline-none transition-all focus:ring-2"
               style={{
                 background: 'var(--color-bg-base)',
@@ -77,6 +80,8 @@ export default async function AdminLoginPage({ searchParams }: Props) {
 
           {error && (
             <p
+              id="login-error"
+              role="alert"
               className="flex items-center gap-1.5 text-[12.5px]"
               style={{ color: 'oklch(55% 0.2 25)' }}
             >

@@ -9,7 +9,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     >
       <AdminSidebar />
       <div className="flex-1 min-w-0 lg:ml-64">
-        <main className="px-6 sm:px-10 py-10 max-w-5xl mx-auto">{children}</main>
+        <main id="main-content" className="px-6 sm:px-10 py-10 max-w-5xl mx-auto">
+          {children}
+        </main>
       </div>
     </div>
   );

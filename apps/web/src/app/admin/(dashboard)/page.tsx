@@ -54,12 +54,9 @@ export default async function AdminDashboard() {
         }}
       >
         <div className="flex items-baseline justify-between mb-3">
-          <span
-            className="text-[13px]"
-            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-          >
+          <h2 className="text-[13px]" style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}>
             AI 요약 / 번역 진행
-          </span>
+          </h2>
           <span className="text-[13px] tabular-nums" style={{ color: 'var(--color-fg-muted)' }}>
             <span style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}>{summarized}</span> /{' '}
             {total} · {pct}%

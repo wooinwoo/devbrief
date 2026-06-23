@@ -128,6 +128,7 @@ export function SourcesPanel({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://blog.example.com"
+            aria-label="소스 URL"
             className="flex-1 px-3 py-2 text-[13px] outline-none border rounded"
             style={{ borderColor: 'var(--color-line-strong)' }}
           />

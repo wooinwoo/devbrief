@@ -181,6 +181,7 @@ function SectionHeaderWithMore({
       <button
         type="button"
         onClick={onMore}
+        aria-label={`${label} 더 보기`}
         className="text-[12.5px] transition-colors hover:text-(--color-accent-strong)"
         style={{ color: 'var(--color-accent)', fontWeight: 600 }}
       >

@@ -37,12 +37,12 @@ export function DailyDigest({ digest }: Props) {
         className="flex items-baseline gap-3 mb-4 pb-2 border-b"
         style={{ borderColor: 'var(--color-fg-strong)' }}
       >
-        <span
+        <h2
           className="text-[15px] tracking-[-0.01em]"
           style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
         >
           오늘의 핵심
-        </span>
+        </h2>
         <span className="text-[11.5px] tabular-nums" style={{ color: 'var(--color-fg-subtle)' }}>
           {digest.items.length}
         </span>
