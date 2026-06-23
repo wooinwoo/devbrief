@@ -82,9 +82,13 @@ export function SourcesPanel({
 
   const onToggle = async (id: string) => {
     setBusy(id);
+    setError(null);
     try {
-      await adminFetch(`/sources/${id}/toggle`, { method: 'PATCH' });
+      const res = await adminFetch(`/sources/${id}/toggle`, { method: 'PATCH' });
+      if (!res.ok) throw new Error(`소스 상태 변경 실패 (${res.status})`);
       startTransition(() => router.refresh());
+    } catch (e) {
+      setError((e as Error).message);
     } finally {
       setBusy(null);
     }
@@ -93,9 +97,13 @@ export function SourcesPanel({
   const onDelete = async (id: string) => {
     if (!confirm('정말 삭제하시겠어요?')) return;
     setBusy(id);
+    setError(null);
     try {
-      await adminFetch(`/sources/${id}`, { method: 'DELETE' });
+      const res = await adminFetch(`/sources/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`소스 삭제 실패 (${res.status})`);
       startTransition(() => router.refresh());
+    } catch (e) {
+      setError((e as Error).message);
     } finally {
       setBusy(null);
     }
