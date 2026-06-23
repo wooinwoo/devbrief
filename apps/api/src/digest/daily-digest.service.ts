@@ -48,10 +48,26 @@ export class DailyDigestService {
     private prisma: PrismaService,
   ) {}
 
+  // 다이제스트 날짜 경계는 KST(Asia/Seoul, UTC+9) 기준. 크론이 09:30 KST에 돌 때
+  // 서버가 UTC면 setHours(0,0,0,0)이 전날로 어긋난다. 로컬타임 의존 없이 KST 자정의
+  // UTC 순간을 계산한다. (서울은 DST 없어 +9 고정)
+  private static readonly KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
   private dayStart(date: Date = new Date()): Date {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    return d;
+    const kstMs = date.getTime() + DailyDigestService.KST_OFFSET_MS;
+    const kst = new Date(kstMs);
+    // KST 기준 연/월/일을 UTC getter로 읽어 그 날 00:00 KST의 UTC 순간 도출
+    const kstMidnightUtcMs =
+      Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) -
+      DailyDigestService.KST_OFFSET_MS;
+    return new Date(kstMidnightUtcMs);
+  }
+
+  /** dayStart(=KST 자정의 UTC 순간)를 KST 기준 yyyy-mm-dd 문자열로. */
+  private dayLabel(dayStartUtc: Date): string {
+    return new Date(dayStartUtc.getTime() + DailyDigestService.KST_OFFSET_MS)
+      .toISOString()
+      .slice(0, 10);
   }
 
   /**
@@ -67,7 +83,7 @@ export class DailyDigestService {
       where: { date: today },
     });
     if (existing && !opts.force) {
-      this.logger.debug(`Daily digest already generated for ${today.toISOString().slice(0, 10)}`);
+      this.logger.debug(`Daily digest already generated for ${this.dayLabel(today)}`);
       return existing.items as unknown as DigestPayload;
     }
 
@@ -126,7 +142,7 @@ export class DailyDigestService {
     try {
       parsed = await this.gemini.generateJson<DigestPayload>({
         system: SYSTEM_PROMPT,
-        prompt: `오늘 (${today.toISOString().slice(0, 10)}) 글 ${articles.length}개. 각 줄: id | 제목 | 소스 | 태그.\n\n${listText}\n\n핵심 5개 JSON.`,
+        prompt: `오늘 (${this.dayLabel(today)}) 글 ${articles.length}개. 각 줄: id | 제목 | 소스 | 태그.\n\n${listText}\n\n핵심 5개 JSON.`,
         maxTokens: 8000,
       });
     } catch (e) {
@@ -158,9 +174,7 @@ export class DailyDigestService {
       },
     });
 
-    this.logger.log(
-      `Digest 생성 완료: ${today.toISOString().slice(0, 10)} (${result.items.length} items)`,
-    );
+    this.logger.log(`Digest 생성 완료: ${this.dayLabel(today)} (${result.items.length} items)`);
     return result;
   }
 
@@ -248,9 +262,7 @@ export class DailyDigestService {
         generatedAt: new Date(),
       },
     });
-    this.logger.log(
-      `Digest(휴리스틱) 생성: ${today.toISOString().slice(0, 10)} (${items.length} items)`,
-    );
+    this.logger.log(`Digest(휴리스틱) 생성: ${this.dayLabel(today)} (${items.length} items)`);
     return result;
   }
 
