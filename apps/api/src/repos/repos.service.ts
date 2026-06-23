@@ -57,7 +57,11 @@ export class ReposService {
   async refresh(period: 'daily' | 'weekly') {
     const repos = await this.trending.fetch(period);
     if (!repos.length) {
-      this.logger.warn(`trending ${period}: 0건 파싱 (페이지 구조 변경?)`);
+      // 0건이면 기존 데이터를 보존(갈아끼우지 않음)하되, 영구 파손 감지를 위해 error로 격상.
+      // fetch 실패/페이지 구조 변경 모두 여기로 수렴하므로 가시성이 중요하다.
+      this.logger.error(
+        `trending ${period}: 0건 파싱 — 기존 데이터 보존. 페이지 구조 변경 또는 fetch 실패 의심.`,
+      );
       return { period, synced: 0 };
     }
 

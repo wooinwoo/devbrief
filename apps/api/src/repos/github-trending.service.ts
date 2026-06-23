@@ -46,6 +46,7 @@ export class GithubTrendingService {
     const $ = cheerio.load(html);
     const repos: TrendingRepo[] = [];
 
+    const rowCount = $('article.Box-row').length;
     $('article.Box-row').each((i, el) => {
       const $el = $(el);
       const href = ($el.find('h2 a').attr('href') ?? '').trim();
@@ -83,6 +84,15 @@ export class GithubTrendingService {
         rank: i + 1,
       });
     });
+
+    // 행은 있는데 파싱 결과가 0이면 셀렉터/구조 변경 신호 — error로 격상.
+    if (rowCount > 0 && repos.length === 0) {
+      this.logger.error(
+        `trending 파싱 이상: article.Box-row ${rowCount}개 발견했으나 0건 추출 — 셀렉터 구조 변경 의심.`,
+      );
+    } else if (rowCount === 0) {
+      this.logger.error('trending 파싱: article.Box-row 0개 — 페이지 구조 변경 또는 차단 의심.');
+    }
 
     return repos;
   }
