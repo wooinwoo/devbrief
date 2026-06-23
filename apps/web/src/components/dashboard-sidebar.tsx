@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { formatDuration } from '@/lib/format-duration';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { VideoDto } from '@/lib/mock-videos';
+import Link from 'next/link';
 
 function daysUntil(iso: string): number {
   const target = new Date(iso).getTime();
@@ -20,19 +20,10 @@ interface Props {
   activeTag?: string;
 }
 
-export function DashboardSidebar({
-  conferences,
-  videos,
-  topTags,
-  onTagClick,
-  activeTag,
-}: Props) {
+export function DashboardSidebar({ conferences, videos, topTags, onTagClick, activeTag }: Props) {
   const upcoming = conferences
     .filter((c) => daysUntil(c.startDate) >= 0)
-    .sort(
-      (a, b) =>
-        new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-    )
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
     .slice(0, 4);
 
   return (
@@ -56,9 +47,7 @@ export function DashboardSidebar({
                   onClick={() => onTagClick?.(tag)}
                   className="text-[12.5px] transition-colors"
                   style={{
-                    color: isActive
-                      ? 'var(--color-fg-strong)'
-                      : 'var(--color-fg-muted)',
+                    color: isActive ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
                     fontWeight: isActive ? 700 : 500,
                   }}
                 >
@@ -160,10 +149,7 @@ export function DashboardSidebar({
           <ul className="space-y-2.5">
             {videos.slice(0, 4).map((v) => (
               <li key={v.id}>
-                <Link
-                  href={`/videos/${v.id}`}
-                  className="group flex items-baseline gap-3"
-                >
+                <Link href={`/videos/${v.id}`} className="group flex items-baseline gap-3">
                   <span
                     className="tabular-nums text-[11px] shrink-0 px-1.5 py-px"
                     style={{

@@ -10,17 +10,13 @@ interface NavItem {
   icon: string;
 }
 
-const NAV_MAIN: NavItem[] = [
-  { href: '/admin', label: '대시보드', icon: '◰' },
-];
+const NAV_MAIN: NavItem[] = [{ href: '/admin', label: '대시보드', icon: '◰' }];
 const NAV_CONTENT: NavItem[] = [
   { href: '/admin/conferences', label: '컨퍼런스 후보', icon: '◆' },
   { href: '/admin/videos', label: '발표 영상', icon: '▶' },
   { href: '/admin/sources', label: 'RSS 소스', icon: '⊚' },
 ];
-const NAV_TOOL: NavItem[] = [
-  { href: '/admin/chat', label: 'RAG 챗봇', icon: '✦' },
-];
+const NAV_TOOL: NavItem[] = [{ href: '/admin/chat', label: 'RAG 챗봇', icon: '✦' }];
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -46,9 +42,7 @@ export function AdminSidebar() {
               className="group relative flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors"
               style={{
                 background: active ? 'var(--color-bg-sunken)' : 'transparent',
-                color: active
-                  ? 'var(--color-fg-strong)'
-                  : 'var(--color-fg-muted)',
+                color: active ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
               }}
             >
               {active && (
@@ -62,9 +56,7 @@ export function AdminSidebar() {
                 aria-hidden
                 className="text-[13px] w-4 text-center shrink-0"
                 style={{
-                  color: active
-                    ? 'var(--color-accent)'
-                    : 'var(--color-fg-subtle)',
+                  color: active ? 'var(--color-accent)' : 'var(--color-fg-subtle)',
                 }}
               >
                 {item.icon}

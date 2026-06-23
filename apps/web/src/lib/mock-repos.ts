@@ -40,8 +40,7 @@ export const MOCK_REPOS: RepoDto[] = [
     owner: 'lfnovo',
     name: 'open-notebook',
     url: 'https://github.com/lfnovo/open-notebook',
-    description:
-      'An Open Source implementation of Notebook LM with more flexibility and features',
+    description: 'An Open Source implementation of Notebook LM with more flexibility and features',
     language: 'TypeScript',
     languageColor: '#3178c6',
     stars: 29002,

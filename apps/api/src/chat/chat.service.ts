@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { GeminiService } from '../ai/gemini.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../embedding/embedding.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface RetrievedArticle {
   id: string;

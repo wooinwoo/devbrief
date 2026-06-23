@@ -1,5 +1,5 @@
-import { RssParserService, RssItem } from './rss-parser.service';
 import { OgImageService } from '../common/og-image.service';
+import { RssItem, RssParserService } from './rss-parser.service';
 
 describe('RssParserService', () => {
   let service: RssParserService;
@@ -30,18 +30,14 @@ describe('RssParserService', () => {
       const item: RssItem = {
         enclosure: { url: 'https://example.com/a.jpg', type: 'image/jpeg' },
       };
-      expect(service.extractImageFromItem(item)).toBe(
-        'https://example.com/a.jpg',
-      );
+      expect(service.extractImageFromItem(item)).toBe('https://example.com/a.jpg');
     });
 
     it('enclosure type 미지정 시 enclosure.url 반환', () => {
       const item: RssItem = {
         enclosure: { url: 'https://example.com/a.jpg' },
       };
-      expect(service.extractImageFromItem(item)).toBe(
-        'https://example.com/a.jpg',
-      );
+      expect(service.extractImageFromItem(item)).toBe('https://example.com/a.jpg');
     });
 
     it('enclosure가 audio면 enclosure 무시하고 다음 후보로', () => {
@@ -49,9 +45,7 @@ describe('RssParserService', () => {
         enclosure: { url: 'https://example.com/a.mp3', type: 'audio/mpeg' },
         'media:thumbnail': { $: { url: 'https://example.com/thumb.png' } },
       };
-      expect(service.extractImageFromItem(item)).toBe(
-        'https://example.com/thumb.png',
-      );
+      expect(service.extractImageFromItem(item)).toBe('https://example.com/thumb.png');
     });
 
     it('media:thumbnail 우선', () => {
@@ -59,9 +53,7 @@ describe('RssParserService', () => {
         'media:thumbnail': { $: { url: 'https://example.com/thumb.png' } },
         'media:content': { $: { url: 'https://example.com/content.png' } },
       };
-      expect(service.extractImageFromItem(item)).toBe(
-        'https://example.com/thumb.png',
-      );
+      expect(service.extractImageFromItem(item)).toBe('https://example.com/thumb.png');
     });
 
     it('media:content medium=image 인 경우 url 반환', () => {
@@ -70,9 +62,7 @@ describe('RssParserService', () => {
           $: { url: 'https://example.com/content.png', medium: 'image' },
         },
       };
-      expect(service.extractImageFromItem(item)).toBe(
-        'https://example.com/content.png',
-      );
+      expect(service.extractImageFromItem(item)).toBe('https://example.com/content.png');
     });
 
     it('media:content medium=video 인 경우 무시', () => {
@@ -82,9 +72,7 @@ describe('RssParserService', () => {
         },
         'content:encoded': '<p>본문</p><img src="https://example.com/in.jpg" />',
       };
-      expect(service.extractImageFromItem(item)).toBe(
-        'https://example.com/in.jpg',
-      );
+      expect(service.extractImageFromItem(item)).toBe('https://example.com/in.jpg');
     });
 
     it('content:encoded 안 첫 <img src> 추출', () => {
@@ -92,18 +80,14 @@ describe('RssParserService', () => {
         'content:encoded':
           '<p>안녕</p><img src="https://example.com/first.png"><img src="https://example.com/second.png">',
       };
-      expect(service.extractImageFromItem(item)).toBe(
-        'https://example.com/first.png',
-      );
+      expect(service.extractImageFromItem(item)).toBe('https://example.com/first.png');
     });
 
     it('description 안 <img> 도 처리', () => {
       const item: RssItem = {
         description: '<img src="https://example.com/d.jpg" />',
       };
-      expect(service.extractImageFromItem(item)).toBe(
-        'https://example.com/d.jpg',
-      );
+      expect(service.extractImageFromItem(item)).toBe('https://example.com/d.jpg');
     });
 
     it('이미지 후보 전무하면 null', () => {
@@ -118,17 +102,13 @@ describe('RssParserService', () => {
       const item: RssItem = {
         'content:encoded': "<img src='https://example.com/s.png' />",
       };
-      expect(service.extractImageFromItem(item)).toBe(
-        'https://example.com/s.png',
-      );
+      expect(service.extractImageFromItem(item)).toBe('https://example.com/s.png');
     });
   });
 
   describe('absolutize (private이지만 resolveImageUrl을 통해 검증)', () => {
     it('//example.com/x.png → https:// 붙임', async () => {
-      jest
-        .spyOn(service, 'extractImageFromItem')
-        .mockReturnValue('//cdn.example.com/x.png');
+      jest.spyOn(service, 'extractImageFromItem').mockReturnValue('//cdn.example.com/x.png');
       const result = await service.resolveImageUrl({
         link: 'https://blog.com/post',
       } as RssItem);
@@ -136,9 +116,7 @@ describe('RssParserService', () => {
     });
 
     it('절대 경로 /path/x.png → host 합성', async () => {
-      jest
-        .spyOn(service, 'extractImageFromItem')
-        .mockReturnValue('/uploads/x.png');
+      jest.spyOn(service, 'extractImageFromItem').mockReturnValue('/uploads/x.png');
       const result = await service.resolveImageUrl({
         link: 'https://blog.com/article/1',
       } as RssItem);
@@ -146,9 +124,7 @@ describe('RssParserService', () => {
     });
 
     it('이미 절대 URL은 그대로', async () => {
-      jest
-        .spyOn(service, 'extractImageFromItem')
-        .mockReturnValue('https://cdn.com/a.png');
+      jest.spyOn(service, 'extractImageFromItem').mockReturnValue('https://cdn.com/a.png');
       const result = await service.resolveImageUrl({
         link: 'https://blog.com/x',
       } as RssItem);
@@ -158,9 +134,7 @@ describe('RssParserService', () => {
 
   describe('resolveImageUrl', () => {
     it('RSS에서 잡히면 OgImageService.fetch 호출 안 함', async () => {
-      jest
-        .spyOn(service, 'extractImageFromItem')
-        .mockReturnValue('https://rss-img.com/a.png');
+      jest.spyOn(service, 'extractImageFromItem').mockReturnValue('https://rss-img.com/a.png');
       const result = await service.resolveImageUrl({
         link: 'https://blog.com/x',
       } as RssItem);

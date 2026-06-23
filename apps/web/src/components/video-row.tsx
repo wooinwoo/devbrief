@@ -1,9 +1,9 @@
 'use client';
 
-import { motion } from 'motion/react';
-import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
 import { formatDuration } from '@/lib/format-duration';
 import { formatViews } from '@/lib/format-views';
+import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
+import { motion } from 'motion/react';
 
 function relativeShort(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -31,7 +31,10 @@ export function VideoRow({ videos }: Props = {}) {
       transition={{ duration: 0.4, ease: [0.2, 0, 0, 1], delay: 0.08 }}
       className="mb-20"
     >
-      <div className="flex items-end justify-between mb-7 pb-4 border-b" style={{ borderColor: 'var(--color-line)' }}>
+      <div
+        className="flex items-end justify-between mb-7 pb-4 border-b"
+        style={{ borderColor: 'var(--color-line)' }}
+      >
         <div>
           <h2
             className="text-[1.5rem] sm:text-[2.125rem] leading-none tracking-[-0.025em] break-keep"
@@ -41,9 +44,7 @@ export function VideoRow({ videos }: Props = {}) {
           </h2>
           <p className="mt-2 text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
             이번 주 컨퍼런스 영상{' '}
-            <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}>
-              {list.length}
-            </span>
+            <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}>{list.length}</span>
             개를 모아놨어요.
           </p>
         </div>
@@ -51,12 +52,7 @@ export function VideoRow({ videos }: Props = {}) {
 
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         {/* 좌: 메인 (큰 영상) — 이미지 X, brand 색 + 큰 duration */}
-        <a
-          href={hero.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group block"
-        >
+        <a href={hero.url} target="_blank" rel="noopener noreferrer" className="group block">
           <div
             className="relative aspect-[16/10] overflow-hidden mb-4 flex flex-col justify-between p-6"
             style={{
@@ -84,11 +80,8 @@ export function VideoRow({ videos }: Props = {}) {
                 className="inline-flex items-center justify-center w-9 h-9 rounded-full shrink-0"
                 style={{ background: 'oklch(99% 0 0 / 0.15)' }}
               >
-                <svg width="12" height="14" viewBox="0 0 14 16" fill="none">
-                  <path
-                    d="M2 1.5L12 8L2 14.5V1.5Z"
-                    fill="oklch(99% 0 0 / 0.9)"
-                  />
+                <svg width="12" height="14" viewBox="0 0 14 16" fill="none" aria-hidden="true">
+                  <path d="M2 1.5L12 8L2 14.5V1.5Z" fill="oklch(99% 0 0 / 0.9)" />
                 </svg>
               </span>
             </div>
@@ -114,10 +107,7 @@ export function VideoRow({ videos }: Props = {}) {
             )}
 
             <div className="flex items-end justify-between">
-              <span
-                className="text-[11px]"
-                style={{ color: 'oklch(99% 0 0 / 0.6)' }}
-              >
+              <span className="text-[11px]" style={{ color: 'oklch(99% 0 0 / 0.6)' }}>
                 조회수 {formatViews(hero.views)} · {relativeShort(hero.publishedAt)}
               </span>
               <span
@@ -138,9 +128,7 @@ export function VideoRow({ videos }: Props = {}) {
             {hero.title}
           </h3>
           <div className="mt-3 flex items-center gap-2 text-[12.5px]">
-            <span style={{ color: 'var(--color-fg-muted)' }}>
-              조회수 {formatViews(hero.views)}
-            </span>
+            <span style={{ color: 'var(--color-fg-muted)' }}>조회수 {formatViews(hero.views)}</span>
             <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
             <span style={{ color: 'var(--color-fg-muted)' }}>
               {relativeShort(hero.publishedAt)}

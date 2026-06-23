@@ -1,8 +1,8 @@
-import { Controller, Post, Query } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
+import { Controller, Post, Query } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { IngestionService } from './ingestion.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { IngestionService } from './ingestion.service';
 
 @Controller('ingestion')
 export class IngestionController {
@@ -31,18 +31,13 @@ export class IngestionController {
    * onlyMissing=1 이면 summaryOneLine 비어 있는 글만 (기본).
    */
   @Post('reanalyze')
-  async reanalyze(
-    @Query('onlyMissing') onlyMissing?: string,
-    @Query('limit') limitStr?: string,
-  ) {
+  async reanalyze(@Query('onlyMissing') onlyMissing?: string, @Query('limit') limitStr?: string) {
     const all = onlyMissing === '0';
     const limit = Math.min(Number(limitStr) || 500, 2000);
 
     const articles = await this.prisma.article.findMany({
       // 기본: 한 줄 또는 세 줄 요약이 빠진 글 (무료 추출요약으로 백필)
-      where: all
-        ? {}
-        : { OR: [{ summaryOneLine: null }, { summaryThreeLine: null }] },
+      where: all ? {} : { OR: [{ summaryOneLine: null }, { summaryThreeLine: null }] },
       orderBy: { publishedAt: 'desc' },
       take: limit,
       select: { id: true, title: true, contentSnippet: true },

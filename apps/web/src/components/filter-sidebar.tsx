@@ -35,8 +35,7 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
   // 모바일에선 접힌 상태가 기본 — 필터가 본문을 한참 밀어내지 않게.
   const [mobileOpen, setMobileOpen] = useState(false);
   const activeCount =
-    groups.filter((g) => g.active !== null).length +
-    (search && search.value.trim() ? 1 : 0);
+    groups.filter((g) => g.active !== null).length + (search?.value.trim() ? 1 : 0);
 
   return (
     <aside className="lg:w-[210px] lg:shrink-0">
@@ -73,7 +72,7 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
           height="12"
           viewBox="0 0 12 12"
           fill="none"
-          aria-hidden
+          aria-hidden="true"
           className="transition-transform"
           style={{ transform: mobileOpen ? 'rotate(180deg)' : undefined }}
         >
@@ -110,42 +109,40 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
         {groups
           .filter((g) => g.options.length > 0)
           .map((g) => (
-          <div key={g.key}>
-            {/* 그룹 헤더: 라벨(위계 1순위) + 필터 적용 시에만 해제 링크 */}
-            <div className="flex items-center justify-between gap-2 mb-2 px-1">
-              <span
-                className="text-[12.5px] tracking-[-0.005em]"
-                style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-              >
-                {g.label}
-              </span>
-              {g.active !== null && (
-                <button
-                  type="button"
-                  onClick={() => g.onSelect(null)}
-                  className="shrink-0 text-[11px] hover:underline underline-offset-2"
-                  style={{ color: 'var(--color-accent)', fontWeight: 600 }}
+            <div key={g.key}>
+              {/* 그룹 헤더: 라벨(위계 1순위) + 필터 적용 시에만 해제 링크 */}
+              <div className="flex items-center justify-between gap-2 mb-2 px-1">
+                <span
+                  className="text-[12.5px] tracking-[-0.005em]"
+                  style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
                 >
-                  전체 보기
-                </button>
-              )}
+                  {g.label}
+                </span>
+                {g.active !== null && (
+                  <button
+                    type="button"
+                    onClick={() => g.onSelect(null)}
+                    className="shrink-0 text-[11px] hover:underline underline-offset-2"
+                    style={{ color: 'var(--color-accent)', fontWeight: 600 }}
+                  >
+                    전체 보기
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap lg:flex-col gap-1">
+                {g.options.map((opt) => (
+                  <FilterButton
+                    key={opt.value}
+                    active={g.active === opt.value}
+                    onClick={() => g.onSelect(g.active === opt.value ? null : opt.value)}
+                    label={opt.label}
+                    count={opt.count}
+                    color={opt.color}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap lg:flex-col gap-1">
-              {g.options.map((opt) => (
-                <FilterButton
-                  key={opt.value}
-                  active={g.active === opt.value}
-                  onClick={() =>
-                    g.onSelect(g.active === opt.value ? null : opt.value)
-                  }
-                  label={opt.label}
-                  count={opt.count}
-                  color={opt.color}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
+          ))}
 
         {extra && <div>{extra}</div>}
         {footer}

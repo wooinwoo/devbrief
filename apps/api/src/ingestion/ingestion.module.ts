@@ -1,12 +1,12 @@
-import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
-import { IngestionService } from './ingestion.service';
-import { IngestionController } from './ingestion.controller';
-import { IngestionProcessor } from './ingestion.processor';
-import { IngestionCron } from './ingestion.cron';
-import { SourceSeederService } from './source-seeder.service';
-import { RssParserService } from './rss-parser.service';
+import { Module } from '@nestjs/common';
 import { CommonModule } from '../common/common.module';
+import { IngestionController } from './ingestion.controller';
+import { IngestionCron } from './ingestion.cron';
+import { IngestionProcessor } from './ingestion.processor';
+import { IngestionService } from './ingestion.service';
+import { RssParserService } from './rss-parser.service';
+import { SourceSeederService } from './source-seeder.service';
 
 @Module({
   imports: [

@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
-import { ConferenceDiscoveryService } from './conference-discovery.service';
 import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConferenceDiscoveryService } from './conference-discovery.service';
 
 describe('ConferenceDiscoveryService', () => {
   let service: ConferenceDiscoveryService;

@@ -20,10 +20,7 @@ describe('ArticleFetchService.fetchBody', () => {
   });
 
   it('보일러플레이트(nav/script)는 제거하고 본문만 남긴다', async () => {
-    const body =
-      '<nav>메뉴 메뉴 메뉴 메뉴 메뉴 메뉴 메뉴 메뉴</nav>' +
-      `<article><p>${'본문내용'.repeat(15)}</p></article>` +
-      '<script>alert(1)</script>';
+    const body = `<nav>메뉴 메뉴 메뉴 메뉴 메뉴 메뉴 메뉴 메뉴</nav><article><p>${'본문내용'.repeat(15)}</p></article><script>alert(1)</script>`;
     mockGet.mockResolvedValue(page(body));
     const out = await svc.fetchBody('https://x.com/a');
     expect(out).not.toContain('메뉴');

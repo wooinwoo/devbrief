@@ -1,21 +1,21 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ArticleRow } from '../article-row';
-import { SectionHeader } from '../section-header';
-import { FilterSidebar, type FilterGroup } from '../filter-sidebar';
-import { Pagination } from '../pagination';
-import { BenchmarkDashboard } from '../benchmark-dashboard';
-import type { ArticleDto } from '../article-card';
 import {
+  AI_HARNESSES,
+  AI_MODELS,
+  AI_THEMES,
+  harnessesOf,
   isAiArticle,
   modelsOf,
-  harnessesOf,
   themesOf,
-  AI_MODELS,
-  AI_HARNESSES,
-  AI_THEMES,
 } from '@/lib/ai-topics';
+import { useEffect, useMemo, useState } from 'react';
+import type { ArticleDto } from '../article-card';
+import { ArticleRow } from '../article-row';
+import { BenchmarkDashboard } from '../benchmark-dashboard';
+import { type FilterGroup, FilterSidebar } from '../filter-sidebar';
+import { Pagination } from '../pagination';
+import { SectionHeader } from '../section-header';
 
 function AiSectionHeader({
   color,
@@ -61,13 +61,7 @@ interface Props {
   onBookmark?: (id: string) => void;
 }
 
-export function AiTab({
-  articles,
-  readSet,
-  bookmarkSet,
-  onOpen,
-  onBookmark,
-}: Props) {
+export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Props) {
   const aiArticles = useMemo(() => articles.filter(isAiArticle), [articles]);
   const [model, setModel] = useState<string | null>(null);
   const [harness, setHarness] = useState<string | null>(null);
@@ -80,8 +74,7 @@ export function AiTab({
         value: m.key,
         label: m.label,
         color: m.color,
-        count: aiArticles.filter((a) => modelsOf(a).some((x) => x.key === m.key))
-          .length,
+        count: aiArticles.filter((a) => modelsOf(a).some((x) => x.key === m.key)).length,
       })).filter((o) => o.count > 0),
     [aiArticles],
   );
@@ -92,9 +85,7 @@ export function AiTab({
         value: h.key,
         label: h.label,
         color: h.color,
-        count: aiArticles.filter((a) =>
-          harnessesOf(a).some((x) => x.key === h.key),
-        ).length,
+        count: aiArticles.filter((a) => harnessesOf(a).some((x) => x.key === h.key)).length,
       })).filter((o) => o.count > 0),
     [aiArticles],
   );
@@ -105,8 +96,7 @@ export function AiTab({
         value: t.key,
         label: t.label,
         color: t.color,
-        count: aiArticles.filter((a) => themesOf(a).some((x) => x.key === t.key))
-          .length,
+        count: aiArticles.filter((a) => themesOf(a).some((x) => x.key === t.key)).length,
       })).filter((o) => o.count > 0),
     [aiArticles],
   );
@@ -115,8 +105,7 @@ export function AiTab({
     const q = query.trim().toLowerCase();
     return aiArticles.filter((a) => {
       if (model && !modelsOf(a).some((x) => x.key === model)) return false;
-      if (harness && !harnessesOf(a).some((x) => x.key === harness))
-        return false;
+      if (harness && !harnessesOf(a).some((x) => x.key === harness)) return false;
       if (theme && !themesOf(a).some((x) => x.key === theme)) return false;
       if (q) {
         const hay =
@@ -164,8 +153,7 @@ export function AiTab({
   const pageSlice = filtered.slice(start, start + PER_PAGE);
   const goPage = (p: number) => {
     setPage(p);
-    if (typeof window !== 'undefined')
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const groups: FilterGroup[] = [
@@ -201,17 +189,11 @@ export function AiTab({
 
       <div className="flex-1 min-w-0">
         {aiArticles.length === 0 ? (
-          <p
-            className="py-12 text-center text-[13px]"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
+          <p className="py-12 text-center text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
             아직 모인 AI 소식이 없어요. AI 전문 소스 수집이 돌면 채워집니다.
           </p>
         ) : filtered.length === 0 ? (
-          <p
-            className="py-12 text-center text-[13px]"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
+          <p className="py-12 text-center text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
             조건에 맞는 AI 소식이 없어요.
           </p>
         ) : isFiltering ? (
@@ -231,11 +213,7 @@ export function AiTab({
                 />
               ))}
             </ul>
-            <Pagination
-              page={safePage}
-              totalPages={totalPages}
-              onChange={goPage}
-            />
+            <Pagination page={safePage} totalPages={totalPages} onChange={goPage} />
           </>
         ) : (
           <div className="flex flex-col gap-12">

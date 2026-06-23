@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
-import { motion } from 'motion/react';
-import type { ArticleDto } from './article-card';
 import { relativeTime } from '@/lib/relative-time';
+import { motion } from 'motion/react';
+import Link from 'next/link';
+import type { ArticleDto } from './article-card';
 
 // 잭 톤 정돈: source 별 무지개 glow / bar 제거. 모든 Top Story 동일 회색 톤.
 // 소스 구분은 dot 한 개로만 (글 카드와 동일 규약).
@@ -54,7 +54,9 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
         onClick={onOpen}
         className="block group focus-visible:outline-none"
       >
-        <div className={`grid gap-x-10 gap-y-6 ${article.imageUrl ? 'lg:grid-cols-[1.3fr_1fr] items-center' : ''}`}>
+        <div
+          className={`grid gap-x-10 gap-y-6 ${article.imageUrl ? 'lg:grid-cols-[1.3fr_1fr] items-center' : ''}`}
+        >
           <div>
             <div className="flex items-center gap-2 mb-4 text-[13.5px]">
               {!read && (
@@ -64,11 +66,16 @@ export function TopStoryCard({ article, read = false, onOpen }: Props) {
                   style={{ background: dot }}
                 />
               )}
-              <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }} className="tracking-wide">
+              <span
+                style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}
+                className="tracking-wide"
+              >
                 {article.source.name}
               </span>
               <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-              <span style={{ color: 'var(--color-fg-muted)' }}>{relativeTime(article.publishedAt)}</span>
+              <span style={{ color: 'var(--color-fg-muted)' }}>
+                {relativeTime(article.publishedAt)}
+              </span>
             </div>
 
             <h2

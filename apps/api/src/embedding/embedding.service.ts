@@ -24,11 +24,7 @@ export class EmbeddingService {
     return this.gemini.embed(text, 'RETRIEVAL_QUERY');
   }
 
-  async storeArticleEmbedding(
-    articleId: string,
-    title: string,
-    snippet: string,
-  ): Promise<void> {
+  async storeArticleEmbedding(articleId: string, title: string, snippet: string): Promise<void> {
     if (!this.gemini.isAvailable()) {
       this.logger.debug(`[${articleId}] embed skip (Gemini 미설정)`);
       return;
@@ -40,9 +36,7 @@ export class EmbeddingService {
       const content = `${title}\n\n${snippet}`.slice(0, 8000);
       vector = await this.embedDocument(content);
     } catch (e) {
-      this.logger.debug(
-        `[${articleId}] embed skip (실패): ${(e as Error).message.slice(0, 80)}`,
-      );
+      this.logger.debug(`[${articleId}] embed skip (실패): ${(e as Error).message.slice(0, 80)}`);
       return;
     }
     const literal = `[${vector.join(',')}]`;

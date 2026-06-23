@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { ADMIN_COOKIE, verifyToken } from '@/lib/admin-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 // /admin/* 전체 보호 (로그인 페이지 제외).
 export async function middleware(req: NextRequest) {

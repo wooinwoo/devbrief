@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import Parser from 'rss-parser';
-import { PrismaService } from '../prisma/prisma.service';
 import { OgImageService } from '../common/og-image.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface DiscoveredFeed {
   feedUrl: string;
@@ -125,8 +125,11 @@ export class RssDiscoveryService {
       if (!rel.toLowerCase().includes('alternate')) continue;
 
       const t = type.toLowerCase();
-      const feedType: 'rss' | 'atom' | null =
-        t.includes('rss') ? 'rss' : t.includes('atom') ? 'atom' : null;
+      const feedType: 'rss' | 'atom' | null = t.includes('rss')
+        ? 'rss'
+        : t.includes('atom')
+          ? 'atom'
+          : null;
       if (!feedType) continue;
 
       found.push({
@@ -154,9 +157,7 @@ export class RssDiscoveryService {
   }
 
   /** 후보 URL이 실제 피드인지 검증해서 valid만 반환. */
-  private async validateFeeds(
-    candidates: DiscoveredFeed[],
-  ): Promise<DiscoveredFeed[]> {
+  private async validateFeeds(candidates: DiscoveredFeed[]): Promise<DiscoveredFeed[]> {
     const valid: DiscoveredFeed[] = [];
     for (const c of candidates) {
       const real = await this.tryParseFeed(c.feedUrl);

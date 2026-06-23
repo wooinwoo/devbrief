@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
-import { EmbeddingService } from './embedding.service';
 import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmbeddingService } from './embedding.service';
 
 describe('EmbeddingService', () => {
   let service: EmbeddingService;

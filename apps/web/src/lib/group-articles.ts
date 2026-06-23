@@ -19,11 +19,11 @@ export function groupByTime(articles: ArticleDto[]): ArticleGroup[] {
 
   for (const a of articles) {
     const diff = now - new Date(a.publishedAt).getTime();
-    if (diff < HOUR * 3) buckets['방금'].push(a);
-    else if (diff < HOUR * 24) buckets['오늘'].push(a);
-    else if (diff < HOUR * 48) buckets['어제'].push(a);
+    if (diff < HOUR * 3) buckets.방금.push(a);
+    else if (diff < HOUR * 24) buckets.오늘.push(a);
+    else if (diff < HOUR * 48) buckets.어제.push(a);
     else if (diff < HOUR * 24 * 7) buckets['이번 주'].push(a);
-    else buckets['그 외']!.push(a);
+    else buckets['그 외']?.push(a);
   }
 
   return Object.entries(buckets)
@@ -31,7 +31,10 @@ export function groupByTime(articles: ArticleDto[]): ArticleGroup[] {
     .map(([label, list]) => ({ label, articles: list }));
 }
 
-export function extractTopTags(articles: ArticleDto[], limit = 8): Array<{ tag: string; count: number }> {
+export function extractTopTags(
+  articles: ArticleDto[],
+  limit = 8,
+): Array<{ tag: string; count: number }> {
   const map = new Map<string, number>();
   for (const a of articles) {
     for (const t of a.tags) {

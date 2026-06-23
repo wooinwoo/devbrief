@@ -37,9 +37,7 @@ export class YouTubeSyncService {
   ) {
     this.apiKey = config.get<string>('YOUTUBE_API_KEY') ?? '';
     if (!this.apiKey) {
-      this.logger.warn(
-        'YOUTUBE_API_KEY 미설정. /videos는 manual seed에만 의존.',
-      );
+      this.logger.warn('YOUTUBE_API_KEY 미설정. /videos는 manual seed에만 의존.');
     }
   }
 
@@ -68,11 +66,7 @@ export class YouTubeSyncService {
     return { synced: total };
   }
 
-  async syncChannel(
-    conferenceId: string,
-    channelId: string,
-    maxResults: number,
-  ): Promise<number> {
+  async syncChannel(conferenceId: string, channelId: string, maxResults: number): Promise<number> {
     // 1) search.list — 채널 최근 영상 videoId 추출
     const searchRes = await axios.get<{ items: YtSearchItem[] }>(
       'https://www.googleapis.com/youtube/v3/search',
@@ -129,14 +123,12 @@ export class YouTubeSyncService {
           durationSec: parseIsoDuration(detail.contentDetails.duration),
           views: Number(detail.statistics?.viewCount ?? 0),
           publishedAt: new Date(it.snippet.publishedAt),
-          description:
-            detail.snippet?.description ?? it.snippet.description ?? null,
+          description: detail.snippet?.description ?? it.snippet.description ?? null,
           conferenceId,
         },
         update: {
           title: it.snippet.title,
-          description:
-            detail.snippet?.description ?? it.snippet.description ?? null,
+          description: detail.snippet?.description ?? it.snippet.description ?? null,
           thumbnailUrl: thumb,
           views: Number(detail.statistics?.viewCount ?? 0),
         },

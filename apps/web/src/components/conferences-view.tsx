@@ -1,7 +1,7 @@
 'use client';
 
-import { motion } from 'motion/react';
 import type { ConferenceDto } from '@/lib/mock-conferences';
+import { motion } from 'motion/react';
 
 interface Props {
   conferences: ConferenceDto[];
@@ -15,8 +15,7 @@ function daysUntil(iso: string): number {
 }
 
 function formatDate(iso: string, end?: string | null): string {
-  const fmt = (d: Date) =>
-    d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+  const fmt = (d: Date) => d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   const s = new Date(iso);
   if (!end || end === iso) return fmt(s);
   return `${fmt(s)} ~ ${fmt(new Date(end))}`;
@@ -202,9 +201,7 @@ function HeroConference({
       )}
 
       {c.topics.length > 0 && (
-        <div
-          className={`mt-5 flex flex-wrap gap-x-3 gap-y-1.5 ${isLeft ? '' : 'lg:justify-end'}`}
-        >
+        <div className={`mt-5 flex flex-wrap gap-x-3 gap-y-1.5 ${isLeft ? '' : 'lg:justify-end'}`}>
           {c.topics.slice(0, 5).map((t) => (
             <span key={t} className="text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
               #{t}
@@ -260,10 +257,7 @@ function HeroConference({
             {isOngoing ? '·' : d}
           </p>
           {!isOngoing && (
-            <p
-              className="text-[13px] mt-2"
-              style={{ color: 'oklch(96% 0 0 / 0.92)' }}
-            >
+            <p className="text-[13px] mt-2" style={{ color: 'oklch(96% 0 0 / 0.92)' }}>
               일 남음
             </p>
           )}
@@ -422,11 +416,7 @@ function MidCard({ c, index }: { c: ConferenceDto; index: number }) {
           {c.topics.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-x-2.5 gap-y-1">
               {c.topics.slice(0, 4).map((t) => (
-                <span
-                  key={t}
-                  className="text-[11px]"
-                  style={{ color: 'var(--color-fg-subtle)' }}
-                >
+                <span key={t} className="text-[11px]" style={{ color: 'var(--color-fg-subtle)' }}>
                   #{t}
                 </span>
               ))}
@@ -485,17 +475,17 @@ function TailRow({ c, index }: { c: ConferenceDto; index: number }) {
             <>
               <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
               <span style={{ color: 'var(--color-fg-subtle)' }}>
-                {c.topics.slice(0, 3).map((t) => `#${t}`).join(' ')}
+                {c.topics
+                  .slice(0, 3)
+                  .map((t) => `#${t}`)
+                  .join(' ')}
               </span>
             </>
           )}
         </div>
       </div>
 
-      <span
-        className="text-[12px] transition-colors"
-        style={{ color: 'var(--color-fg-subtle)' }}
-      >
+      <span className="text-[12px] transition-colors" style={{ color: 'var(--color-fg-subtle)' }}>
         <span className="group-hover:text-(--color-fg-default)">바로가기 →</span>
       </span>
     </motion.a>

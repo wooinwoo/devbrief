@@ -1,10 +1,10 @@
 'use client';
 
+import { daysUntil } from '@/lib/date-utils';
+import type { ConferenceDto } from '@/lib/mock-conferences';
 import { useMemo, useState } from 'react';
 import { ConferenceCard } from '../conference-card';
-import { FilterSidebar, type FilterGroup } from '../filter-sidebar';
-import type { ConferenceDto } from '@/lib/mock-conferences';
-import { daysUntil } from '@/lib/date-utils';
+import { type FilterGroup, FilterSidebar } from '../filter-sidebar';
 
 type Period = 'soon' | 'month1' | 'month2' | 'later';
 
@@ -40,8 +40,7 @@ export function ConferencesTab({
   // 토픽 집계
   const topicOptions = useMemo(() => {
     const map = new Map<string, number>();
-    for (const c of upcoming)
-      for (const t of c.topics) map.set(t, (map.get(t) ?? 0) + 1);
+    for (const c of upcoming) for (const t of c.topics) map.set(t, (map.get(t) ?? 0) + 1);
     return [...map.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([value, count]) => ({ value, label: value, count }));

@@ -1,6 +1,6 @@
+import { GoogleGenAI } from '@google/genai';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenAI } from '@google/genai';
 
 /**
  * Gemini 2.5 Flash + text-embedding-004 를 한 곳에서.
@@ -68,7 +68,7 @@ export class GeminiService {
       // 혹시 코드블록(```json ... ```) 으로 감싸져 왔을 때 추출 fallback
       const m = trimmed.match(/\{[\s\S]*\}/);
       if (!m) {
-        throw new Error('Gemini 응답에 JSON 없음: ' + trimmed.slice(0, 200));
+        throw new Error(`Gemini 응답에 JSON 없음: ${trimmed.slice(0, 200)}`);
       }
       return JSON.parse(m[0]) as T;
     }
@@ -96,7 +96,10 @@ export class GeminiService {
   }
 
   /** text-embedding-004 (768 차원). */
-  async embed(text: string, taskType?: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY'): Promise<number[]> {
+  async embed(
+    text: string,
+    taskType?: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY',
+  ): Promise<number[]> {
     const res = await this.ensure().models.embedContent({
       model: 'text-embedding-004',
       contents: text,

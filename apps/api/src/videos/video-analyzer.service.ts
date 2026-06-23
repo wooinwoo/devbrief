@@ -1,6 +1,6 @@
+import { GoogleGenAI } from '@google/genai';
 import { Injectable, Logger } from '@nestjs/common';
 import { Innertube } from 'youtubei.js';
-import { GoogleGenAI } from '@google/genai';
 import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -99,11 +99,10 @@ export class VideoAnalyzerService {
     const durationSec = basic.duration ?? 0;
     const views = basic.view_count ?? 0;
     const thumb =
-      basic.thumbnail?.[0]?.url ??
-      `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
+      basic.thumbnail?.[0]?.url ?? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
     const description =
-      (info as unknown as { basic_info: { short_description?: string } })
-        .basic_info.short_description ?? null;
+      (info as unknown as { basic_info: { short_description?: string } }).basic_info
+        .short_description ?? null;
 
     const video = await this.prisma.video.upsert({
       where: { videoId },
@@ -148,8 +147,7 @@ export class VideoAnalyzerService {
     if (video.analyzedAt && !opts.force) {
       return {
         chapters: (video.chapters as unknown as Chapter[]) ?? [],
-        chapterSource:
-          (video.chapterSource as ChapterSource | null) ?? null,
+        chapterSource: (video.chapterSource as ChapterSource | null) ?? null,
         summary: video.summary,
         skipped: true,
       };
@@ -249,9 +247,7 @@ export class VideoAnalyzerService {
       if (!res.ok) return null;
       const xml = await res.text();
 
-      const matches = [
-        ...xml.matchAll(/<text start="([\d.]+)"[^>]*>([\s\S]*?)<\/text>/g),
-      ];
+      const matches = [...xml.matchAll(/<text start="([\d.]+)"[^>]*>([\s\S]*?)<\/text>/g)];
       if (!matches.length) return null;
 
       const decode = (s: string) =>
@@ -292,8 +288,11 @@ export class VideoAnalyzerService {
     }
     const rawChapters =
       (info as unknown as { chapters?: MaybeChapter[] }).chapters ??
-      ((info as unknown as { player_overlays?: { decorated_player_bar?: { chapters?: MaybeChapter[] } } })
-        .player_overlays?.decorated_player_bar?.chapters) ??
+      (
+        info as unknown as {
+          player_overlays?: { decorated_player_bar?: { chapters?: MaybeChapter[] } };
+        }
+      ).player_overlays?.decorated_player_bar?.chapters ??
       [];
 
     const out: Chapter[] = [];
@@ -307,10 +306,7 @@ export class VideoAnalyzerService {
   }
 
   // Tier 3 는 chapters 만 Gemini 로 추출 (요약은 설명 기반으로 대체해 출력 토큰 절약)
-  private async analyzeWithGemini(
-    videoId: string,
-    durationSec: number,
-  ): Promise<Chapter[]> {
+  private async analyzeWithGemini(videoId: string, durationSec: number): Promise<Chapter[]> {
     if (!this.rawGemini) throw new Error('Gemini not configured');
 
     // 자막(transcript)을 텍스트로 보냄 — fileData(영상) 호출보다 인증/비용에 유리
@@ -348,7 +344,9 @@ ${transcript.slice(0, 9000)}`;
     const chapters: Chapter[] = (parsed.chapters ?? [])
       .map((c) => ({
         time: Math.max(0, Math.min(durationSec, Math.floor(Number(c.time ?? 0)))),
-        label: String(c.label ?? '').trim().slice(0, 80),
+        label: String(c.label ?? '')
+          .trim()
+          .slice(0, 80),
       }))
       .filter((c) => c.label.length > 0)
       .sort((a, b) => a.time - b.time);
@@ -372,7 +370,7 @@ function summarizeDescription(desc: string | null): string | null {
     .trim();
   if (clean.length < 10) return null;
   if (clean.length <= 180) return clean;
-  return clean.slice(0, 180).replace(/\s\S*$/, '') + '…';
+  return `${clean.slice(0, 180).replace(/\s\S*$/, '')}…`;
 }
 
 // ── description 안 timestamp 추출 (apps/web 의 parse-chapters 와 동일 로직) ──

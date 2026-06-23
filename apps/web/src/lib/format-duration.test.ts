@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { formatDuration } from './format-duration';
 
 describe('formatDuration', () => {
@@ -40,7 +40,7 @@ describe('formatDuration', () => {
 
   it('음수 / NaN / Infinity → 0:00', () => {
     expect(formatDuration(-1)).toBe('0:00');
-    expect(formatDuration(NaN)).toBe('0:00');
-    expect(formatDuration(Infinity)).toBe('0:00');
+    expect(formatDuration(Number.NaN)).toBe('0:00');
+    expect(formatDuration(Number.POSITIVE_INFINITY)).toBe('0:00');
   });
 });

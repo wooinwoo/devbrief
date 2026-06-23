@@ -1,3 +1,4 @@
+import { InjectQueue } from '@nestjs/bullmq';
 import {
   BadRequestException,
   Body,
@@ -9,12 +10,11 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
-import { YouTubeSyncService } from './youtube-sync.service';
-import { VideoAnalyzerService } from './video-analyzer.service';
 import type { VideoAnalyzeJobData } from './video-analysis.processor';
+import { VideoAnalyzerService } from './video-analyzer.service';
+import { YouTubeSyncService } from './youtube-sync.service';
 
 @Controller('videos')
 export class VideosController {
@@ -78,10 +78,7 @@ export class VideosController {
 
   /** 동기 분석 (DB 즉시 업데이트). force=1 이면 기존 결과 무시하고 재분석. */
   @Post(':id/analyze')
-  async analyzeOne(
-    @Param('id') id: string,
-    @Query('force') force?: string,
-  ) {
+  async analyzeOne(@Param('id') id: string, @Query('force') force?: string) {
     return this.analyzer.analyzeOne(id, { force: force === '1' });
   }
 

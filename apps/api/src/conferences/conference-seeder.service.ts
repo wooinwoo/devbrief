@@ -118,8 +118,6 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
           `Conference image auto-sync: total=${r.total} updated=${r.updated} failed=${r.failed}`,
         ),
       )
-      .catch((e) =>
-        this.logger.warn(`Conference image sync 실패: ${(e as Error).message}`),
-      );
+      .catch((e) => this.logger.warn(`Conference image sync 실패: ${(e as Error).message}`));
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@pulse/db';
 
 @Injectable()
@@ -9,7 +9,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     try {
       await this.$connect();
     } catch (e) {
-      this.logger.warn(`Prisma connect failed: ${(e as Error).message}. 환경변수 DATABASE_URL 확인.`);
+      this.logger.warn(
+        `Prisma connect failed: ${(e as Error).message}. 환경변수 DATABASE_URL 확인.`,
+      );
     }
   }
 

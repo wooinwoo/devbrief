@@ -1,7 +1,7 @@
 'use client';
 
-import { motion } from 'motion/react';
 import type { ConferenceDto } from '@/lib/mock-conferences';
+import { motion } from 'motion/react';
 
 interface Props {
   conferences: ConferenceDto[];
@@ -16,8 +16,7 @@ function daysUntil(iso: string): number {
 
 function formatDate(iso: string, end?: string | null): string {
   const s = new Date(iso);
-  const fmt = (d: Date) =>
-    d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+  const fmt = (d: Date) => d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   if (!end || end === iso) return fmt(s);
   const e = new Date(end);
   return `${fmt(s)} ~ ${fmt(e)}`;
@@ -93,10 +92,7 @@ export function ConferenceSection({ conferences }: Props) {
                     {c.name}
                   </span>
                 </h4>
-                <p
-                  className="text-[12px] mt-1"
-                  style={{ color: 'var(--color-fg-subtle)' }}
-                >
+                <p className="text-[12px] mt-1" style={{ color: 'var(--color-fg-subtle)' }}>
                   {c.location}
                 </p>
                 {c.topics.length > 0 && (

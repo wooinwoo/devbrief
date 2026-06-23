@@ -1,7 +1,7 @@
 'use client';
 
-import { motion } from 'motion/react';
 import type { RepoDto } from '@/lib/mock-repos';
+import { motion } from 'motion/react';
 
 const CATEGORY_LABEL: Record<string, string> = {
   ai: 'AI',
@@ -56,9 +56,7 @@ export function RepoCard({ repo: r, index = 0 }: { repo: RepoDto; index?: number
 
         {/* 제목: owner/repo */}
         <h3 className="text-[15.5px] leading-snug tracking-[-0.01em] break-all">
-          <span style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}>
-            {r.owner}/
-          </span>
+          <span style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}>{r.owner}/</span>
           <span
             className="group-hover:underline underline-offset-2"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
@@ -88,11 +86,8 @@ export function RepoCard({ repo: r, index = 0 }: { repo: RepoDto; index?: number
             className="inline-flex items-center gap-1"
             style={{ color: 'var(--color-accent-strong)', fontWeight: 700 }}
           >
-            <svg width="9" height="11" viewBox="0 0 9 11" fill="none" aria-hidden>
-              <path
-                d="M4.5 0.5L8.5 5H6V10.5H3V5H0.5L4.5 0.5Z"
-                fill="currentColor"
-              />
+            <svg width="9" height="11" viewBox="0 0 9 11" fill="none" aria-hidden="true">
+              <path d="M4.5 0.5L8.5 5H6V10.5H3V5H0.5L4.5 0.5Z" fill="currentColor" />
             </svg>
             +{r.periodStars.toLocaleString()}
             <span style={{ color: 'var(--color-fg-subtle)', fontWeight: 500 }}>
@@ -106,7 +101,7 @@ export function RepoCard({ repo: r, index = 0 }: { repo: RepoDto; index?: number
             className="inline-flex items-center gap-1"
             style={{ color: 'var(--color-fg-subtle)' }}
           >
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
               <path
                 d="M5.5 0.5L6.9 3.9L10.5 4.1L7.7 6.4L8.6 9.9L5.5 7.9L2.4 9.9L3.3 6.4L0.5 4.1L4.1 3.9L5.5 0.5Z"
                 stroke="currentColor"
@@ -118,9 +113,7 @@ export function RepoCard({ repo: r, index = 0 }: { repo: RepoDto; index?: number
           </span>
 
           {/* fork */}
-          <span style={{ color: 'var(--color-fg-subtle)' }}>
-            포크 {fmtK(r.forks)}
-          </span>
+          <span style={{ color: 'var(--color-fg-subtle)' }}>포크 {fmtK(r.forks)}</span>
         </div>
       </a>
     </motion.li>

@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 
 export interface DigestItem {
   articleId: string;
@@ -43,10 +43,7 @@ export function DailyDigest({ digest }: Props) {
         >
           오늘의 핵심
         </span>
-        <span
-          className="text-[11.5px] tabular-nums"
-          style={{ color: 'var(--color-fg-subtle)' }}
-        >
+        <span className="text-[11.5px] tabular-nums" style={{ color: 'var(--color-fg-subtle)' }}>
           {digest.items.length}
         </span>
         <span className="flex-1" />
@@ -69,11 +66,7 @@ export function DailyDigest({ digest }: Props) {
 
       <ol className="grid gap-x-8 gap-y-0 md:grid-cols-2">
         {digest.items.map((it, i) => (
-          <li
-            key={it.articleId}
-            className="border-b"
-            style={{ borderColor: 'var(--color-line)' }}
-          >
+          <li key={it.articleId} className="border-b" style={{ borderColor: 'var(--color-line)' }}>
             <Link
               href={`/articles/${it.articleId}`}
               className="group flex gap-3 items-baseline py-3"

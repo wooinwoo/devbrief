@@ -1,25 +1,19 @@
 'use client';
 
-import Link from 'next/link';
-import { ArticleRow } from '../article-row';
-import { FeaturedArticle } from '../featured-article';
-import { SectionHeader } from '../section-header';
-import { DailyDigest, type DigestDto } from '../daily-digest';
-import { ConferenceCard } from '../conference-card';
-import { VideoCard } from '../video-card';
-import type { ArticleDto } from '../article-card';
+import { daysUntil } from '@/lib/date-utils';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { VideoDto } from '@/lib/mock-videos';
-import { daysUntil } from '@/lib/date-utils';
+import Link from 'next/link';
+import type { ArticleDto } from '../article-card';
+import { ArticleRow } from '../article-row';
+import { ConferenceCard } from '../conference-card';
+import { DailyDigest, type DigestDto } from '../daily-digest';
+import { FeaturedArticle } from '../featured-article';
+import { SectionHeader } from '../section-header';
+import { VideoCard } from '../video-card';
 
 // 큐레이션 점수: 한국어화 > 양질 소스 > 가공완료 > 이미지 > 최신성.
-const KO_SOURCES = new Set([
-  'geeknews',
-  'kakao_tech',
-  'toss_tech',
-  'woowahan',
-  'naver_d2',
-]);
+const KO_SOURCES = new Set(['geeknews', 'kakao_tech', 'toss_tech', 'woowahan', 'naver_d2']);
 function curationScore(a: ArticleDto): number {
   let s = 0;
   const isKo = !!a.titleKo || a.language === 'ko' || /[가-힣]/.test(a.title);
@@ -27,8 +21,7 @@ function curationScore(a: ArticleDto): number {
   if (KO_SOURCES.has(a.source.provider)) s += 30;
   if (a.summaryOneLine) s += 15; // 요약 가공 완료
   if (a.imageUrl) s += 10;
-  const ageDays =
-    (Date.now() - new Date(a.publishedAt).getTime()) / 86_400_000;
+  const ageDays = (Date.now() - new Date(a.publishedAt).getTime()) / 86_400_000;
   s += Math.max(0, 14 - ageDays); // 2주 내 최신성 가산
   return s;
 }
@@ -63,9 +56,7 @@ export function OverviewTab({
 }: Props) {
   // 홈 = 큐레이션 쇼케이스. 최신순(API) 그대로면 갓 수집된 영문 dev.to 글이 상위를
   // 독식한다 → 한국어화·양질 소스·가공완료 글을 위로 올려 첫인상을 한국어 중심으로.
-  const ranked = [...articles].sort(
-    (a, b) => curationScore(b) - curationScore(a),
-  );
+  const ranked = [...articles].sort((a, b) => curationScore(b) - curationScore(a));
   const [featured, ...rest] = ranked;
   // 소스 쏠림 방지 — 한 소스(예: GeekNews)가 주요 글을 독식하지 않게 소스당 최대 2개.
   const perSource = new Map<string, number>();
@@ -80,10 +71,7 @@ export function OverviewTab({
 
   const upcoming = conferences
     .filter((c) => daysUntil(c.startDate) >= 0)
-    .sort(
-      (a, b) =>
-        new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-    )
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
     .slice(0, 3);
 
   const recentVideos = videos.slice(0, 3);

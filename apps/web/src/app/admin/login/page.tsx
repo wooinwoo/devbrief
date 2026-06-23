@@ -65,14 +65,11 @@ export default async function AdminLoginPage({ searchParams }: Props) {
               type="password"
               name="password"
               placeholder="••••••••"
-              autoFocus
               required
               className="px-3.5 py-3 text-[14px] rounded-lg border outline-none transition-all focus:ring-2"
               style={{
                 background: 'var(--color-bg-base)',
-                borderColor: error
-                  ? 'oklch(60% 0.2 25)'
-                  : 'var(--color-line-strong)',
+                borderColor: error ? 'oklch(60% 0.2 25)' : 'var(--color-line-strong)',
                 color: 'var(--color-fg-strong)',
               }}
             />

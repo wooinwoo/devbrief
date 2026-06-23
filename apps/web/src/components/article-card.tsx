@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { relativeTime } from '@/lib/relative-time';
+import Link from 'next/link';
 import { Highlight } from './highlight';
 
 export interface ArticleDto {
@@ -97,11 +97,16 @@ export function ArticleCard({
               style={{ background: dot }}
             />
           )}
-          <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }} className="tracking-wide">
+          <span
+            style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}
+            className="tracking-wide"
+          >
             {article.source.name}
           </span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-          <span style={{ color: 'var(--color-fg-muted)' }}>{relativeTime(article.publishedAt)}</span>
+          <span style={{ color: 'var(--color-fg-muted)' }}>
+            {relativeTime(article.publishedAt)}
+          </span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
           <span className="tabular-nums" style={{ color: 'var(--color-fg-muted)' }}>
             {minutes}분 읽기

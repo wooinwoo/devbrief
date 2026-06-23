@@ -1,18 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ArticleRow } from '../article-row';
-import { FeaturedArticle } from '../featured-article';
-import { SectionHeader } from '../section-header';
-import { FilterSidebar, type FilterGroup } from '../filter-sidebar';
-import { Pagination } from '../pagination';
-import { SidebarWidgets } from '../sidebar-widgets';
-import type { ArticleDto } from '../article-card';
+import { groupByTime } from '@/lib/group-articles';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { VideoDto } from '@/lib/mock-videos';
-import { groupByTime } from '@/lib/group-articles';
 import { sourceColor } from '@/lib/source-colors';
-
+import { useEffect, useMemo, useState } from 'react';
+import type { ArticleDto } from '../article-card';
+import { ArticleRow } from '../article-row';
+import { FeaturedArticle } from '../featured-article';
+import { type FilterGroup, FilterSidebar } from '../filter-sidebar';
+import { Pagination } from '../pagination';
+import { SectionHeader } from '../section-header';
+import { SidebarWidgets } from '../sidebar-widgets';
 
 interface Props {
   articles: ArticleDto[];
@@ -92,8 +91,7 @@ export function ArticlesTab({
     const q = query.trim().toLowerCase();
     return articles.filter((a) => {
       if (source && a.source.provider !== source) return false;
-      if (category && !a.tags.some((t) => t.toLowerCase() === category))
-        return false;
+      if (category && !a.tags.some((t) => t.toLowerCase() === category)) return false;
       if (hideRead && readSet.has(a.id)) return false;
       if (q) {
         const hay =
@@ -120,8 +118,7 @@ export function ArticlesTab({
 
   const goPage = (p: number) => {
     setPage(p);
-    if (typeof window !== 'undefined')
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // 비필터 1페이지 최상단에만 머리기사(featured), 나머지는 시간대별 그룹.
@@ -172,11 +169,7 @@ export function ArticlesTab({
         extra={hideReadToggle}
         footer={
           conferences && videos && onNavigate ? (
-            <SidebarWidgets
-              conferences={conferences}
-              videos={videos}
-              onNavigate={onNavigate}
-            />
+            <SidebarWidgets conferences={conferences} videos={videos} onNavigate={onNavigate} />
           ) : undefined
         }
       />
@@ -203,11 +196,7 @@ export function ArticlesTab({
                 />
               ))}
             </ul>
-            <Pagination
-              page={safePage}
-              totalPages={totalPages}
-              onChange={goPage}
-            />
+            <Pagination page={safePage} totalPages={totalPages} onChange={goPage} />
           </>
         ) : (
           <>
@@ -220,10 +209,7 @@ export function ArticlesTab({
             )}
             {grouped.map((group, gi) => {
               const base =
-                rowIndexBase +
-                grouped
-                  .slice(0, gi)
-                  .reduce((s, g) => s + g.articles.length, 0);
+                rowIndexBase + grouped.slice(0, gi).reduce((s, g) => s + g.articles.length, 0);
               return (
                 <section key={group.label} className="mb-8">
                   <SectionHeader
@@ -248,11 +234,7 @@ export function ArticlesTab({
                 </section>
               );
             })}
-            <Pagination
-              page={safePage}
-              totalPages={totalPages}
-              onChange={goPage}
-            />
+            <Pagination page={safePage} totalPages={totalPages} onChange={goPage} />
           </>
         )}
       </div>

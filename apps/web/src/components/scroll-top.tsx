@@ -31,7 +31,7 @@ export function ScrollTop() {
         color: 'var(--color-fg-default)',
       }}
     >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path
           d="M8 13V3M8 3L3.5 7.5M8 3l4.5 4.5"
           stroke="currentColor"

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format-duration';
+import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
 
 export interface AdminVideo {
   id: string;
@@ -70,10 +70,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
   return (
     <div>
       {/* 추가 패널 */}
-      <section
-        className="p-5 mb-8 border rounded-lg"
-        style={{ borderColor: 'var(--color-line)' }}
-      >
+      <section className="p-5 mb-8 border rounded-lg" style={{ borderColor: 'var(--color-line)' }}>
         <h2
           className="text-[13.5px] mb-3"
           style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
@@ -110,8 +107,8 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
           </p>
         )}
         <p className="mt-2.5 text-[11.5px]" style={{ color: 'var(--color-fg-subtle)' }}>
-          watch / youtu.be / shorts / live URL 모두 지원. 추가 후 챕터/요약은
-          백그라운드에서 분석됩니다 (몇 초 후 새로고침).
+          watch / youtu.be / shorts / live URL 모두 지원. 추가 후 챕터/요약은 백그라운드에서
+          분석됩니다 (몇 초 후 새로고침).
         </p>
       </section>
 
@@ -120,10 +117,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
         className="flex items-baseline gap-3 mb-3 pt-1 border-t-2"
         style={{ borderColor: 'var(--color-fg-strong)' }}
       >
-        <span
-          className="text-[13px]"
-          style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-        >
+        <span className="text-[13px]" style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}>
           등록된 영상
         </span>
         <span className="text-[11.5px] tabular-nums" style={{ color: 'var(--color-fg-subtle)' }}>
@@ -132,10 +126,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
       </div>
 
       {initialVideos.length === 0 ? (
-        <p
-          className="py-10 text-center text-[13px]"
-          style={{ color: 'var(--color-fg-muted)' }}
-        >
+        <p className="py-10 text-center text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
           등록된 영상이 없어요. 위에 URL 을 붙여넣어 추가하세요.
         </p>
       ) : (
@@ -192,9 +183,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
                       background: v.analyzedAt
                         ? 'oklch(80% 0.15 160 / 0.15)'
                         : 'var(--color-bg-sunken)',
-                      color: v.analyzedAt
-                        ? 'oklch(45% 0.16 160)'
-                        : 'var(--color-fg-muted)',
+                      color: v.analyzedAt ? 'oklch(45% 0.16 160)' : 'var(--color-fg-muted)',
                       fontWeight: 600,
                     }}
                   >
@@ -202,11 +191,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
                       ? `분석됨${v.chapterSource ? ` · ${SOURCE_KO[v.chapterSource]}` : ''}`
                       : '분석 대기'}
                   </span>
-                  {v.summary && (
-                    <span style={{ color: 'var(--color-fg-subtle)' }}>
-                      요약 있음
-                    </span>
-                  )}
+                  {v.summary && <span style={{ color: 'var(--color-fg-subtle)' }}>요약 있음</span>}
                 </div>
               </div>
 

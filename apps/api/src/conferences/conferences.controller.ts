@@ -1,14 +1,7 @@
-import {
-  Controller,
-  Get,
-  NotFoundException,
-  Param,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ConferenceImageSyncService } from './conference-image-sync.service';
 import { ConferenceDiscoveryService } from './conference-discovery.service';
+import { ConferenceImageSyncService } from './conference-image-sync.service';
 
 @Controller('conferences')
 export class ConferencesController {
@@ -20,10 +13,7 @@ export class ConferencesController {
 
   /** ACTIVE만 기본 노출. ?status=PROPOSED 로 후보 확인. */
   @Get()
-  async list(
-    @Query('upcoming') upcoming?: string,
-    @Query('status') status?: string,
-  ) {
+  async list(@Query('upcoming') upcoming?: string, @Query('status') status?: string) {
     const where: Record<string, unknown> = {
       status: status ?? 'ACTIVE',
     };

@@ -47,11 +47,9 @@ describe('TranslationService', () => {
     });
 
     it('Google 실패 시 MyMemory로 폴백한다', async () => {
-      mockGet
-        .mockRejectedValueOnce(new Error('google down'))
-        .mockResolvedValueOnce({
-          data: { responseData: { translatedText: '폴백 번역' } },
-        });
+      mockGet.mockRejectedValueOnce(new Error('google down')).mockResolvedValueOnce({
+        data: { responseData: { translatedText: '폴백 번역' } },
+      });
       expect(await svc.toKorean('Hello')).toBe('폴백 번역');
     });
 

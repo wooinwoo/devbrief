@@ -1,8 +1,8 @@
 'use server';
 
+import { ADMIN_COOKIE, checkPassword, sessionToken } from '@/lib/admin-auth';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { ADMIN_COOKIE, checkPassword, sessionToken } from '@/lib/admin-auth';
 
 export async function login(formData: FormData) {
   const password = String(formData.get('password') ?? '');

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
 
 interface SourceDto {
   id: string;
@@ -169,10 +169,7 @@ export function SourcesPanel({
             ) : (
               <ul className="space-y-1">
                 {discovered.map((f) => (
-                  <li
-                    key={f.feedUrl}
-                    className="text-[12.5px] flex items-center gap-3"
-                  >
+                  <li key={f.feedUrl} className="text-[12.5px] flex items-center gap-3">
                     <span
                       className="px-1.5 py-0.5 text-[10px] tracking-wide uppercase rounded"
                       style={{
@@ -248,9 +245,7 @@ export function SourcesPanel({
                 className="text-[11px] px-2 py-0.5 rounded"
                 style={{
                   color: s.active ? 'oklch(48% 0.16 160)' : 'var(--color-fg-muted)',
-                  background: s.active
-                    ? 'oklch(80% 0.15 160 / 0.15)'
-                    : 'var(--color-bg-subtle)',
+                  background: s.active ? 'oklch(80% 0.15 160 / 0.15)' : 'var(--color-bg-subtle)',
                   fontWeight: 600,
                 }}
               >

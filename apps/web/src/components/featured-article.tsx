@@ -1,12 +1,12 @@
 'use client';
 
-import { Fragment } from 'react';
-import Link from 'next/link';
-import { motion } from 'motion/react';
-import { relativeTime } from '@/lib/relative-time';
 import { categoryOf } from '@/lib/category';
-import { useLang, pickTitle } from '@/lib/lang-context';
+import { pickTitle, useLang } from '@/lib/lang-context';
+import { relativeTime } from '@/lib/relative-time';
 import { sourceColor } from '@/lib/source-colors';
+import { motion } from 'motion/react';
+import Link from 'next/link';
+import { Fragment } from 'react';
 import type { ArticleDto } from './article-card';
 
 interface Props {
@@ -65,7 +65,10 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
               className="text-[1.5rem] sm:text-[1.875rem] lg:text-[2.125rem] leading-[1.14] tracking-[-0.018em] break-keep mb-2"
               style={{ color: 'var(--color-fg-strong)', fontWeight: 800 }}
             >
-              <span className="group-hover:underline underline-offset-[6px] decoration-2" style={{ textDecorationColor: cat.color }}>
+              <span
+                className="group-hover:underline underline-offset-[6px] decoration-2"
+                style={{ textDecorationColor: cat.color }}
+              >
                 {primary}
               </span>
             </h2>

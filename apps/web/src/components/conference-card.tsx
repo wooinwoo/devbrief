@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'motion/react';
-import type { ConferenceDto } from '@/lib/mock-conferences';
 import { daysUntil } from '@/lib/date-utils';
+import type { ConferenceDto } from '@/lib/mock-conferences';
+import { motion } from 'motion/react';
+import { useState } from 'react';
 
 function fmtDateWeekday(iso: string): string {
   const d = new Date(iso);
@@ -66,8 +66,7 @@ export function ConferenceCard({ conference: c, index = 0 }: Props) {
                 aria-hidden
                 className="absolute inset-0"
                 style={{
-                  background:
-                    'linear-gradient(to top, oklch(0% 0 0 / 0.35) 0%, transparent 50%)',
+                  background: 'linear-gradient(to top, oklch(0% 0 0 / 0.35) 0%, transparent 50%)',
                 }}
               />
             </>
@@ -120,9 +119,7 @@ export function ConferenceCard({ conference: c, index = 0 }: Props) {
           {c.location && (
             <>
               <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-              <span style={{ color: 'var(--color-fg-muted)' }}>
-                {c.location}
-              </span>
+              <span style={{ color: 'var(--color-fg-muted)' }}>{c.location}</span>
             </>
           )}
         </div>
@@ -146,13 +143,14 @@ export function ConferenceCard({ conference: c, index = 0 }: Props) {
         <div className="mt-2 flex items-center gap-2 text-[11.5px]">
           {c.topics.length > 0 && (
             <span style={{ color: 'var(--color-fg-subtle)' }}>
-              {c.topics.slice(0, 3).map((t) => `#${t}`).join(' ')}
+              {c.topics
+                .slice(0, 3)
+                .map((t) => `#${t}`)
+                .join(' ')}
             </span>
           )}
           <span className="flex-1" />
-          <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
-            무료 / 미정
-          </span>
+          <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>무료 / 미정</span>
         </div>
       </a>
     </motion.li>

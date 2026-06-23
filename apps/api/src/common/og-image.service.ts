@@ -32,15 +32,9 @@ export class OgImageService {
       /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i.exec(
         html,
       ) ??
-      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i.exec(
-        html,
-      ) ??
-      /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i.exec(
-        html,
-      ) ??
-      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i.exec(
-        html,
-      ) ??
+      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i.exec(html) ??
+      /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i.exec(html) ??
+      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i.exec(html) ??
       /<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i.exec(html);
 
     const raw = og?.[1];

@@ -58,7 +58,10 @@ export default async function AdminConferencesPage() {
       </header>
 
       <section className="mb-16">
-        <div className="flex items-baseline gap-3 mb-5 pb-3 border-b" style={{ borderColor: 'var(--color-line)' }}>
+        <div
+          className="flex items-baseline gap-3 mb-5 pb-3 border-b"
+          style={{ borderColor: 'var(--color-line)' }}
+        >
           <h2
             className="text-[15px] tracking-[-0.005em]"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
@@ -73,7 +76,10 @@ export default async function AdminConferencesPage() {
       </section>
 
       <section>
-        <div className="flex items-baseline gap-3 mb-5 pb-3 border-b" style={{ borderColor: 'var(--color-line)' }}>
+        <div
+          className="flex items-baseline gap-3 mb-5 pb-3 border-b"
+          style={{ borderColor: 'var(--color-line)' }}
+        >
           <h2
             className="text-[15px] tracking-[-0.005em]"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}

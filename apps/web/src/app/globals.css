@@ -1,6 +1,6 @@
 /* Pretendard (한국어 자연) — Tailwind 앞에 와야 @import 순서 규칙 통과 */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
-@import 'tailwindcss';
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css");
+@import "tailwindcss";
 
 :root {
   /* 라이트 — 중립 연회색 베이스 + 인디고 시그니처.
@@ -30,7 +30,8 @@
   --bar-accent: oklch(72% 0.15 265);
   /* 카드 그림자 (중립, 은은하게) */
   --shadow-card: 0 1px 2px oklch(40% 0.02 265 / 0.06), 0 6px 20px -6px oklch(40% 0.04 265 / 0.1);
-  --shadow-card-hover: 0 2px 4px oklch(40% 0.02 265 / 0.08), 0 14px 32px -8px oklch(40% 0.05 265 / 0.14);
+  --shadow-card-hover: 0 2px 4px oklch(40% 0.02 265 / 0.08), 0 14px 32px -8px
+    oklch(40% 0.05 265 / 0.14);
   /* 큰 콘텐츠 지면 패널용 */
   --shadow-panel: 0 1px 2px oklch(40% 0.02 265 / 0.05), 0 10px 34px -10px oklch(38% 0.04 265 / 0.12);
 }
@@ -52,7 +53,7 @@
   --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
   --color-warm: var(--warm);
-  --font-sans: 'Pretendard Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Pretendard Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -64,7 +65,7 @@ body {
   word-break: keep-all;
   overflow-wrap: anywhere;
   text-wrap: pretty;
-  font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv11';
+  font-feature-settings: "ss01", "ss02", "cv01", "cv11";
   overflow-x: hidden;
 }
 
@@ -76,17 +77,20 @@ html {
 
 /* 미세한 색감 배경 (상단 인디고 한 톤만 은은하게) */
 body::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   z-index: -10;
   pointer-events: none;
-  background-image:
-    radial-gradient(ellipse 85% 45% at 50% -10%, oklch(68% 0.13 265 / 0.06), transparent 62%);
+  background-image: radial-gradient(
+    ellipse 85% 45% at 50% -10%,
+    oklch(68% 0.13 265 / 0.06),
+    transparent 62%
+  );
 }
 
 body::after {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   z-index: -9;
@@ -97,7 +101,7 @@ body::after {
 
 /* Tailwind v4 가 button/select/summary 의 cursor:pointer 기본값을 제거 — 복원 */
 button:not(:disabled),
-[role='button']:not(:disabled),
+[role="button"]:not(:disabled),
 summary,
 select:not(:disabled),
 label[for]:not(:disabled) {
@@ -105,7 +109,7 @@ label[for]:not(:disabled) {
 }
 
 button:disabled,
-[role='button'][aria-disabled='true'] {
+[role="button"][aria-disabled="true"] {
   cursor: not-allowed;
 }
 
@@ -140,8 +144,13 @@ button:disabled,
 
 /* shimmer 인라인 라인 (Top story 좌측) */
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .pulse-bar {

@@ -1,9 +1,6 @@
-import { SiteNav } from '@/components/site-nav';
 import { ConferencesView } from '@/components/conferences-view';
-import {
-  MOCK_CONFERENCES,
-  type ConferenceDto,
-} from '@/lib/mock-conferences';
+import { SiteNav } from '@/components/site-nav';
+import { type ConferenceDto, MOCK_CONFERENCES } from '@/lib/mock-conferences';
 
 import { API_BASE } from '@/lib/api';
 

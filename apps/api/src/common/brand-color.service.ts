@@ -29,18 +29,13 @@ export class BrandColorService {
 
       // 우선순위: Vibrant → Muted → DarkVibrant → LightVibrant
       const swatch =
-        palette.Vibrant ??
-        palette.Muted ??
-        palette.DarkVibrant ??
-        palette.LightVibrant;
+        palette.Vibrant ?? palette.Muted ?? palette.DarkVibrant ?? palette.LightVibrant;
 
       if (!swatch?.rgb) return null;
       const [r, g, b] = swatch.rgb;
       return rgbToOklch(r, g, b);
     } catch (e) {
-      this.logger.debug(
-        `brand color 추출 실패 ${imageUrl}: ${(e as Error).message}`,
-      );
+      this.logger.debug(`brand color 추출 실패 ${imageUrl}: ${(e as Error).message}`);
       return null;
     }
   }
@@ -83,5 +78,5 @@ export function rgbToOklch(r: number, g: number, b: number): string {
 
 function srgbToLinear(channel: number): number {
   const c = channel / 255;
-  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 }

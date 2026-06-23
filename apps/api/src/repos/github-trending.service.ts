@@ -30,17 +30,14 @@ export class GithubTrendingService {
     try {
       const { data: html } = await axios.get<string>(url, {
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.app)',
+          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.app)',
           Accept: 'text/html,application/xhtml+xml',
         },
         timeout: 15_000,
       });
       return this.parse(html);
     } catch (e) {
-      this.logger.error(
-        `trending ${period} fetch 실패: ${(e as Error).message}`,
-      );
+      this.logger.error(`trending ${period} fetch 실패: ${(e as Error).message}`);
       return [];
     }
   }
@@ -57,9 +54,7 @@ export class GithubTrendingService {
       const [owner, name] = fullName.split('/');
 
       const description = $el.find('p').first().text().trim() || null;
-      const language =
-        $el.find('[itemprop="programmingLanguage"]').first().text().trim() ||
-        null;
+      const language = $el.find('[itemprop="programmingLanguage"]').first().text().trim() || null;
       const languageColor =
         /background-color:\s*([^;]+)/
           .exec($el.find('.repo-language-color').first().attr('style') ?? '')?.[1]
@@ -68,15 +63,9 @@ export class GithubTrendingService {
       // 총 star / fork: href 패턴 우선(견고), 없으면 a.Link--muted 인덱스 fallback
       const muted = $el.find('a.Link--muted');
       const starLink = $el.find('a[href$="/stargazers"]');
-      const forkLink = $el.find(
-        'a[href$="/forks"], a[href$="/network/members"]',
-      );
-      const stars = this.num(
-        (starLink.length ? starLink : $(muted[0])).first().text(),
-      );
-      const forks = this.num(
-        (forkLink.length ? forkLink : $(muted[1])).first().text(),
-      );
+      const forkLink = $el.find('a[href$="/forks"], a[href$="/network/members"]');
+      const stars = this.num((starLink.length ? starLink : $(muted[0])).first().text());
+      const forks = this.num((forkLink.length ? forkLink : $(muted[1])).first().text());
       // 기간 증가 star: 우하단 "X stars today/this week"
       const periodStars = this.num($el.find('.float-sm-right').text());
 
@@ -103,7 +92,7 @@ export class GithubTrendingService {
     const cleaned = s.replace(/,/g, '');
     const m = /([\d.]+)\s*(k)?/i.exec(cleaned);
     if (!m) return 0;
-    const n = parseFloat(m[1]);
+    const n = Number.parseFloat(m[1]);
     return Math.round(m[2] ? n * 1000 : n);
   }
 }

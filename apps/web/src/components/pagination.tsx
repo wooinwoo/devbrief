@@ -9,9 +9,7 @@ interface Props {
 /** 현재 페이지 주변 + 처음/끝을 보여주고 사이는 '…' 으로 생략 */
 function pageItems(cur: number, total: number): (number | '…')[] {
   const set = new Set<number>([1, total, cur - 1, cur, cur + 1]);
-  const arr = [...set]
-    .filter((p) => p >= 1 && p <= total)
-    .sort((a, b) => a - b);
+  const arr = [...set].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
   const out: (number | '…')[] = [];
   let prev = 0;
   for (const p of arr) {
@@ -44,10 +42,7 @@ export function Pagination({ page, totalPages, onChange }: Props) {
   );
 
   return (
-    <nav
-      className="flex items-center justify-center gap-1.5 pt-10 pb-2"
-      aria-label="페이지"
-    >
+    <nav className="flex items-center justify-center gap-1.5 pt-10 pb-2" aria-label="페이지">
       {arrow('‹', page - 1, page <= 1)}
       {items.map((it, i) =>
         it === '…' ? (

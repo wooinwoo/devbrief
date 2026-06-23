@@ -1,21 +1,21 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { BullModule } from '@nestjs/bullmq';
+import { GeminiModule } from './ai/gemini.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PrismaModule } from './prisma/prisma.module';
-import { GeminiModule } from './ai/gemini.module';
-import { IngestionModule } from './ingestion/ingestion.module';
-import { SummarizationModule } from './summarization/summarization.module';
 import { ArticlesModule } from './articles/articles.module';
+import { ChatModule } from './chat/chat.module';
 import { ConferencesModule } from './conferences/conferences.module';
-import { VideosModule } from './videos/videos.module';
+import { DigestModule } from './digest/digest.module';
+import { EmbeddingModule } from './embedding/embedding.module';
+import { IngestionModule } from './ingestion/ingestion.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { ReposModule } from './repos/repos.module';
 import { SourcesModule } from './sources/sources.module';
-import { EmbeddingModule } from './embedding/embedding.module';
-import { ChatModule } from './chat/chat.module';
-import { DigestModule } from './digest/digest.module';
+import { SummarizationModule } from './summarization/summarization.module';
+import { VideosModule } from './videos/videos.module';
 
 @Module({
   imports: [

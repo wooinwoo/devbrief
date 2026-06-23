@@ -18,15 +18,14 @@ interface Article {
 }
 
 export default async function AdminDashboard() {
-  const [articles, proposed, active, sources, videos, digest] =
-    await Promise.all([
-      safeJson<Article[]>('/articles?limit=200', []),
-      safeJson<unknown[]>('/conferences?status=PROPOSED', []),
-      safeJson<unknown[]>('/conferences?status=ACTIVE', []),
-      safeJson<unknown[]>('/sources', []),
-      safeJson<unknown[]>('/videos?limit=200', []),
-      safeJson<{ items?: unknown[] } | null>('/digest/today', null),
-    ]);
+  const [articles, proposed, active, sources, videos, digest] = await Promise.all([
+    safeJson<Article[]>('/articles?limit=200', []),
+    safeJson<unknown[]>('/conferences?status=PROPOSED', []),
+    safeJson<unknown[]>('/conferences?status=ACTIVE', []),
+    safeJson<unknown[]>('/sources', []),
+    safeJson<unknown[]>('/videos?limit=200', []),
+    safeJson<{ items?: unknown[] } | null>('/digest/today', null),
+  ]);
 
   const total = articles.length;
   const summarized = articles.filter((a) => a.summaryOneLine).length;
@@ -61,16 +60,9 @@ export default async function AdminDashboard() {
           >
             AI 요약 / 번역 진행
           </span>
-          <span
-            className="text-[13px] tabular-nums"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
-            <span
-              style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-            >
-              {summarized}
-            </span>{' '}
-            / {total} · {pct}%
+          <span className="text-[13px] tabular-nums" style={{ color: 'var(--color-fg-muted)' }}>
+            <span style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}>{summarized}</span> /{' '}
+            {total} · {pct}%
           </span>
         </div>
         <div
@@ -110,18 +102,8 @@ export default async function AdminDashboard() {
           sub="노출 중"
           href="/admin/conferences"
         />
-        <StatCard
-          label="발표 영상"
-          value={videos.length}
-          sub="YouTube"
-          href="/admin/videos"
-        />
-        <StatCard
-          label="RSS 소스"
-          value={sources.length}
-          sub="활성 피드"
-          href="/admin/sources"
-        />
+        <StatCard label="발표 영상" value={videos.length} sub="YouTube" href="/admin/videos" />
+        <StatCard label="RSS 소스" value={sources.length} sub="활성 피드" href="/admin/sources" />
         <StatCard
           label="오늘 다이제스트"
           value={digest?.items?.length ?? 0}
@@ -174,10 +156,7 @@ function StatCard({
         boxShadow: '0 1px 2px oklch(0% 0 0 / 0.04)',
       }}
     >
-      <div
-        className="text-[12px] mb-3"
-        style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
-      >
+      <div className="text-[12px] mb-3" style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}>
         {label}
       </div>
       <div className="flex items-baseline gap-2">

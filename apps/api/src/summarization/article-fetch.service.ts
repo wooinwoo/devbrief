@@ -22,8 +22,7 @@ export class ArticleFetchService {
         maxContentLength: 5_000_000,
         responseType: 'text',
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief)',
+          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief)',
           Accept: 'text/html,application/xhtml+xml',
         },
         // 4xx/5xx는 throw하지 않고 빈 본문 취급
@@ -38,9 +37,7 @@ export class ArticleFetchService {
     try {
       const $ = cheerio.load(html);
       // 보일러플레이트 제거
-      $(
-        'script, style, noscript, nav, aside, footer, header, form, iframe, svg, button',
-      ).remove();
+      $('script, style, noscript, nav, aside, footer, header, form, iframe, svg, button').remove();
 
       // 1순위: 시맨틱 컨테이너
       let root = $('article').first();
@@ -68,9 +65,7 @@ export class ArticleFetchService {
         .get()
         .filter((t) => t.length >= 30); // 메뉴/캡션 같은 짧은 조각 제외
 
-      const text = (paras.length ? paras.join(' ') : root.text())
-        .replace(/\s+/g, ' ')
-        .trim();
+      const text = (paras.length ? paras.join(' ') : root.text()).replace(/\s+/g, ' ').trim();
 
       if (text.length < 40) return null;
       return text.slice(0, max);

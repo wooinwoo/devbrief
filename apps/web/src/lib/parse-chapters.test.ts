@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parseChapters, parseTimestamp } from './parse-chapters';
 
 describe('parseTimestamp', () => {
@@ -39,7 +39,7 @@ describe('parseChapters', () => {
   });
 
   it('H:MM:SS 형식도 매치', () => {
-    const desc = `0:00 시작\n1:23:45 후반부`;
+    const desc = '0:00 시작\n1:23:45 후반부';
     const chapters = parseChapters(desc);
     expect(chapters).toHaveLength(2);
     expect(chapters[1]).toEqual({ time: 5025, label: '후반부' });
@@ -81,20 +81,20 @@ http://example.com
   });
 
   it('durationSec 초과하는 timestamp 는 제거', () => {
-    const desc = `0:00 시작\n1:00 본론\n10:00 ?(잘못된 chapter)`;
+    const desc = '0:00 시작\n1:00 본론\n10:00 ?(잘못된 chapter)';
     const chapters = parseChapters(desc, 300); // 5분
     expect(chapters.map((c) => c.label)).toEqual(['시작', '본론']);
   });
 
   it('중복 time 제거', () => {
-    const desc = `0:00 A\n0:00 B\n1:00 C`;
+    const desc = '0:00 A\n0:00 B\n1:00 C';
     const chapters = parseChapters(desc);
     expect(chapters).toHaveLength(2);
     expect(chapters[0].label).toBe('A');
   });
 
   it('time 오름차순 정렬', () => {
-    const desc = `5:00 C\n0:00 A\n2:30 B`;
+    const desc = '5:00 C\n0:00 A\n2:30 B';
     const chapters = parseChapters(desc);
     expect(chapters.map((c) => c.label)).toEqual(['A', 'B', 'C']);
   });

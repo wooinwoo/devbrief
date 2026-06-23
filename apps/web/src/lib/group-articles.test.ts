@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { groupByTime, extractTopTags } from './group-articles';
 import type { ArticleDto } from '@/components/article-card';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { extractTopTags, groupByTime } from './group-articles';
 
 function makeArticle(
   partial: Partial<ArticleDto> & { id: string; publishedAt: string },
@@ -100,18 +100,11 @@ describe('extractTopTags', () => {
     const result = extractTopTags(list);
     expect(result[0]).toEqual({ tag: 'AI', count: 3 });
     expect(result[1]).toEqual({ tag: 'LLM', count: 2 });
-    expect(result.map((r) => r.tag)).toEqual([
-      'AI',
-      'LLM',
-      'Anthropic',
-      'Claude',
-    ]);
+    expect(result.map((r) => r.tag)).toEqual(['AI', 'LLM', 'Anthropic', 'Claude']);
   });
 
   it('limit 인자가 결과 길이를 제한', () => {
-    const list = [
-      { tags: ['a', 'b', 'c', 'd', 'e'] },
-    ].map(
+    const list = [{ tags: ['a', 'b', 'c', 'd', 'e'] }].map(
       (p, i) =>
         ({
           id: `a${i}`,

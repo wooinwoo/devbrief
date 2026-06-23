@@ -52,9 +52,7 @@ describe('OgImageService', () => {
 
     it('상대 경로 + base → 절대화', () => {
       const html = `<meta property="og:image" content="/static/og.jpg">`;
-      expect(service.parse(html, 'https://blog.com/post/1')).toBe(
-        'https://blog.com/static/og.jpg',
-      );
+      expect(service.parse(html, 'https://blog.com/post/1')).toBe('https://blog.com/static/og.jpg');
     });
 
     it('// 시작 → https:// 붙임', () => {
@@ -65,9 +63,7 @@ describe('OgImageService', () => {
 
   describe('absolutize', () => {
     it('이미 절대 URL은 그대로', () => {
-      expect(service.absolutize('https://a.com/x.png')).toBe(
-        'https://a.com/x.png',
-      );
+      expect(service.absolutize('https://a.com/x.png')).toBe('https://a.com/x.png');
     });
 
     it('// → https://', () => {
@@ -75,9 +71,7 @@ describe('OgImageService', () => {
     });
 
     it('/path + base → 절대화', () => {
-      expect(service.absolutize('/p/x.png', 'https://a.com/sub/y')).toBe(
-        'https://a.com/p/x.png',
-      );
+      expect(service.absolutize('/p/x.png', 'https://a.com/sub/y')).toBe('https://a.com/p/x.png');
     });
 
     it('base 없으면 상대경로 그대로', () => {

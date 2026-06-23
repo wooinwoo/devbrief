@@ -1,8 +1,8 @@
-import { notFound } from 'next/navigation';
-import { SiteNav } from '@/components/site-nav';
-import { ArticleDetail } from '@/components/article-detail';
-import { MOCK_ARTICLES } from '@/lib/mock-articles';
 import type { ArticleDto } from '@/components/article-card';
+import { ArticleDetail } from '@/components/article-detail';
+import { SiteNav } from '@/components/site-nav';
+import { MOCK_ARTICLES } from '@/lib/mock-articles';
+import { notFound } from 'next/navigation';
 
 import { API_BASE } from '@/lib/api';
 
@@ -80,8 +80,7 @@ export async function generateMetadata({ params }: Props) {
 export default async function ArticleDetailPage({ params }: Props) {
   const { id } = await params;
   const [fromApi, all] = await Promise.all([getOne(id), getAll()]);
-  const article =
-    fromApi ?? MOCK_ARTICLES.find((a) => a.id === id) ?? null;
+  const article = fromApi ?? MOCK_ARTICLES.find((a) => a.id === id) ?? null;
   if (!article) notFound();
 
   const related = all
@@ -94,9 +93,7 @@ export default async function ArticleDetailPage({ params }: Props) {
     .slice(0, 4);
 
   return (
-    <main
-      className="min-h-screen w-full px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32"
-    >
+    <main className="min-h-screen w-full px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32">
       <SiteNav />
       <div className="max-w-3xl mx-auto">
         <ArticleDetail article={article} related={related} />

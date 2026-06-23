@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
-import { EmbeddingService } from './embedding.service';
-import { EmbeddingProcessor } from './embedding.processor';
+import { Module } from '@nestjs/common';
 import { GeminiModule } from '../ai/gemini.module';
+import { EmbeddingProcessor } from './embedding.processor';
+import { EmbeddingService } from './embedding.service';
 
 @Module({
   imports: [BullModule.registerQueue({ name: 'embedding' }), GeminiModule],

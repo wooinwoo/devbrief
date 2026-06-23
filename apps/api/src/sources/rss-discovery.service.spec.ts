@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
-import { RssDiscoveryService } from './rss-discovery.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { OgImageService } from '../common/og-image.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { RssDiscoveryService } from './rss-discovery.service';
 
 describe('RssDiscoveryService', () => {
   let service: RssDiscoveryService;
@@ -107,9 +107,11 @@ describe('RssDiscoveryService', () => {
     });
 
     it('한국어 제목이면 language=ko', async () => {
-      jest.spyOn(service, 'discover').mockResolvedValue([
-        { feedUrl: 'https://k.com/rss', title: '오늘의 한국 블로그', type: 'rss' },
-      ]);
+      jest
+        .spyOn(service, 'discover')
+        .mockResolvedValue([
+          { feedUrl: 'https://k.com/rss', title: '오늘의 한국 블로그', type: 'rss' },
+        ]);
       prisma.source.findUnique.mockResolvedValue(null);
       prisma.source.create.mockResolvedValue({ id: 'k' });
 

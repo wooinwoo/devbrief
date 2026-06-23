@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { InlineChat, type InlineChatHandle } from '@/components/inline-chat';
+import { useSearchParams } from 'next/navigation';
+import { useRef } from 'react';
 
 export function AdminChatClient() {
   const params = useSearchParams();

@@ -17,9 +17,9 @@ export class RssParserService {
     timeout: 10_000,
     // 일부 피드(NAVER D2 등)는 UA 없으면 406 차단 → 브라우저 UA 위장
     headers: {
-      'User-Agent':
-        'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.app)',
-      Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml; q=0.9, */*; q=0.8',
+      'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.app)',
+      Accept:
+        'application/rss+xml, application/atom+xml, application/xml, text/xml; q=0.9, */*; q=0.8',
     },
     customFields: {
       item: [
@@ -53,15 +53,11 @@ export class RssParserService {
     if (mediaThumb) return mediaThumb;
 
     const mediaContent = item['media:content']?.$;
-    if (
-      mediaContent?.url &&
-      (!mediaContent.medium || mediaContent.medium === 'image')
-    ) {
+    if (mediaContent?.url && (!mediaContent.medium || mediaContent.medium === 'image')) {
       return mediaContent.url;
     }
 
-    const html =
-      item['content:encoded'] ?? item.description ?? item.content ?? '';
+    const html = item['content:encoded'] ?? item.description ?? item.content ?? '';
     const match = /<img[^>]+src=["']([^"']+)["']/i.exec(String(html));
     if (match?.[1]) return match[1];
 

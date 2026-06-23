@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ChatService } from './chat.service';
-import { ChatController } from './chat.controller';
-import { EmbeddingModule } from '../embedding/embedding.module';
 import { GeminiModule } from '../ai/gemini.module';
+import { EmbeddingModule } from '../embedding/embedding.module';
+import { ChatController } from './chat.controller';
+import { ChatService } from './chat.service';
 
 @Module({
   imports: [EmbeddingModule, GeminiModule],

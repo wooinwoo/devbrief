@@ -1,11 +1,11 @@
-import { Suspense } from 'react';
-import { ArticlesView } from '@/components/articles-view';
 import type { ArticleDto } from '@/components/article-card';
+import { ArticlesView } from '@/components/articles-view';
 import type { DigestDto } from '@/components/daily-digest';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
-import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
-import { MOCK_CONFERENCES, type ConferenceDto } from '@/lib/mock-conferences';
+import { type ConferenceDto, MOCK_CONFERENCES } from '@/lib/mock-conferences';
 import { MOCK_REPOS, type RepoDto } from '@/lib/mock-repos';
+import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
+import { Suspense } from 'react';
 
 import { API_BASE } from '@/lib/api';
 
@@ -85,10 +85,7 @@ async function getDigest(): Promise<DigestDto | null> {
     const data = await res.json();
     if (!data) return null;
     return {
-      date:
-        typeof data.date === 'string'
-          ? data.date
-          : new Date(data.date).toISOString(),
+      date: typeof data.date === 'string' ? data.date : new Date(data.date).toISOString(),
       intro: data.intro ?? null,
       items: Array.isArray(data.items) ? data.items : [],
     };

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { motion } from 'motion/react';
 import { formatDuration } from '@/lib/format-duration';
-import { parseChapters, type Chapter } from '@/lib/parse-chapters';
-import { SectionHeader } from './section-header';
-import type { VideoDto } from '@/lib/mock-videos';
 import { formatViews } from '@/lib/format-views';
+import type { VideoDto } from '@/lib/mock-videos';
+import { type Chapter, parseChapters } from '@/lib/parse-chapters';
+import { motion } from 'motion/react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { SectionHeader } from './section-header';
 
 interface Props {
   video: VideoDto;
@@ -27,10 +27,7 @@ function isYouTubeId(id: string): boolean {
   return /^[A-Za-z0-9_-]{8,15}$/.test(id) && !id.startsWith('mock-');
 }
 
-const SOURCE_LABEL: Record<
-  NonNullable<VideoDto['chapterSource']>,
-  { ko: string; en: string }
-> = {
+const SOURCE_LABEL: Record<NonNullable<VideoDto['chapterSource']>, { ko: string; en: string }> = {
   official: { ko: '유튜버 직접 표시', en: 'official' },
   description: { ko: '영상 설명에서 추출', en: 'from description' },
   ai: { ko: 'AI 자동 생성 (Gemini)', en: 'AI generated' },
@@ -43,12 +40,9 @@ export function VideoDetail({ video, related }: Props) {
       ? video.chapters
       : parseChapters(video.description, video.durationSec);
   const chapterSource =
-    video.chapterSource ??
-    (chapters.length > 0 ? ('description' as const) : null);
+    video.chapterSource ?? (chapters.length > 0 ? ('description' as const) : null);
 
-  const [activeChapter, setActiveChapter] = useState<Chapter | null>(
-    chapters[0] ?? null,
-  );
+  const [activeChapter, setActiveChapter] = useState<Chapter | null>(chapters[0] ?? null);
   const [copied, setCopied] = useState(false);
 
   const seekTo = (c: Chapter) => setActiveChapter(c);
@@ -164,14 +158,15 @@ export function VideoDetail({ video, related }: Props) {
                 <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
                 <span>{relativeShort(video.publishedAt)}</span>
                 <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-                <span className="tabular-nums">
-                  {formatDuration(video.durationSec)}
-                </span>
+                <span className="tabular-nums">{formatDuration(video.durationSec)}</span>
               </div>
             </header>
 
             {/* 토픽 칩 + 액션 바 */}
-            <div className="flex items-center gap-2 flex-wrap pb-6 mb-8 border-b" style={{ borderColor: 'var(--color-line)' }}>
+            <div
+              className="flex items-center gap-2 flex-wrap pb-6 mb-8 border-b"
+              style={{ borderColor: 'var(--color-line)' }}
+            >
               {video.topics.slice(0, 5).map((t) => (
                 <span
                   key={t}
@@ -231,25 +226,16 @@ export function VideoDetail({ video, related }: Props) {
           {/* === 타임라인 =================================== */}
           {chapters.length > 0 ? (
             <section className="mb-10">
-              <SectionHeader
-                label="타임라인"
-                count={chapters.length}
-                hint="chapters"
-              />
+              <SectionHeader label="타임라인" count={chapters.length} hint="chapters" />
               {chapterSource && (
-                <p
-                  className="text-[11.5px] -mt-2 mb-3"
-                  style={{ color: 'var(--color-fg-subtle)' }}
-                >
+                <p className="text-[11.5px] -mt-2 mb-3" style={{ color: 'var(--color-fg-subtle)' }}>
                   {SOURCE_LABEL[chapterSource].ko}
                 </p>
               )}
               <ol>
                 {chapters.map((c, i) => {
                   const next = chapters[i + 1];
-                  const segDur = next
-                    ? next.time - c.time
-                    : video.durationSec - c.time;
+                  const segDur = next ? next.time - c.time : video.durationSec - c.time;
                   const isActive = activeChapter?.time === c.time;
                   return (
                     <li
@@ -257,9 +243,7 @@ export function VideoDetail({ video, related }: Props) {
                       className="grid grid-cols-[auto_1fr_auto] gap-4 items-baseline py-2.5 px-2 -mx-2 rounded-md border-b transition-colors"
                       style={{
                         borderColor: 'var(--color-line)',
-                        background: isActive
-                          ? 'var(--color-accent-soft)'
-                          : undefined,
+                        background: isActive ? 'var(--color-accent-soft)' : undefined,
                       }}
                     >
                       <button
@@ -267,15 +251,9 @@ export function VideoDetail({ video, related }: Props) {
                         onClick={() => seekTo(c)}
                         className="tabular-nums text-[12.5px] shrink-0 px-2 py-0.5 transition-colors"
                         style={{
-                          background: isActive
-                            ? 'var(--color-accent)'
-                            : 'transparent',
-                          color: isActive
-                            ? 'oklch(99% 0 0)'
-                            : 'var(--color-fg-default)',
-                          border: isActive
-                            ? 'none'
-                            : '1px solid var(--color-line-strong)',
+                          background: isActive ? 'var(--color-accent)' : 'transparent',
+                          color: isActive ? 'oklch(99% 0 0)' : 'var(--color-fg-default)',
+                          border: isActive ? 'none' : '1px solid var(--color-line-strong)',
                           fontWeight: 600,
                           borderRadius: 4,
                           minWidth: 56,
@@ -289,9 +267,7 @@ export function VideoDetail({ video, related }: Props) {
                         onClick={() => seekTo(c)}
                         className="text-[14px] leading-tight tracking-[-0.005em] text-left hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
                         style={{
-                          color: isActive
-                            ? 'var(--color-fg-strong)'
-                            : 'var(--color-fg-default)',
+                          color: isActive ? 'var(--color-fg-strong)' : 'var(--color-fg-default)',
                           fontWeight: isActive ? 700 : 500,
                         }}
                       >
@@ -360,10 +336,7 @@ export function VideoDetail({ video, related }: Props) {
                 className="text-[12.5px] cursor-pointer mb-2 inline-flex items-center gap-1.5 select-none"
                 style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
               >
-                <span
-                  aria-hidden
-                  className="transition-transform group-open:rotate-90"
-                >
+                <span aria-hidden className="transition-transform group-open:rotate-90">
                   ▸
                 </span>
                 영상 설명 원문 보기
@@ -411,10 +384,7 @@ export function VideoDetail({ video, related }: Props) {
               >
                 {video.channel}
               </div>
-              <div
-                className="text-[12px]"
-                style={{ color: 'var(--color-fg-muted)' }}
-              >
+              <div className="text-[12px]" style={{ color: 'var(--color-fg-muted)' }}>
                 YouTube 채널
               </div>
             </div>
@@ -459,10 +429,7 @@ export function VideoDetail({ video, related }: Props) {
               <ul className="flex flex-col gap-3">
                 {related.map((v) => (
                   <li key={v.id}>
-                    <Link
-                      href={`/videos/${v.id}`}
-                      className="group flex gap-3 items-start"
-                    >
+                    <Link href={`/videos/${v.id}`} className="group flex gap-3 items-start">
                       <div
                         className="relative w-[104px] aspect-video shrink-0 overflow-hidden"
                         style={{

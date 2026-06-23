@@ -1,9 +1,4 @@
-import {
-  cleanBody,
-  topSentences,
-  splitSentences,
-  clamp,
-} from './summarization.service';
+import { clamp, cleanBody, splitSentences, topSentences } from './summarization.service';
 
 describe('cleanBody', () => {
   it('HTML 태그와 엔티티를 제거하고 평문화한다', () => {
@@ -27,11 +22,7 @@ describe('cleanBody', () => {
 
 describe('splitSentences', () => {
   it('마침표·물음표·느낌표 뒤 공백 기준으로 문장을 나눈다', () => {
-    expect(splitSentences('첫 문장. 둘째? 셋째!')).toEqual([
-      '첫 문장.',
-      '둘째?',
-      '셋째!',
-    ]);
+    expect(splitSentences('첫 문장. 둘째? 셋째!')).toEqual(['첫 문장.', '둘째?', '셋째!']);
   });
 
   it('전각 마침표(。)도 경계로 인식한다', () => {
@@ -56,9 +47,7 @@ describe('topSentences', () => {
   it('12자 미만의 짧은 조각은 버린다', () => {
     // "짧다." 는 12자 미만이라 제외, 긴 문장만 남는다
     const text = '짧다. 이것은 충분히 길이가 되는 첫 문장입니다.';
-    expect(topSentences(text, 3)).toEqual([
-      '이것은 충분히 길이가 되는 첫 문장입니다.',
-    ]);
+    expect(topSentences(text, 3)).toEqual(['이것은 충분히 길이가 되는 첫 문장입니다.']);
   });
 
   it('본문이 너무 짧으면 빈 배열', () => {

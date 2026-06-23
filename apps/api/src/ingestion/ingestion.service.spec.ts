@@ -1,8 +1,8 @@
-import { Test } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
+import { Test } from '@nestjs/testing';
+import { PrismaService } from '../prisma/prisma.service';
 import { IngestionService } from './ingestion.service';
 import { RssParserService } from './rss-parser.service';
-import { PrismaService } from '../prisma/prisma.service';
 
 describe('IngestionService', () => {
   let service: IngestionService;
@@ -154,10 +154,7 @@ describe('IngestionService', () => {
         { id: 's1', name: 'A', feedUrl: 'https://a' },
         { id: 's2', name: 'B', feedUrl: 'https://b' },
       ]);
-      jest
-        .spyOn(service, 'ingestSource')
-        .mockResolvedValueOnce(3)
-        .mockResolvedValueOnce(5);
+      jest.spyOn(service, 'ingestSource').mockResolvedValueOnce(3).mockResolvedValueOnce(5);
 
       const result = await service.ingestAll();
       expect(result).toEqual({ sourceCount: 2, newArticles: 8 });

@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../prisma/prisma.module';
 import { GeminiModule } from '../ai/gemini.module';
-import { DailyDigestService } from './daily-digest.service';
+import { PrismaModule } from '../prisma/prisma.module';
 import { DailyDigestCron } from './daily-digest.cron';
+import { DailyDigestService } from './daily-digest.service';
 import { DigestController } from './digest.controller';
 
 @Module({

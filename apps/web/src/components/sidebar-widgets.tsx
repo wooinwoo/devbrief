@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
+import { daysUntil } from '@/lib/date-utils';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { VideoDto } from '@/lib/mock-videos';
-import { daysUntil } from '@/lib/date-utils';
+import Link from 'next/link';
 
 function fmtViews(n: number): string {
   if (n >= 10000) return `${Math.round(n / 10000)}만`;
@@ -21,10 +21,7 @@ interface Props {
 export function SidebarWidgets({ conferences, videos, onNavigate }: Props) {
   const upcoming = conferences
     .filter((c) => daysUntil(c.startDate) >= 0)
-    .sort(
-      (a, b) =>
-        new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-    )
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
     .slice(0, 3);
   const vids = videos.slice(0, 2);
 

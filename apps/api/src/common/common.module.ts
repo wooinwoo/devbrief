@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { OgImageService } from './og-image.service';
 import { BrandColorService } from './brand-color.service';
+import { OgImageService } from './og-image.service';
 
 @Module({
   providers: [OgImageService, BrandColorService],

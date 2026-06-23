@@ -35,10 +35,13 @@ export function categorize(text: string): string {
 
 /** GitHub 설명에 섞인 이모지·장식문자 제거 — 서비스 톤 통일 */
 export function stripEmoji(s: string): string {
-  return s
-    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  return (
+    s
+      // biome-ignore lint/suspicious/noMisleadingCharacterClass: 이모지 본체·변형 선택자·ZWJ를 의도적으로 함께 제거
+      .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+  );
 }
 
 @Injectable()

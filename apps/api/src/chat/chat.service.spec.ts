@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing';
-import { ChatService } from './chat.service';
 import { GeminiService } from '../ai/gemini.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../embedding/embedding.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { ChatService } from './chat.service';
 
 describe('ChatService', () => {
   let service: ChatService;

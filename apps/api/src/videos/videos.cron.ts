@@ -14,9 +14,7 @@ export class VideosCron {
     this.logger.log('Weekly YouTube sync triggered');
     try {
       const result = await this.youtube.syncAllConferences();
-      this.logger.log(
-        `YouTube sync done: synced=${result.synced}`,
-      );
+      this.logger.log(`YouTube sync done: synced=${result.synced}`);
     } catch (e) {
       this.logger.error(`YouTube sync failed: ${(e as Error).message}`);
     }

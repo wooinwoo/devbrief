@@ -6,7 +6,8 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     id: 'm1',
     title: 'Anthropic, Claude Opus 4.8 출시',
     url: 'https://www.anthropic.com/news',
-    summaryOneLine: 'Anthropic 이 코딩 정확도가 개선되고 dynamic workflow 도구가 추가된 Opus 4.8 을 발표.',
+    summaryOneLine:
+      'Anthropic 이 코딩 정확도가 개선되고 dynamic workflow 도구가 추가된 Opus 4.8 을 발표.',
     summaryThreeLine: null,
     publishedAt: '2026-05-29T08:30:00Z',
     tags: ['AI', 'LLM', 'Anthropic'],
@@ -81,7 +82,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
   },
   {
     id: 'm8',
-    title: 'I paid for Cursor and Claude Code for 6 months. Here\'s the one to keep.',
+    title: "I paid for Cursor and Claude Code for 6 months. Here's the one to keep.",
     url: 'https://dev.to',
     summaryOneLine: 'Cursor 와 Claude Code 를 6개월 병행 사용한 후 선택한 도구 후기.',
     summaryThreeLine: null,
@@ -92,7 +93,7 @@ export const MOCK_ARTICLES: ArticleDto[] = [
   },
   {
     id: 'm9',
-    title: 'Sneak peek at new Siri app reveals Apple\'s plans to take on ChatGPT',
+    title: "Sneak peek at new Siri app reveals Apple's plans to take on ChatGPT",
     url: 'https://techcrunch.com',
     summaryOneLine: '새 Siri 앱 사전 유출, ChatGPT 대응 위한 Apple 의 전략 윤곽.',
     summaryThreeLine: null,

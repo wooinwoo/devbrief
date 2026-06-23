@@ -87,9 +87,7 @@ export class DailyDigestService {
     // 당일 글이 부족하면(수집 공백·주말 등) 최신 글로 폴백 → 다이제스트가 비지 않게.
     // 개인 프로젝트 특성상 매일 수집이 돌지 않을 수 있어 "오늘의 핵심"을 최근 글 기준으로 채운다.
     if (articles.length < 5) {
-      this.logger.log(
-        `당일 글 ${articles.length}개 — 최신 글로 폴백해 digest 생성`,
-      );
+      this.logger.log(`당일 글 ${articles.length}개 — 최신 글로 폴백해 digest 생성`);
       articles = await this.prisma.article.findMany({
         orderBy: { publishedAt: 'desc' },
         take: 30,
@@ -133,17 +131,13 @@ export class DailyDigestService {
       });
     } catch (e) {
       // 키 만료/한도 등 — 휴리스틱으로 폴백 (다이제스트를 비우지 않는다)
-      this.logger.warn(
-        `digest Gemini 실패 → 휴리스틱 폴백: ${(e as Error).message.slice(0, 100)}`,
-      );
+      this.logger.warn(`digest Gemini 실패 → 휴리스틱 폴백: ${(e as Error).message.slice(0, 100)}`);
       return this.generateHeuristic(today, articles);
     }
 
     // 유효한 articleId 만 유지
     const validIds = new Set(input.map((a) => a.id));
-    const cleanItems = (parsed.items ?? [])
-      .filter((it) => validIds.has(it.articleId))
-      .slice(0, 5);
+    const cleanItems = (parsed.items ?? []).filter((it) => validIds.has(it.articleId)).slice(0, 5);
 
     const result: DigestPayload = {
       intro: parsed.intro?.trim() ?? '',

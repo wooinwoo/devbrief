@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { OgImageService } from '../common/og-image.service';
 import { BrandColorService } from '../common/brand-color.service';
+import { OgImageService } from '../common/og-image.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * 컨퍼런스 자동 이미지 동기화 + brand 색 추출.

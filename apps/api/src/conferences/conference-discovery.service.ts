@@ -55,9 +55,7 @@ export class ConferenceDiscoveryService {
       });
       return parsed.conferences ?? [];
     } catch (e) {
-      this.logger.debug(
-        `[${article.id}] NER 실패: ${(e as Error).message}`,
-      );
+      this.logger.debug(`[${article.id}] NER 실패: ${(e as Error).message}`);
       return [];
     }
   }
@@ -131,9 +129,7 @@ export class ConferenceDiscoveryService {
           saved++;
         }
       } catch (e) {
-        this.logger.warn(
-          `후보 저장 실패 [${c.name}]: ${(e as Error).message}`,
-        );
+        this.logger.warn(`후보 저장 실패 [${c.name}]: ${(e as Error).message}`);
         skipped++;
       }
     }
@@ -188,8 +184,7 @@ export class ConferenceDiscoveryService {
 
     for (const a of articles) {
       try {
-        const snippet =
-          a.summaryThreeLine ?? a.summaryOneLine ?? '';
+        const snippet = a.summaryThreeLine ?? a.summaryOneLine ?? '';
         const candidates = await this.extractFromArticle({
           id: a.id,
           title: a.title,
@@ -201,14 +196,10 @@ export class ConferenceDiscoveryService {
         totalSaved += r.saved;
         totalSkipped += r.skipped;
         if (r.saved > 0) {
-          this.logger.log(
-            `[${a.id}] ${candidates.length}개 후보 → ${r.saved}건 저장`,
-          );
+          this.logger.log(`[${a.id}] ${candidates.length}개 후보 → ${r.saved}건 저장`);
         }
       } catch (e) {
-        this.logger.warn(
-          `Discovery [${a.id}] 실패: ${(e as Error).message}`,
-        );
+        this.logger.warn(`Discovery [${a.id}] 실패: ${(e as Error).message}`);
       }
     }
 

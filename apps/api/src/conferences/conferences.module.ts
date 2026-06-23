@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../prisma/prisma.module';
-import { CommonModule } from '../common/common.module';
 import { GeminiModule } from '../ai/gemini.module';
-import { ConferencesController } from './conferences.controller';
-import { ConferenceSeederService } from './conference-seeder.service';
-import { ConferenceImageSyncService } from './conference-image-sync.service';
-import { ConferenceDiscoveryService } from './conference-discovery.service';
+import { CommonModule } from '../common/common.module';
+import { PrismaModule } from '../prisma/prisma.module';
 import { ConferenceDiscoveryCron } from './conference-discovery.cron';
+import { ConferenceDiscoveryService } from './conference-discovery.service';
+import { ConferenceImageSyncService } from './conference-image-sync.service';
+import { ConferenceSeederService } from './conference-seeder.service';
+import { ConferencesController } from './conferences.controller';
 
 @Module({
   imports: [PrismaModule, CommonModule, GeminiModule],

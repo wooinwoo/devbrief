@@ -21,7 +21,8 @@ export const MOCK_CONFERENCES: ConferenceDto[] = [
     endDate: '2026-06-21',
     location: '서울 양재 aT센터',
     topics: ['Frontend', 'React', 'Vue'],
-    description: '국내 최대 프론트엔드 컨퍼런스. 1,500명 참여 규모로 React / Vue / 웹 성능 / 디자인 시스템 등 다룸.',
+    description:
+      '국내 최대 프론트엔드 컨퍼런스. 1,500명 참여 규모로 React / Vue / 웹 성능 / 디자인 시스템 등 다룸.',
     brand: 'oklch(55% 0.20 245)',
   },
   {
@@ -43,7 +44,8 @@ export const MOCK_CONFERENCES: ConferenceDto[] = [
     endDate: '2026-08-13',
     location: '서울 코엑스',
     topics: ['핀테크', '백엔드', 'iOS'],
-    description: '토스 개발자 컨퍼런스. 금융 도메인 백엔드 / iOS / 운영 / 보안 / SRE 깊이 있는 세션.',
+    description:
+      '토스 개발자 컨퍼런스. 금융 도메인 백엔드 / iOS / 운영 / 보안 / SRE 깊이 있는 세션.',
     brand: 'oklch(52% 0.19 240)',
   },
   {

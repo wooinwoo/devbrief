@@ -1,7 +1,7 @@
-import { notFound } from 'next/navigation';
 import { SiteNav } from '@/components/site-nav';
 import { VideoDetail } from '@/components/video-detail';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
+import { notFound } from 'next/navigation';
 
 import { API_BASE } from '@/lib/api';
 
@@ -87,14 +87,10 @@ export default async function VideoDetailPage({ params }: Props) {
   const video = fromApi ?? MOCK_VIDEOS.find((v) => v.id === id);
   if (!video) notFound();
 
-  const related = all
-    .filter((v) => v.id !== video.id)
-    .slice(0, 5);
+  const related = all.filter((v) => v.id !== video.id).slice(0, 5);
 
   return (
-    <main
-      className="min-h-screen w-full px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32"
-    >
+    <main className="min-h-screen w-full px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32">
       <SiteNav />
       <div className="max-w-6xl mx-auto">
         <VideoDetail video={video} related={related} />

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { motion } from 'motion/react';
 import { formatDuration } from '@/lib/format-duration';
 import { formatViews } from '@/lib/format-views';
 import type { VideoDto } from '@/lib/mock-videos';
+import { motion } from 'motion/react';
+import Link from 'next/link';
+import { useState } from 'react';
 
 function relativeShort(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -63,8 +63,7 @@ export function VideoCard({ video: v, index = 0 }: Props) {
                 aria-hidden
                 className="absolute inset-0"
                 style={{
-                  background:
-                    'linear-gradient(to top, oklch(0% 0 0 / 0.4) 0%, transparent 50%)',
+                  background: 'linear-gradient(to top, oklch(0% 0 0 / 0.4) 0%, transparent 50%)',
                 }}
               />
             </>
@@ -95,11 +94,8 @@ export function VideoCard({ video: v, index = 0 }: Props) {
                 boxShadow: '0 8px 24px -4px oklch(0% 0 0 / 0.4)',
               }}
             >
-              <svg width="14" height="16" viewBox="0 0 14 16" fill="none">
-                <path
-                  d="M2 1.5L12 8L2 14.5V1.5Z"
-                  fill="oklch(20% 0.012 245)"
-                />
+              <svg width="14" height="16" viewBox="0 0 14 16" fill="none" aria-hidden="true">
+                <path d="M2 1.5L12 8L2 14.5V1.5Z" fill="oklch(20% 0.012 245)" />
               </svg>
             </span>
           </div>
@@ -159,13 +155,9 @@ export function VideoCard({ video: v, index = 0 }: Props) {
 
         {/* 메타 */}
         <div className="mt-2 flex items-center gap-2 text-[11.5px]">
-          <span style={{ color: 'var(--color-fg-muted)' }}>
-            조회수 {formatViews(v.views)}회
-          </span>
+          <span style={{ color: 'var(--color-fg-muted)' }}>조회수 {formatViews(v.views)}회</span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-          <span style={{ color: 'var(--color-fg-muted)' }}>
-            {relativeShort(v.publishedAt)}
-          </span>
+          <span style={{ color: 'var(--color-fg-muted)' }}>{relativeShort(v.publishedAt)}</span>
         </div>
       </Link>
     </motion.li>

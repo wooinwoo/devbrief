@@ -14,9 +14,7 @@ export class ReposCron {
     this.logger.log('GitHub Trending sync triggered');
     try {
       const result = await this.repos.refreshAll();
-      this.logger.log(
-        `Trending sync done: daily=${result.daily} weekly=${result.weekly}`,
-      );
+      this.logger.log(`Trending sync done: daily=${result.daily} weekly=${result.weekly}`);
     } catch (e) {
       this.logger.error(`Trending sync failed: ${(e as Error).message}`);
     }

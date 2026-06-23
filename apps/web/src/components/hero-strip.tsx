@@ -11,13 +11,7 @@ interface Props {
   onTagClick?: (tag: string) => void;
 }
 
-export function HeroStrip({
-  total,
-  unread,
-  sourceCount,
-  topTags,
-  onTagClick,
-}: Props) {
+export function HeroStrip({ total, unread, sourceCount, topTags, onTagClick }: Props) {
   const readPercent = total > 0 ? Math.round(((total - unread) / total) * 100) : 0;
 
   return (
@@ -30,14 +24,9 @@ export function HeroStrip({
       {/* 큰 수 + 짧은 카피 (잭 톤 박력) */}
       <div className="grid gap-x-12 gap-y-8 lg:grid-cols-[auto_1fr] lg:items-end">
         <div>
-          <p
-            className="text-[13px] mb-3 tracking-wide"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
+          <p className="text-[13px] mb-3 tracking-wide" style={{ color: 'var(--color-fg-muted)' }}>
             오늘 9시에 새 글{' '}
-            <span style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}>
-              {unread}
-            </span>
+            <span style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}>{unread}</span>
             개가 들어왔어요.
           </p>
           <h2
@@ -79,18 +68,13 @@ export function HeroStrip({
                   onClick={() => onTagClick?.(tag)}
                   className="transition-colors leading-none"
                   style={{
-                    color:
-                      i === 0
-                        ? 'var(--color-fg-strong)'
-                        : 'var(--color-fg-muted)',
+                    color: i === 0 ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
                     fontSize: `${size}rem`,
                     fontWeight: i === 0 ? 700 : 500,
                     letterSpacing: '-0.01em',
                   }}
                 >
-                  <span className="hover:text-(--color-fg-strong) transition-colors">
-                    {tag}
-                  </span>
+                  <span className="hover:text-(--color-fg-strong) transition-colors">{tag}</span>
                   <sup
                     className="ml-0.5 tabular-nums"
                     style={{

@@ -1,6 +1,6 @@
 'use client';
 
-import { useLang, type Lang } from '@/lib/lang-context';
+import { type Lang, useLang } from '@/lib/lang-context';
 
 const ITEMS: Array<{ value: Lang; label: string }> = [
   { value: 'ko', label: '한국어' },

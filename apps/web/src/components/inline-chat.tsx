@@ -1,17 +1,17 @@
 'use client';
 
+import { MOCK_ARTICLES } from '@/lib/mock-articles';
+import { AnimatePresence, motion } from 'motion/react';
 import {
+  type FormEvent,
   forwardRef,
   useEffect,
   useImperativeHandle,
   useRef,
   useState,
-  type FormEvent,
 } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { CitationGrid, type Citation } from './citation-card';
 import { AnswerText } from './answer-text';
-import { MOCK_ARTICLES } from '@/lib/mock-articles';
+import { type Citation, CitationGrid } from './citation-card';
 
 export interface InlineChatHandle {
   ask(text: string): void;
@@ -151,9 +151,7 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
       for (let i = 0; i < answer.length; i += 4) {
         await new Promise((r) => setTimeout(r, 18));
         setMessages((m) =>
-          m.map((msg) =>
-            msg.id === asstId ? { ...msg, content: answer.slice(0, i + 4) } : msg,
-          ),
+          m.map((msg) => (msg.id === asstId ? { ...msg, content: answer.slice(0, i + 4) } : msg)),
         );
       }
       setMessages((m) => m.map((msg) => (msg.id === asstId ? { ...msg, citations } : msg)));
@@ -297,9 +295,7 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
-                className={
-                  m.role === 'user' ? 'leading-relaxed' : 'leading-relaxed pl-4 relative'
-                }
+                className={m.role === 'user' ? 'leading-relaxed' : 'leading-relaxed pl-4 relative'}
               >
                 {m.role === 'assistant' && (
                   <span

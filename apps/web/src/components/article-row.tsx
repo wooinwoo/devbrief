@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
-import { relativeTime } from '@/lib/relative-time';
 import { categoryOf } from '@/lib/category';
-import { useLang, pickTitle } from '@/lib/lang-context';
+import { pickTitle, useLang } from '@/lib/lang-context';
+import { relativeTime } from '@/lib/relative-time';
 import { sourceColor } from '@/lib/source-colors';
+import Link from 'next/link';
 import type { ArticleDto } from './article-card';
 
 interface Props {
@@ -89,11 +89,7 @@ export function ArticleRow({
               {cat.label}
             </span>
           )}
-          <Link
-            href={`/articles/${article.id}`}
-            onClick={onOpen}
-            className="min-w-0 flex-1"
-          >
+          <Link href={`/articles/${article.id}`} onClick={onOpen} className="min-w-0 flex-1">
             <span
               className="block text-[15px] leading-[1.4] tracking-[-0.005em] break-keep group-hover:text-(--color-accent-strong) transition-colors line-clamp-3"
               style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
@@ -163,7 +159,7 @@ export function ArticleRow({
             color: bookmarked ? 'var(--color-accent)' : 'var(--color-fg-muted)',
           }}
         >
-          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
+          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
             <path
               d="M4 2.5h8a.5.5 0 0 1 .5.5v10.2a.3.3 0 0 1-.48.24L8 11l-4.02 2.94a.3.3 0 0 1-.48-.24V3a.5.5 0 0 1 .5-.5Z"
               fill={bookmarked ? 'currentColor' : 'none'}

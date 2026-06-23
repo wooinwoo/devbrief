@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
+import { type ConferenceDto, MOCK_CONFERENCES } from '@/lib/mock-conferences';
 import { motion } from 'motion/react';
-import { MOCK_CONFERENCES, type ConferenceDto } from '@/lib/mock-conferences';
+import Link from 'next/link';
 
 function daysUntil(iso: string): number {
   const target = new Date(iso).getTime();
@@ -12,8 +12,7 @@ function daysUntil(iso: string): number {
 }
 
 function formatDate(iso: string, end?: string | null): string {
-  const fmt = (d: Date) =>
-    d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+  const fmt = (d: Date) => d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   const s = new Date(iso);
   if (!end || end === iso) return fmt(s);
   return `${fmt(s)} ~ ${fmt(new Date(end))}`;
@@ -24,13 +23,10 @@ interface Props {
 }
 
 export function UpcomingRow({ conferences }: Props = {}) {
-  const list =
-    conferences && conferences.length > 0 ? conferences : MOCK_CONFERENCES;
+  const list = conferences && conferences.length > 0 ? conferences : MOCK_CONFERENCES;
   const upcoming = list
     .filter((c) => daysUntil(c.startDate) >= 0)
-    .sort(
-      (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-    )
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
     .slice(0, 5);
 
   if (upcoming.length === 0) return null;
@@ -42,7 +38,10 @@ export function UpcomingRow({ conferences }: Props = {}) {
       transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
       className="mb-20"
     >
-      <div className="flex items-end justify-between mb-7 pb-4 border-b" style={{ borderColor: 'var(--color-line)' }}>
+      <div
+        className="flex items-end justify-between mb-7 pb-4 border-b"
+        style={{ borderColor: 'var(--color-line)' }}
+      >
         <div>
           <h2
             className="text-[1.5rem] sm:text-[2.125rem] leading-none tracking-[-0.025em] break-keep"
@@ -117,7 +116,8 @@ export function UpcomingRow({ conferences }: Props = {}) {
                   </div>
 
                   {/* 우하단 큰 D-day 숫자 */}
-                  <div className="self-end leading-none tabular-nums tracking-[-0.04em]"
+                  <div
+                    className="self-end leading-none tabular-nums tracking-[-0.04em]"
                     style={{
                       fontSize: '4rem',
                       fontWeight: 700,

@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { VideoCard } from '../video-card';
-import { FilterSidebar, type FilterGroup } from '../filter-sidebar';
 import type { VideoDto } from '@/lib/mock-videos';
+import { useMemo, useState } from 'react';
+import { type FilterGroup, FilterSidebar } from '../filter-sidebar';
+import { VideoCard } from '../video-card';
 
 export function VideosTab({ videos }: { videos: VideoDto[] }) {
   const [channel, setChannel] = useState<string | null>(null);
@@ -20,8 +20,7 @@ export function VideosTab({ videos }: { videos: VideoDto[] }) {
 
   const topicOptions = useMemo(() => {
     const map = new Map<string, number>();
-    for (const v of videos)
-      for (const t of v.topics) map.set(t, (map.get(t) ?? 0) + 1);
+    for (const v of videos) for (const t of v.topics) map.set(t, (map.get(t) ?? 0) + 1);
     return [...map.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([value, count]) => ({ value, label: value, count }));

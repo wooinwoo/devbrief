@@ -41,8 +41,8 @@ export function PageFooter({ total }: Props) {
               Dev<span style={{ color: 'var(--bar-accent)' }}>brief</span>
             </p>
             <p className="text-[13.5px] leading-[1.7] max-w-sm">
-              한국 개발자를 위한 기술 큐레이션. 매일 오전 9시에 개발 글 ·
-              컨퍼런스 · 발표 영상을 자동 수집하고 한국어로 번역합니다.
+              한국 개발자를 위한 기술 큐레이션. 매일 오전 9시에 개발 글 · 컨퍼런스 · 발표 영상을
+              자동 수집하고 한국어로 번역합니다.
             </p>
           </div>
 
@@ -83,10 +83,7 @@ export function PageFooter({ total }: Props) {
                 ['다음 갱신', nextNineAm()],
                 ['수집 주기', '매일 09:00'],
               ].map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex items-baseline justify-between gap-3"
-                >
+                <div key={k} className="flex items-baseline justify-between gap-3">
                   <dt>{k}</dt>
                   <dd
                     className="tabular-nums"

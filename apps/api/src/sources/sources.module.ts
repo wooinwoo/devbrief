@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../prisma/prisma.module';
 import { CommonModule } from '../common/common.module';
-import { SourcesController } from './sources.controller';
+import { PrismaModule } from '../prisma/prisma.module';
 import { RssDiscoveryService } from './rss-discovery.service';
+import { SourcesController } from './sources.controller';
 
 @Module({
   imports: [PrismaModule, CommonModule],

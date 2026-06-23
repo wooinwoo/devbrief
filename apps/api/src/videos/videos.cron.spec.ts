@@ -9,10 +9,7 @@ describe('VideosCron', () => {
   beforeEach(async () => {
     youtube = { syncAllConferences: jest.fn() };
     const moduleRef = await Test.createTestingModule({
-      providers: [
-        VideosCron,
-        { provide: YouTubeSyncService, useValue: youtube },
-      ],
+      providers: [VideosCron, { provide: YouTubeSyncService, useValue: youtube }],
     }).compile();
     cron = moduleRef.get(VideosCron);
   });

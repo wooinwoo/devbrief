@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { FilterSidebar, type FilterGroup } from '../filter-sidebar';
-import { RepoCard } from '../repo-card';
 import type { RepoDto } from '@/lib/mock-repos';
+import { useMemo, useState } from 'react';
+import { type FilterGroup, FilterSidebar } from '../filter-sidebar';
+import { RepoCard } from '../repo-card';
 
 const CATEGORY_LABEL: Record<string, string> = {
   ai: 'AI',
@@ -38,10 +38,7 @@ export function ReposTab({ repos }: Props) {
   };
 
   // 기간별로 먼저 분리
-  const periodRepos = useMemo(
-    () => repos.filter((r) => r.period === period),
-    [repos, period],
-  );
+  const periodRepos = useMemo(() => repos.filter((r) => r.period === period), [repos, period]);
 
   // 언어 옵션 (현재 기간 기준, 등장 횟수순)
   const languageOptions = useMemo(() => {
@@ -110,11 +107,9 @@ export function ReposTab({ repos }: Props) {
             className="text-[13px] leading-relaxed break-keep max-w-[42ch]"
             style={{ color: 'var(--color-fg-muted)' }}
           >
-            최근 {period === 'weekly' ? '한 주' : '하루'} 동안 star가 가장 가파르게
-            오른 레포. 절대 규모가 아니라{' '}
-            <span style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}>
-              증가 속도
-            </span>{' '}
+            최근 {period === 'weekly' ? '한 주' : '하루'} 동안 star가 가장 가파르게 오른 레포. 절대
+            규모가 아니라{' '}
+            <span style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}>증가 속도</span>{' '}
             기준이라, 작아도 뜨는 중이면 잡힙니다.
           </p>
           <div className="w-[150px] shrink-0">
@@ -181,9 +176,7 @@ function PeriodToggle({
             className="flex-1 py-1.5 rounded-md text-[12.5px] transition-colors"
             style={{
               background: active ? 'var(--color-bg-elevated)' : 'transparent',
-              color: active
-                ? 'var(--color-fg-strong)'
-                : 'var(--color-fg-muted)',
+              color: active ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
               fontWeight: active ? 700 : 500,
               boxShadow: active ? '0 1px 2px oklch(0% 0 0 / 0.08)' : undefined,
             }}

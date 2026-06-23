@@ -43,11 +43,7 @@ export class SummarizationService {
     private fetcher: ArticleFetchService,
   ) {}
 
-  async summarize(
-    articleId: string,
-    title: string,
-    snippet: string,
-  ): Promise<void> {
+  async summarize(articleId: string, title: string, snippet: string): Promise<void> {
     // 1순위: Gemini(고품질). isAvailable()은 키 "존재"만 보므로, 키가
     // 만료/무효여도 true다 → 실제 호출이 실패하면 무료 경로로 폴백한다.
     if (this.gemini.isAvailable()) {
@@ -61,7 +57,7 @@ export class SummarizationService {
           where: { id: articleId },
           data: {
             language: parsed.language ?? 'mixed',
-            titleKo: parsed.language === 'ko' ? null : parsed.titleKo ?? null,
+            titleKo: parsed.language === 'ko' ? null : (parsed.titleKo ?? null),
             summaryOneLine: parsed.summaryOneLine ?? null,
             summaryThreeLine: parsed.summaryThreeLine ?? null,
           },
@@ -90,11 +86,7 @@ export class SummarizationService {
    * - oneLine  : 본문 첫 문장. threeLine: 첫 3문장. 영문이면 통째 번역 후 재분할.
    *   (LLM 압축이 아니라 추출이지만, Gemini 없이도 한/세 줄을 채울 수 있다.)
    */
-  private async summarizeFree(
-    articleId: string,
-    title: string,
-    snippet: string,
-  ): Promise<void> {
+  private async summarizeFree(articleId: string, title: string, snippet: string): Promise<void> {
     const isKo = this.translation.hasKorean(title);
     const titleKo = isKo ? null : await this.translation.toKorean(title);
 
@@ -124,7 +116,7 @@ export class SummarizationService {
       const block = sentences.join(' ');
       const koBlock = this.translation.hasKorean(block)
         ? block
-        : (await this.translation.toKorean(block)) ?? block;
+        : ((await this.translation.toKorean(block)) ?? block);
       const koSentences = splitSentences(koBlock).slice(0, 3);
       if (koSentences.length) {
         oneLine = clamp(koSentences[0], 140);
@@ -178,5 +170,5 @@ export function splitSentences(text: string): string[] {
 /** 최대 길이 초과 시 말줄임. */
 export function clamp(s: string, max: number): string {
   const t = s.trim();
-  return t.length > max ? t.slice(0, max).trim() + '…' : t;
+  return t.length > max ? `${t.slice(0, max).trim()}…` : t;
 }

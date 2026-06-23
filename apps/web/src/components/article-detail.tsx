@@ -1,14 +1,14 @@
 'use client';
 
-import Link from 'next/link';
+import { categoryOf } from '@/lib/category';
+import { pickTitle, useLang } from '@/lib/lang-context';
+import { readTracking } from '@/lib/read-tracking';
+import { relativeTime } from '@/lib/relative-time';
+import { sourceColor } from '@/lib/source-colors';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import { useEffect } from 'react';
 import type { ArticleDto } from './article-card';
-import { relativeTime } from '@/lib/relative-time';
-import { readTracking } from '@/lib/read-tracking';
-import { categoryOf } from '@/lib/category';
-import { useLang, pickTitle } from '@/lib/lang-context';
-import { sourceColor } from '@/lib/source-colors';
 import { SectionHeader } from './section-header';
 
 function readingMinutes(article: {
@@ -189,16 +189,10 @@ export function ArticleDetail({ article, related }: Props) {
         }}
       >
         <div className="min-w-0">
-          <p
-            className="text-[13.5px]"
-            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-          >
+          <p className="text-[13.5px]" style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}>
             전체 내용이 궁금하다면
           </p>
-          <p
-            className="text-[12.5px] mt-0.5 truncate"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
+          <p className="text-[12.5px] mt-0.5 truncate" style={{ color: 'var(--color-fg-muted)' }}>
             {article.source.name} 원문에서 이어 읽기
           </p>
         </div>
@@ -214,7 +208,7 @@ export function ArticleDetail({ article, related }: Props) {
           }}
         >
           원문 보기
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <path
               d="M3 9L9 3M9 3H4M9 3V8"
               stroke="currentColor"
@@ -233,8 +227,7 @@ export function ArticleDetail({ article, related }: Props) {
           <ul>
             {related.map((r) => {
               const rCat = categoryOf(r.tags);
-              const rDot =
-                sourceColor(r.source.provider);
+              const rDot = sourceColor(r.source.provider);
               return (
                 <li key={r.id}>
                   <Link
@@ -275,9 +268,7 @@ export function ArticleDetail({ article, related }: Props) {
                           style={{ background: rDot }}
                           aria-hidden
                         />
-                        <span style={{ color: 'var(--color-fg-muted)' }}>
-                          {r.source.name}
-                        </span>
+                        <span style={{ color: 'var(--color-fg-muted)' }}>{r.source.name}</span>
                         <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
                         <span style={{ color: 'var(--color-fg-muted)' }}>
                           {relativeTime(r.publishedAt)}

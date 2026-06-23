@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing';
-import { ConferenceImageSyncService } from './conference-image-sync.service';
-import { OgImageService } from '../common/og-image.service';
 import { BrandColorService } from '../common/brand-color.service';
+import { OgImageService } from '../common/og-image.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConferenceImageSyncService } from './conference-image-sync.service';
 
 describe('ConferenceImageSyncService', () => {
   let service: ConferenceImageSyncService;
