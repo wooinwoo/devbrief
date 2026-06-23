@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface FilterOption {
   value: string;
@@ -90,21 +90,7 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
       <div
         className={`${mobileOpen ? 'flex' : 'hidden'} lg:flex flex-col gap-6 lg:sticky lg:top-20`}
       >
-        {search && (
-          <input
-            type="search"
-            value={search.value}
-            onChange={(e) => search.onChange(e.target.value)}
-            placeholder={search.placeholder ?? '검색'}
-            aria-label={search.placeholder ?? '검색'}
-            className="w-full px-3 py-2 text-[13px] rounded-lg border outline-none transition-colors focus:border-(--color-accent)"
-            style={{
-              background: 'var(--color-bg-elevated)',
-              borderColor: 'var(--color-line-strong)',
-              color: 'var(--color-fg-strong)',
-            }}
-          />
-        )}
+        {search && <SearchField {...search} />}
 
         {groups
           .filter((g) => g.options.length > 0)
@@ -148,6 +134,79 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
         {footer}
       </div>
     </aside>
+  );
+}
+
+/**
+ * 검색 입력 — role=search 폼으로 감싸 Enter 제출을 지원한다.
+ * 타이핑은 즉시 onChange 로 흘려보내 라이브 필터가 동작하고,
+ * 외부에서 value 가 바뀌면(예: URL 복원/초기화) 입력값을 동기화한다.
+ */
+function SearchField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const label = placeholder ?? '검색';
+  return (
+    <form
+      role="search"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onChange(draft);
+      }}
+      className="relative"
+    >
+      <label htmlFor="article-search" className="sr-only">
+        {label}
+      </label>
+      <input
+        id="article-search"
+        type="search"
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          onChange(e.target.value);
+        }}
+        placeholder={label}
+        className="w-full pl-3 pr-8 py-2 text-[13px] rounded-lg border outline-none transition-colors focus:border-(--color-accent)"
+        style={{
+          background: 'var(--color-bg-elevated)',
+          borderColor: 'var(--color-line-strong)',
+          color: 'var(--color-fg-strong)',
+        }}
+      />
+      {draft && (
+        <button
+          type="button"
+          onClick={() => {
+            setDraft('');
+            onChange('');
+          }}
+          aria-label="검색어 지우기"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded transition-colors hover:bg-(--color-bg-sunken)"
+          style={{ color: 'var(--color-fg-muted)' }}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path
+              d="M3 3L9 9M9 3L3 9"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      )}
+    </form>
   );
 }
 

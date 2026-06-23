@@ -1,10 +1,16 @@
 'use client';
 
+import {
+  categoryOptionsOf,
+  filterArticles,
+  isFiltering as isFilteringFn,
+  sourceOptionsOf,
+} from '@/lib/filter-articles';
 import { groupByTime } from '@/lib/group-articles';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { VideoDto } from '@/lib/mock-videos';
-import { sourceColor } from '@/lib/source-colors';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ArticleDto } from '../article-card';
 import { ArticleRow } from '../article-row';
 import { FeaturedArticle } from '../featured-article';
@@ -44,65 +50,58 @@ export function ArticlesTab({
   videos,
   onNavigate,
 }: Props) {
-  const [query, setQuery] = useState('');
-  const [source, setSource] = useState<string | null>(null);
-  const [category, setCategory] = useState<string | null>(null);
-  const [hideRead, setHideRead] = useState(false);
+  // 검색/필터 상태는 URL 쿼리에서 파생 — 새로고침/뒤로가기/링크 공유 시 그대로 복원됨.
+  // (탭 상태가 articles-view 에서 URL 로 관리되는 것과 동일한 패턴.)
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const query = searchParams.get('q') ?? '';
+  const source = searchParams.get('source') || null;
+  const category = (searchParams.get('cat') || null)?.toLowerCase() ?? null;
+  const hideRead = searchParams.get('unread') === '1';
 
-  const sourceOptions = useMemo(() => {
-    const map = new Map<string, { name: string; count: number }>();
-    for (const a of articles) {
-      const cur = map.get(a.source.provider);
-      if (cur) cur.count += 1;
-      else map.set(a.source.provider, { name: a.source.name, count: 1 });
-    }
-    return [...map.entries()]
-      .sort((a, b) => b[1].count - a[1].count)
-      .map(([value, { name, count }]) => ({
-        value,
-        label: name,
-        count,
-        color: sourceColor(value),
-      }));
-  }, [articles]);
+  // 현재 쿼리스트링을 복제해 한 키만 갱신한 뒤 history 를 교체한다(tab 등 다른 키 보존).
+  const setParam = useCallback(
+    (key: string, value: string | null) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (value === null || value === '') next.delete(key);
+      else next.set(key, value);
+      const qs = next.toString();
+      router.replace(qs ? `/?${qs}` : '/', { scroll: false });
+    },
+    [searchParams, router],
+  );
 
-  const categoryOptions = useMemo(() => {
-    // 대소문자만 다른 태그(#AI/#ai, #WWDC/#wwdc)는 하나로 합친다.
-    // value 는 lowercase 정규화 키, label 은 가장 많이 쓰인 원형 표기.
-    const map = new Map<string, { count: number; forms: Map<string, number> }>();
-    for (const a of articles)
-      for (const t of a.tags) {
-        const key = t.toLowerCase();
-        const cur = map.get(key) ?? { count: 0, forms: new Map() };
-        cur.count += 1;
-        cur.forms.set(t, (cur.forms.get(t) ?? 0) + 1);
-        map.set(key, cur);
-      }
-    return [...map.entries()]
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 6)
-      .map(([value, { count, forms }]) => {
-        const label = [...forms.entries()].sort((a, b) => b[1] - a[1])[0][0];
-        return { value, label: `#${label}`, count };
-      });
-  }, [articles]);
+  // 키워드는 타이핑마다 URL 을 갈아끼우면 history 가 시끄러워지니 살짝 디바운스.
+  const queryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (queryTimer.current) clearTimeout(queryTimer.current);
+    },
+    [],
+  );
+  const setQuery = useCallback(
+    (v: string) => {
+      if (queryTimer.current) clearTimeout(queryTimer.current);
+      queryTimer.current = setTimeout(() => setParam('q', v.trim() || null), 250);
+    },
+    [setParam],
+  );
+  const setSource = useCallback((v: string | null) => setParam('source', v), [setParam]);
+  const setCategory = useCallback((v: string | null) => setParam('cat', v), [setParam]);
+  const toggleHideRead = useCallback(
+    () => setParam('unread', hideRead ? null : '1'),
+    [setParam, hideRead],
+  );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return articles.filter((a) => {
-      if (source && a.source.provider !== source) return false;
-      if (category && !a.tags.some((t) => t.toLowerCase() === category)) return false;
-      if (hideRead && readSet.has(a.id)) return false;
-      if (q) {
-        const hay =
-          `${a.title} ${a.titleKo ?? ''} ${a.summaryOneLine ?? ''} ${a.tags.join(' ')}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [articles, query, source, category, hideRead, readSet]);
+  const sourceOptions = useMemo(() => sourceOptionsOf(articles), [articles]);
+  const categoryOptions = useMemo(() => categoryOptionsOf(articles), [articles]);
 
-  const isFiltering = !!query.trim() || !!source || !!category || hideRead;
+  const filtered = useMemo(
+    () => filterArticles(articles, { query, source, category, hideRead }, readSet),
+    [articles, query, source, category, hideRead, readSet],
+  );
+
+  const isFiltering = isFilteringFn({ query, source, category, hideRead });
 
   // 페이지네이션. 필터 조건이 바뀌면 1페이지로 리셋.
   const PER_PAGE = 20;
@@ -148,16 +147,27 @@ export function ArticlesTab({
   const hideReadToggle = (
     <button
       type="button"
-      onClick={() => setHideRead(!hideRead)}
+      onClick={toggleHideRead}
       aria-pressed={hideRead}
-      className="w-full text-left px-2.5 py-1.5 rounded-md text-[12.5px] transition-colors"
+      className="flex w-full items-center gap-2 px-2.5 py-1.5 rounded-md text-[12.5px] transition-colors"
       style={{
         background: hideRead ? 'var(--color-bg-sunken)' : 'transparent',
         color: hideRead ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
         fontWeight: hideRead ? 600 : 500,
       }}
     >
-      {hideRead ? '✓ 본 글 숨김' : '본 글 숨기기'}
+      {hideRead && (
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path
+            d="M2.5 6.5L5 9L9.5 3.5"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
+      <span>{hideRead ? '본 글 숨김' : '본 글 숨기기'}</span>
     </button>
   );
 
