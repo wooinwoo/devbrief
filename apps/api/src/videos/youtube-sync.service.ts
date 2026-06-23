@@ -81,7 +81,7 @@ export class YouTubeSyncService {
         },
       },
     );
-    const items = searchRes.data.items ?? [];
+    const items = searchRes.data?.items ?? [];
     if (items.length === 0) return 0;
 
     // 2) videos.list — duration / views 보강
@@ -98,7 +98,8 @@ export class YouTubeSyncService {
         },
       },
     );
-    const detailMap = new Map(detailRes.data.items.map((d) => [d.id, d]));
+    const detailItems = detailRes.data?.items ?? [];
+    const detailMap = new Map(detailItems.map((d) => [d.id, d]));
 
     let count = 0;
     let firstThumb: string | null = null;

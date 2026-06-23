@@ -129,19 +129,22 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
           if (!part.startsWith('data: ')) continue;
           const payload = part.slice(6).trim();
           if (payload === '[DONE]') continue;
+          let obj: { delta?: string; error?: string };
           try {
-            const obj = JSON.parse(payload) as { delta?: string; error?: string };
-            if (obj.delta) {
-              gotAny = true;
-              setMessages((m) =>
-                m.map((msg) =>
-                  msg.id === asstId ? { ...msg, content: msg.content + obj.delta } : msg,
-                ),
-              );
-            }
-            if (obj.error) throw new Error(obj.error);
-          } catch {
-            // ignore
+            obj = JSON.parse(payload) as { delta?: string; error?: string };
+          } catch (err) {
+            console.warn('[inline-chat] SSE 파싱 실패, 청크 건너뜀', err, payload);
+            continue;
+          }
+          // 서버 에러는 catch 바깥에서 throw → 폴백 답변으로 전환
+          if (obj.error) throw new Error(obj.error);
+          if (obj.delta) {
+            gotAny = true;
+            setMessages((m) =>
+              m.map((msg) =>
+                msg.id === asstId ? { ...msg, content: msg.content + obj.delta } : msg,
+              ),
+            );
           }
         }
       }

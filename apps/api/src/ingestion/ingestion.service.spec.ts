@@ -82,6 +82,8 @@ describe('IngestionService', () => {
       expect(embeddingQueue.add).toHaveBeenCalledWith(
         'embed',
         expect.objectContaining({ articleId: 'art-1' }),
+        // embedding 큐도 summarization 과 동일한 재시도 정책 적재
+        expect.objectContaining({ attempts: 6 }),
       );
     });
 

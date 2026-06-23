@@ -97,11 +97,21 @@ export class IngestionService {
           removeOnFail: 1000,
         },
       );
-      await this.embeddingQueue.add('embed', {
-        articleId: article.id,
-        title: article.title,
-        snippet: String(snippet).slice(0, 2000),
-      });
+      await this.embeddingQueue.add(
+        'embed',
+        {
+          articleId: article.id,
+          title: article.title,
+          snippet: String(snippet).slice(0, 2000),
+        },
+        // summarization 과 동일한 지수 backoff 재시도
+        {
+          attempts: 6,
+          backoff: { type: 'exponential', delay: 60_000 },
+          removeOnComplete: 500,
+          removeOnFail: 1000,
+        },
+      );
     }
 
     return newCount;

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('articles')
@@ -18,9 +18,11 @@ export class ArticlesController {
 
   @Get(':id')
   async getOne(@Param('id') id: string) {
-    return this.prisma.article.findUnique({
+    const article = await this.prisma.article.findUnique({
       where: { id },
       include: { source: true },
     });
+    if (!article) throw new NotFoundException('Article not found');
+    return article;
   }
 }
