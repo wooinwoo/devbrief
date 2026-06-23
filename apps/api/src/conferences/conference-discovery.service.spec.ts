@@ -156,6 +156,78 @@ describe('ConferenceDiscoveryService', () => {
       expect(prisma.conference.create).not.toHaveBeenCalled();
     });
 
+    it('URL 없는 후보는 name+startDate 일괄 조회로 dedupe (findFirst N+1 없음)', async () => {
+      // 기존 DB 에 같은 name+startDate 가 placeholder URL 로 이미 있음
+      prisma.conference.findMany.mockResolvedValue([
+        { name: 'DevFest Seoul', startDate: new Date('2026-11-15') },
+      ]);
+
+      const result = await service.saveProposals(
+        [
+          {
+            name: 'DevFest Seoul',
+            url: null,
+            startDate: '2026-11-15',
+            endDate: null,
+            location: '서울',
+            topics: [],
+          },
+        ],
+        'art-1',
+      );
+
+      expect(result).toEqual({ saved: 0, skipped: 1 });
+      // 개별 findFirst 호출이 없어야 한다 (N+1 제거)
+      expect(prisma.conference.findFirst).not.toHaveBeenCalled();
+      expect(prisma.conference.createMany).not.toHaveBeenCalled();
+    });
+
+    it('URL 없는 신규 후보는 placeholder URL 로 createMany', async () => {
+      prisma.conference.findMany.mockResolvedValue([]);
+      prisma.conference.createMany.mockResolvedValue({ count: 1 });
+
+      const result = await service.saveProposals(
+        [
+          {
+            name: 'New Meetup 2026',
+            url: null,
+            startDate: '2026-12-01',
+            endDate: null,
+            location: '온라인',
+            topics: ['web'],
+          },
+        ],
+        'art-2',
+      );
+
+      expect(result).toEqual({ saved: 1, skipped: 0 });
+      expect(prisma.conference.findFirst).not.toHaveBeenCalled();
+      const arg = prisma.conference.createMany.mock.calls[0][0] as {
+        data: Array<{ name: string; url: string }>;
+      };
+      expect(arg.data[0].name).toBe('New Meetup 2026');
+      expect(arg.data[0].url.startsWith('proposed://')).toBe(true);
+    });
+
+    it('같은 배치 내 동일 name+startDate URL 없는 후보 중복은 1건만 저장', async () => {
+      prisma.conference.findMany.mockResolvedValue([]);
+      prisma.conference.createMany.mockResolvedValue({ count: 1 });
+
+      const candidate = {
+        name: 'Dup Conf',
+        url: null,
+        startDate: '2026-09-09',
+        endDate: null,
+        location: '서울',
+        topics: [],
+      };
+      const result = await service.saveProposals([candidate, { ...candidate }], 'art-3');
+
+      expect(result).toEqual({ saved: 1, skipped: 1 });
+      const arg = prisma.conference.createMany.mock.calls[0][0] as { data: unknown[] };
+      expect(arg.data).toHaveLength(1);
+    });
+
     it('startDate null인 후보는 skip', async () => {
       const result = await service.saveProposals(
         [
