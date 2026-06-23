@@ -39,6 +39,15 @@ export class EmbeddingService {
       this.logger.debug(`[${articleId}] embed skip (실패): ${(e as Error).message.slice(0, 80)}`);
       return;
     }
+    // pgvector 리터럴에 넣기 전 검증 — 인젝션/쿼리 파손 방지.
+    if (
+      !Array.isArray(vector) ||
+      vector.length === 0 ||
+      !vector.every((n) => typeof n === 'number' && Number.isFinite(n))
+    ) {
+      this.logger.warn(`[${articleId}] embed skip (벡터 형식 오류)`);
+      return;
+    }
     const literal = `[${vector.join(',')}]`;
 
     await this.prisma.$executeRawUnsafe(

@@ -33,6 +33,15 @@ export class ChatService {
 
   async retrieve(query: string, topK = 8): Promise<RetrievedArticle[]> {
     const queryVector = await this.embedding.embedQuery(query);
+    // pgvector 리터럴에 넣기 전 검증 — 인젝션/쿼리 파손 방지.
+    if (
+      !Array.isArray(queryVector) ||
+      queryVector.length === 0 ||
+      !queryVector.every((n) => typeof n === 'number' && Number.isFinite(n))
+    ) {
+      // 검색 불가 → 빈 결과 (호출부는 "관련 글 없음" 컨텍스트로 진행).
+      return [];
+    }
     const literal = `[${queryVector.join(',')}]`;
 
     return this.prisma.$queryRawUnsafe<RetrievedArticle[]>(
