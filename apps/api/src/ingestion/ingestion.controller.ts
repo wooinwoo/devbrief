@@ -1,10 +1,12 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Controller, Post, Query } from '@nestjs/common';
+import { Controller, Post, Query, UseGuards } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { AdminGuard } from '../common/admin.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { IngestionService } from './ingestion.service';
 
 @Controller('ingestion')
+@UseGuards(AdminGuard)
 export class IngestionController {
   constructor(
     private ingestion: IngestionService,

@@ -7,7 +7,9 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { AdminGuard } from '../common/admin.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { RssDiscoveryService } from './rss-discovery.service';
 
@@ -27,6 +29,7 @@ export class SourcesController {
 
   /** URL 입력 → 피드 자동 발견 (저장 X, 미리보기) */
   @Post('discover')
+  @UseGuards(AdminGuard)
   async discover(@Body() body: { url?: string }) {
     if (!body.url) throw new BadRequestException('url 필수');
     return { feeds: await this.discovery.discover(body.url) };
@@ -34,12 +37,14 @@ export class SourcesController {
 
   /** URL 입력 → 발견된 피드 모두 자동 등록 */
   @Post('discover-and-register')
+  @UseGuards(AdminGuard)
   async register(@Body() body: { url?: string }) {
     if (!body.url) throw new BadRequestException('url 필수');
     return this.discovery.discoverAndRegister(body.url);
   }
 
   @Patch(':id/toggle')
+  @UseGuards(AdminGuard)
   async toggle(@Param('id') id: string) {
     const src = await this.prisma.source.findUnique({ where: { id } });
     if (!src) throw new BadRequestException('Source not found');
@@ -50,6 +55,7 @@ export class SourcesController {
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
   async remove(@Param('id') id: string) {
     await this.prisma.source.delete({ where: { id } });
     return { ok: true };

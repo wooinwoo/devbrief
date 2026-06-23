@@ -1,4 +1,5 @@
-import { Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { AdminGuard } from '../common/admin.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConferenceDiscoveryService } from './conference-discovery.service';
 import { ConferenceImageSyncService } from './conference-image-sync.service';
@@ -28,12 +29,14 @@ export class ConferencesController {
 
   /** og:image 자동 등록 (수동 트리거). force=1 → 기존 값도 재갱신. */
   @Post('sync-images')
+  @UseGuards(AdminGuard)
   async syncImages(@Query('force') force?: string) {
     return this.imageSync.syncAll({ force: force === '1' });
   }
 
   /** 자동 발견 실행 — RSS 글에서 Haiku NER로 컨퍼런스 추출. */
   @Post('discover')
+  @UseGuards(AdminGuard)
   async discover(@Query('days') days?: string, @Query('limit') limit?: string) {
     return this.discovery.discoverFromRecentArticles({
       days: days ? Number(days) : undefined,
@@ -43,6 +46,7 @@ export class ConferencesController {
 
   /** 후보를 ACTIVE로 승인. 승인 후 image sync 자동 트리거. */
   @Post(':id/approve')
+  @UseGuards(AdminGuard)
   async approve(@Param('id') id: string) {
     const conf = await this.prisma.conference.findUnique({ where: { id } });
     if (!conf) throw new NotFoundException('Conference not found');
@@ -60,7 +64,11 @@ export class ConferencesController {
   }
 
   @Post(':id/reject')
+  @UseGuards(AdminGuard)
   async reject(@Param('id') id: string) {
+    const conf = await this.prisma.conference.findUnique({ where: { id } });
+    if (!conf) throw new NotFoundException('Conference not found');
+
     return this.prisma.conference.update({
       where: { id },
       data: { status: 'REJECTED' },

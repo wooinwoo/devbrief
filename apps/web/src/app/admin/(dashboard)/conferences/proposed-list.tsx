@@ -17,7 +17,7 @@ interface ProposedConference {
   discoveredAt: string | null;
 }
 
-import { API_BASE } from '@/lib/api';
+import { adminFetch } from '@/lib/api';
 
 export function ProposedConferenceList({ items }: { items: ProposedConference[] }) {
   const router = useRouter();
@@ -27,7 +27,7 @@ export function ProposedConferenceList({ items }: { items: ProposedConference[] 
   const act = async (id: string, action: 'approve' | 'reject') => {
     setBusy(id);
     try {
-      await fetch(`${API_BASE}/conferences/${id}/${action}`, { method: 'POST' });
+      await adminFetch(`/conferences/${id}/${action}`, { method: 'POST' });
       startTransition(() => router.refresh());
     } finally {
       setBusy(null);

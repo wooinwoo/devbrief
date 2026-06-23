@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { AdminGuard } from '../common/admin.guard';
 import { ReposService } from './repos.service';
 
 @Controller('repos')
@@ -15,8 +16,9 @@ export class ReposController {
     return this.repos.list({ period, language, category });
   }
 
-  // POST /api/v1/repos/sync — 수동 갱신
+  // POST /api/v1/repos/sync — 수동 갱신 (어드민 전용)
   @Post('sync')
+  @UseGuards(AdminGuard)
   sync() {
     return this.repos.refreshAll();
   }

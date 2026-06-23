@@ -9,8 +9,10 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { AdminGuard } from '../common/admin.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import type { VideoAnalyzeJobData } from './video-analysis.processor';
 import { VideoAnalyzerService } from './video-analyzer.service';
@@ -48,6 +50,7 @@ export class VideosController {
 
   /** 어드민 — YouTube URL 붙여넣기로 영상 추가 + 자동 분석 큐. */
   @Post('add')
+  @UseGuards(AdminGuard)
   async addByUrl(@Body() body: { url?: string }) {
     if (!body.url) throw new BadRequestException('url 필수');
     const video = await this.analyzer.fetchAndStore(body.url);
@@ -56,12 +59,14 @@ export class VideosController {
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
   async remove(@Param('id') id: string) {
     await this.prisma.video.delete({ where: { id } });
     return { ok: true };
   }
 
   @Post('sync')
+  @UseGuards(AdminGuard)
   async sync() {
     const result = await this.youtube.syncAllConferences();
     // sync 직후 모든 미분석 영상에 analyze 잡 enqueue
@@ -78,12 +83,14 @@ export class VideosController {
 
   /** 동기 분석 (DB 즉시 업데이트). force=1 이면 기존 결과 무시하고 재분석. */
   @Post(':id/analyze')
+  @UseGuards(AdminGuard)
   async analyzeOne(@Param('id') id: string, @Query('force') force?: string) {
     return this.analyzer.analyzeOne(id, { force: force === '1' });
   }
 
   /** 전체 미분석 영상 일괄 enqueue */
   @Post('analyze-all')
+  @UseGuards(AdminGuard)
   async analyzeAll(@Query('force') force?: string) {
     const where = force === '1' ? {} : { analyzedAt: null };
     const targets = await this.prisma.video.findMany({

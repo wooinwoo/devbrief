@@ -17,7 +17,7 @@ export interface AdminVideo {
   analyzedAt: string | null;
 }
 
-import { API_BASE } from '@/lib/api';
+import { adminFetch } from '@/lib/api';
 
 const SOURCE_KO: Record<string, string> = {
   official: '유튜버 표시',
@@ -38,7 +38,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
     setAdding(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/videos/add`, {
+      const res = await adminFetch('/videos/add', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ url: url.trim() }),
@@ -60,7 +60,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
     if (!confirm('이 영상을 삭제할까요?')) return;
     setBusy(id);
     try {
-      await fetch(`${API_BASE}/videos/${id}`, { method: 'DELETE' });
+      await adminFetch(`/videos/${id}`, { method: 'DELETE' });
       startTransition(() => router.refresh());
     } finally {
       setBusy(null);

@@ -20,7 +20,7 @@ interface DiscoveredFeed {
   type: 'rss' | 'atom';
 }
 
-import { API_BASE } from '@/lib/api';
+import { adminFetch } from '@/lib/api';
 
 export function SourcesPanel({
   initialSources,
@@ -41,7 +41,7 @@ export function SourcesPanel({
     setDiscovering(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/sources/discover`, {
+      const res = await adminFetch('/sources/discover', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ url }),
@@ -60,7 +60,7 @@ export function SourcesPanel({
     setRegistering(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/sources/discover-and-register`, {
+      const res = await adminFetch('/sources/discover-and-register', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ url }),
@@ -83,7 +83,7 @@ export function SourcesPanel({
   const onToggle = async (id: string) => {
     setBusy(id);
     try {
-      await fetch(`${API_BASE}/sources/${id}/toggle`, { method: 'PATCH' });
+      await adminFetch(`/sources/${id}/toggle`, { method: 'PATCH' });
       startTransition(() => router.refresh());
     } finally {
       setBusy(null);
@@ -94,7 +94,7 @@ export function SourcesPanel({
     if (!confirm('정말 삭제하시겠어요?')) return;
     setBusy(id);
     try {
-      await fetch(`${API_BASE}/sources/${id}`, { method: 'DELETE' });
+      await adminFetch(`/sources/${id}`, { method: 'DELETE' });
       startTransition(() => router.refresh());
     } finally {
       setBusy(null);
