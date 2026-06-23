@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import {
   type CanActivate,
   type ExecutionContext,
@@ -26,21 +27,31 @@ export class AdminGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest<Request>();
     const header = req.headers['x-admin-token'];
-    const provided = Array.isArray(header) ? header[0] : header;
 
-    if (!provided || !timingSafeEqualStr(provided, expected)) {
+    // 헤더가 여러 개(배열)면 공격 신호로 보고 거부 — 단일 문자열만 허용.
+    if (Array.isArray(header)) {
+      this.logger.warn('x-admin-token 헤더가 여러 개 — 거부합니다.');
+      throw new UnauthorizedException('Invalid admin token');
+    }
+
+    if (!header || !timingSafeEqualStr(header, expected)) {
       throw new UnauthorizedException('Invalid admin token');
     }
     return true;
   }
 }
 
-/** 타이밍 안전 문자열 비교 (길이 정보 노출 최소화). */
+/**
+ * 타이밍 안전 문자열 비교. NestJS는 Node 전용이므로 `crypto.timingSafeEqual` 사용.
+ * 길이가 다르면 길이 기반 단축(early-return)을 피하려 더미 비교를 한 번 수행한 뒤 false.
+ */
 function timingSafeEqualStr(a: string, b: string): boolean {
-  const len = Math.max(a.length, b.length);
-  let diff = a.length ^ b.length;
-  for (let i = 0; i < len; i++) {
-    diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  const ab = Buffer.from(a, 'utf8');
+  const bb = Buffer.from(b, 'utf8');
+  if (ab.length !== bb.length) {
+    // 길이 정보 노출/단축 회피 — 같은 버퍼끼리 더미 비교 후 항상 false.
+    timingSafeEqual(bb, bb);
+    return false;
   }
-  return diff === 0;
+  return timingSafeEqual(ab, bb);
 }

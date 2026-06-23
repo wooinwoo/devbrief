@@ -41,8 +41,22 @@ describe('AdminGuard', () => {
     expect(() => guard.canActivate(ctx({}))).toThrow(UnauthorizedException);
   });
 
-  it('배열 헤더는 첫 값 사용', () => {
+  it('헤더가 여러 개(배열)면 공격 신호로 보고 거부', () => {
     process.env.ADMIN_API_TOKEN = 'secret-token';
-    expect(guard.canActivate(ctx({ 'x-admin-token': ['secret-token', 'x'] }))).toBe(true);
+    // 첫 값이 정답이어도 배열 자체를 거부한다.
+    expect(() => guard.canActivate(ctx({ 'x-admin-token': ['secret-token', 'x'] }))).toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('길이 다른 토큰도 timingSafeEqual 단축 없이 거부', () => {
+    process.env.ADMIN_API_TOKEN = 'secret-token';
+    expect(() => guard.canActivate(ctx({ 'x-admin-token': 'short' }))).toThrow(
+      UnauthorizedException,
+    );
+    // 토큰보다 긴 입력도 거부
+    expect(() => guard.canActivate(ctx({ 'x-admin-token': `${'secret-token'}-extra` }))).toThrow(
+      UnauthorizedException,
+    );
   });
 });
