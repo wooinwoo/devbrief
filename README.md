@@ -167,7 +167,9 @@ cp env.example .env
 |---|---|---|
 | `DATABASE_URL` | 로컬 docker 또는 Neon | PostgreSQL 연결 |
 | `REDIS_URL` | 로컬 docker 또는 Upstash | BullMQ 큐 |
-| `GEMINI_API_KEY` | https://aistudio.google.com | 요약·번역·챗봇·NER·임베딩·영상 분석 |
+| `GEMINI_API_KEY` | https://aistudio.google.com | 요약·임베딩·챗봇·NER·영상 분석 (전부 Gemini 단일) |
+| `YOUTUBE_API_KEY` | Google Cloud Console | (선택) 영상 sync |
+| `ADMIN_PASSWORD` | 직접 지정 | 어드민 대시보드 및 RAG 챗봇 접근용 |
 
 > `GEMINI_API_KEY`가 없어도 동작합니다. 요약은 무료 번역 폴백으로 내려가고, 의미 검색 임베딩만 skip됩니다.
 
