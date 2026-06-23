@@ -76,6 +76,8 @@ describe('IngestionService', () => {
       expect(summarizationQueue.add).toHaveBeenCalledWith(
         'summarize',
         expect.objectContaining({ articleId: 'art-1' }),
+        // 한도/장애 대비 지수 backoff 재시도 정책이 함께 적재된다
+        expect.objectContaining({ attempts: 6 }),
       );
       expect(embeddingQueue.add).toHaveBeenCalledWith(
         'embed',

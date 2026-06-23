@@ -41,7 +41,7 @@ export class GeminiService {
     json?: boolean; // responseMimeType=application/json 강제
   }): Promise<string> {
     const res = await this.ensure().models.generateContent({
-      model: opts.model ?? 'gemini-2.5-flash',
+      model: opts.model ?? process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite',
       contents: [{ role: 'user', parts: [{ text: opts.prompt }] }],
       config: {
         systemInstruction: opts.system,
@@ -82,7 +82,7 @@ export class GeminiService {
     model?: string;
   }): AsyncGenerator<string> {
     const stream = await this.ensure().models.generateContentStream({
-      model: opts.model ?? 'gemini-2.5-flash',
+      model: opts.model ?? process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite',
       contents: [{ role: 'user', parts: [{ text: opts.prompt }] }],
       config: {
         systemInstruction: opts.system,

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Devbrief 시스템 전체 그림</title>
+<style>
+:root {
+  --bg: #fbfbfd;
+  --surface: #ffffff;
+  --fg: #1c1d22;
+  --fg-muted: #54565f;
+  --fg-subtle: #8a8c95;
+  --line: #e7e7ec;
+  --line-strong: #d2d3db;
+  --accent: #4f46c9;
+  --accent-soft: #eeedfb;
+  --ok: #1a7f4e;
+  --ok-soft: #e7f5ee;
+  --warn: #b45309;
+  --warn-soft: #fdf3e3;
+  --bad: #b3261e;
+  --bad-soft: #fbeae9;
+  --bar: #22232b;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Pretendard', 'Noto Sans KR', sans-serif;
+  font-size: 15px; line-height: 1.65; letter-spacing: -0.003em; word-break: keep-all;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px 90px; }
+
+/* 상단 바 */
+.topbar { background: var(--bar); border-bottom: 1px solid #2e2f38; }
+.topbar .inner { max-width: 1180px; margin: 0 auto; padding: 16px 28px; display: flex; align-items: baseline; gap: 14px; }
+.topbar .brand { color: #fff; font-weight: 800; font-size: 19px; letter-spacing: -0.02em; }
+.topbar .brand span { color: #9b95f0; }
+.topbar .sub { color: #b9bac2; font-size: 13px; }
+.topbar .date { margin-left: auto; color: #8a8c98; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+header.doc { padding: 44px 0 10px; }
+header.doc h1 { font-size: 27px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px; }
+header.doc p { color: var(--fg-muted); margin: 0; font-size: 14.5px; }
+
+h2.sec {
+  font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent); margin: 44px 0 14px; font-weight: 800;
+  display: flex; align-items: center; gap: 10px;
+}
+h2.sec::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* ───────── 파이프라인 ───────── */
+.pipeline { display: grid; grid-template-columns: 1fr 26px 1.25fr 26px 1fr 26px 1fr; gap: 0; align-items: stretch; }
+.stage { display: flex; flex-direction: column; gap: 10px; }
+.stage-title { font-size: 12px; font-weight: 800; color: var(--fg-subtle); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 2px; }
+.flow-arrow { display: flex; align-items: center; justify-content: center; color: var(--line-strong); }
+.flow-arrow svg { width: 16px; height: 16px; }
+
+.node {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 14px; position: relative;
+}
+.node b { display: block; font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; }
+.node small { display: block; color: var(--fg-muted); font-size: 12px; line-height: 1.5; margin-top: 2px; }
+.node .meta { color: var(--fg-subtle); font-size: 11px; font-variant-numeric: tabular-nums; margin-top: 6px; }
+.node.core { border-color: var(--accent); border-width: 1.5px; }
+.node.dark { background: var(--bar); border-color: var(--bar); }
+.node.dark b { color: #fff; }
+.node.dark small { color: #b9bac2; }
+.node.dark .meta { color: #8a8c98; }
+
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 99px; margin-right: 6px; vertical-align: 1px; }
+.dot.ok { background: var(--ok); }
+.dot.warn { background: var(--warn); }
+.dot.bad { background: var(--bad); }
+
+.badge {
+  display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 99px;
+  vertical-align: 2px; margin-left: 6px; letter-spacing: 0.01em;
+}
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.bad { background: var(--bad-soft); color: var(--bad); }
+
+/* 큐 영역 */
+.queues { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.queue {
+  border: 1px dashed var(--line-strong); border-radius: 10px; padding: 12px 14px; background: var(--surface);
+}
+.queue b { font-size: 13px; font-weight: 700; font-family: ui-monospace, 'Cascadia Code', monospace; }
+.queue small { display: block; color: var(--fg-muted); font-size: 12px; margin-top: 3px; line-height: 1.5; }
+
+/* 탭 매핑 */
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+th { background: var(--accent-soft); font-weight: 700; font-size: 12.5px; white-space: nowrap; }
+td:first-child { font-weight: 700; white-space: nowrap; }
+td .src { color: var(--fg-muted); }
+code { font-family: ui-monospace, 'Cascadia Code', monospace; font-size: 12px; background: var(--accent-soft); padding: 1px 6px; border-radius: 5px; color: var(--accent); }
+
+/* 상태 보드 */
+.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.card h3 { margin: 0 0 8px; font-size: 13px; font-weight: 800; display: flex; align-items: center; }
+.card ul { margin: 0; padding-left: 4px; list-style: none; }
+.card li { font-size: 12.5px; color: var(--fg-muted); padding: 4px 0; border-bottom: 1px solid var(--line); line-height: 1.5; }
+.card li:last-child { border-bottom: none; }
+.card li b { color: var(--fg); font-weight: 600; }
+
+/* 인프라 footer */
+.infra { display: flex; gap: 10px; flex-wrap: wrap; }
+.chip {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 12px; font-size: 12.5px; color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--fg); font-weight: 700; }
+
+.note { color: var(--fg-subtle); font-size: 12px; margin-top: 10px; }
+
+@media (max-width: 980px) {
+  .pipeline { grid-template-columns: 1fr; }
+  .flow-arrow { transform: rotate(90deg); padding: 4px 0; }
+  .queues, .board { grid-template-columns: 1fr; }
+}
+@media print { body { background: #fff; } }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <span class="brand">Dev<span>brief</span></span>
+  <span class="sub">시스템 전체 그림</span>
+  <span class="date">2026-06-18 스냅샷 · monorepo: side/devbrief</span>
+</div></div>
+
+<div class="wrap">
+  <header class="doc">
+    <h1>데이터가 흐르는 길</h1>
+    <p>외부 공개 소스 → NestJS 수집·가공 → Postgres → Next.js 화면까지. 상태 점은 현재 동작 여부 (<span class="dot ok"></span>정상 <span class="dot warn"></span>대기 <span class="dot bad"></span>차단).</p>
+  </header>
+
+  <h2 class="sec">파이프라인</h2>
+  <div class="pipeline">
+
+    <!-- 1열: 외부 소스 -->
+    <div class="stage">
+      <div class="stage-title">외부 소스</div>
+      <div class="node"><b><span class="dot ok"></span>RSS 피드 ×14</b>
+        <small>GeekNews · HN · TechCrunch · dev.to · 토스 · 카카오 · 우아한 · D2 · OpenAI · DeepMind · HF · Simon W. · Latent Space · Import AI</small>
+        <div class="meta">rss-parser + UA 위장 · 소스당 최신 30 캡</div>
+      </div>
+      <div class="node"><b><span class="dot ok"></span>YouTube Data API</b>
+        <small>컨퍼런스 채널 5개의 최근 발표 영상 (토스 · kakao tech · NAVER D2 · FEConf · PyCon)</small>
+        <div class="meta">AIzaSy 키 · 채널ID 검증 완료</div>
+      </div>
+      <div class="node"><b><span class="dot ok"></span>GitHub Trending</b>
+        <small>공개 HTML 스크래핑. velocity(기간 증가 star)를 페이지가 직접 제공 → 자체 시계열 불필요</small>
+        <div class="meta">토큰 불필요 · cheerio</div>
+      </div>
+      <div class="node"><b><span class="dot ok"></span>Artificial Analysis</b>
+        <small>LLM 벤치마크 스냅샷 (정적 데이터, 수동 갱신)</small>
+        <div class="meta">benchmark-data.ts</div>
+      </div>
+    </div>
+
+    <div class="flow-arrow"><svg viewBox="0 0 16 16" fill="none"><path d="M2 8h11M9 3.5L13.5 8 9 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+    <!-- 2열: 백엔드 -->
+    <div class="stage">
+      <div class="stage-title">NestJS API :4000</div>
+      <div class="node core"><b>Ingestion <span class="badge ok">매일 09:00</span></b>
+        <small>RSS 파싱 → Article 저장 → 요약·임베딩 큐 push. 이미지: enclosure → media → og:image 폴백</small>
+      </div>
+      <div class="node core"><b>YouTube Sync <span class="badge ok">매주 월 04:00</span></b>
+        <small>채널당 최근 10개 upsert → 3-tier 분석 큐 (챕터: 공식 → 타임스탬프 → Gemini)</small>
+      </div>
+      <div class="node core"><b>Repos Sync <span class="badge ok">매일 08:30</span></b>
+        <small>daily/weekly 트렌딩 통째 덮어쓰기(누적 0) · 분야 자동 분류(ai/web/infra/cli/data) · 이모지 strip</small>
+      </div>
+      <div class="node core"><b>Daily Digest <span class="badge warn">폴백 가동</span></b>
+        <small>그날 글 중 5개 선별. Gemini 실패 시 휴리스틱(소스가중치+최신성+한국어) 폴백 — 단 오늘 자 미생성 상태</small>
+      </div>
+    </div>
+
+    <div class="flow-arrow"><svg viewBox="0 0 16 16" fill="none"><path d="M2 8h11M9 3.5L13.5 8 9 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+    <!-- 3열: 저장소 -->
+    <div class="stage">
+      <div class="stage-title">저장소</div>
+      <div class="node dark"><b>PostgreSQL :5432</b>
+        <small>pgvector 확장</small>
+        <div class="meta">Article 537 (요약 91%) · Video 50 · Conference 5 · Repo 36 · DailyDigest · ChatSession</div>
+      </div>
+      <div class="node dark"><b>Redis :6379</b>
+        <small>BullMQ 큐 저장소</small>
+        <div class="meta">summarization · embedding · ingestion · video-analyze</div>
+      </div>
+      <div class="node"><b><span class="dot bad"></span>Gemini 2.5 flash-lite</b>
+        <small>번역·요약·다이제스트·챕터의 1순위(고품질) 경로. <b>키 만료(401)</b> — 하지만 무료 폴백으로 서비스 유지(요약 91%). 임베딩만 대안 없어 비활성</small>
+        <div class="meta">실패 시 무료 경로 폴백 · 키 교체 시 reanalyze로 품질 복구</div>
+      </div>
+    </div>
+
+    <div class="flow-arrow"><svg viewBox="0 0 16 16" fill="none"><path d="M2 8h11M9 3.5L13.5 8 9 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+    <!-- 4열: 프론트 -->
+    <div class="stage">
+      <div class="stage-title">Next.js Web :3001</div>
+      <div class="node"><b>서버 컴포넌트 fetch</b>
+        <small>articles 100 · videos 48 · conferences · repos(d+w) · digest — 실패 시 mock 폴백</small>
+        <div class="meta">no-store · API_BASE 단일화</div>
+      </div>
+      <div class="node core"><b>7개 탭</b>
+        <small>오늘 · AI · 개발 뉴스 · 컨퍼런스 · 발표 영상 · 오픈소스 · 저장</small>
+        <div class="meta">탭별 통계 · 모바일 접이식 필터</div>
+      </div>
+      <div class="node"><b>단말 저장(서버 미전송)</b>
+        <small>북마크 · 읽음 · 언어 설정 → localStorage</small>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="sec">비동기 큐 (BullMQ)</h2>
+  <div class="queues">
+    <div class="queue"><b>summarization</b><small>제목 번역 + 1줄/3줄 요약. 분당 10 제한. <span class="dot ok"></span>Gemini→무료번역(Google/MyMemory)→본문추출 3-tier로 가동 중 (요약 91%)</small></div>
+    <div class="queue"><b>video-analyze</b><small>Tier1 공식 챕터 → Tier2 설명 타임스탬프(무료) → Tier3 Gemini 자막. <span class="dot warn"></span>현재 챕터 산출 0(전부 실패) · 요약은 설명 기반</small></div>
+    <div class="queue"><b>embedding</b><small>pgvector 임베딩 (검색·관련글용). <span class="dot bad"></span>Gemini embed 의존 — 무료 대안 없어 비활성, 키 교체 시 재가동</small></div>
+  </div>
+
+  <h2 class="sec">탭 ↔ 데이터 매핑</h2>
+  <table>
+    <tr><th>탭</th><th>데이터</th><th>핵심 화면 요소</th></tr>
+    <tr><td>오늘</td><td class="src">Article 최신 + Digest + Conference + Video</td><td>머리기사 히어로 · 주요 글 그리드 · 다이제스트(키 복구 시)</td></tr>
+    <tr><td>AI</td><td class="src">Article 중 AI 태그 + 벤치마크 정적 데이터</td><td>LLM 벤치마크 대시보드 · 모델/하네스·도구/주제 facet 필터 · 주제별 섹션</td></tr>
+    <tr><td>개발 뉴스</td><td class="src">Article 전체</td><td>검색 · 소스/카테고리 필터(대소문자 병합) · 페이지네이션 20</td></tr>
+    <tr><td>컨퍼런스</td><td class="src">Conference 5</td><td>D-day 카드 · brandColor 폴백 · 시기/주제 필터</td></tr>
+    <tr><td>발표 영상</td><td class="src">Video 50 (채널 5)</td><td>썸네일 카드 · 채널/주제 필터 · 상세: 임베드 + 챕터 + 관련 영상</td></tr>
+    <tr><td>오픈소스</td><td class="src">Repo daily 19 + weekly 17</td><td>velocity 내림차순 · 언어/분야 필터 · 이번 주/오늘 토글</td></tr>
+    <tr><td>저장</td><td class="src">localStorage 북마크 ∩ Article</td><td>북마크 모음 · 빈 상태 안내</td></tr>
+  </table>
+
+  <h2 class="sec">현재 상태 보드</h2>
+  <div class="board">
+    <div class="card">
+      <h3><span class="dot ok"></span>정상 동작</h3>
+      <ul>
+        <li><b>RSS 수집</b> — 14소스, 소스당 30 캡, 누적 글 537건</li>
+        <li><b>요약 91%</b> — 무료 폴백으로 1줄/3줄 487/537 (Gemini 없이)</li>
+        <li><b>레포·영상</b> — 트렌딩 36 · 컨퍼런스 영상 50</li>
+        <li><b>테스트</b> — API 128 + WEB 45 = 173 전부 그린</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="dot bad"></span>비활성 / 공백</h3>
+      <ul>
+        <li><b>임베딩</b> — Gemini 의존, 무료 대안 없어 검색·관련글 비활성</li>
+        <li><b>다이제스트</b> — 휴리스틱 폴백은 있으나 오늘 자 미생성</li>
+        <li><b>영상 챕터</b> — 50건 전부 타임라인 산출 0</li>
+        <li>품질 복구: AIzaSy 키 발급 → .env → <code>POST /ingestion/reanalyze</code></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="dot warn"></span>알려진 리스크 / 대기</h3>
+      <ul>
+        <li><b>컨퍼런스 이미지</b> — 홈 카드에 엉뚱한 og:image(Lovable 등)</li>
+        <li><b>dev.to 편중</b> — 저품질 글이 주요 글 다수 차지</li>
+        <li><b>운영</b> — nohup·Docker 수동(재부팅 사망), systemd 미설치</li>
+        <li>상세: <code>docs/features/PAGE-AUDIT.md</code> (개선 21건)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="sec">인프라</h2>
+  <div class="infra">
+    <span class="chip">web <b>:3001</b> next dev <span class="note" style="margin:0">(3000은 여백)</span></span>
+    <span class="chip">api <b>:4000</b> node dist/main</span>
+    <span class="chip">postgres <b>:5432</b> docker</span>
+    <span class="chip">redis <b>:6379</b> docker</span>
+    <span class="chip">cron <b>09:00</b> RSS · <b>08:30</b> repos · <b>월 04:00</b> videos · <b>09:30</b> digest · <b>00:00</b> 컨퍼런스</span>
+  </div>
+  <p class="note">monorepo: <code>~/projects/side/devbrief</code> · API/웹은 현재 nohup — WSL 재부팅 시 사망 → ops/systemd 유닛 설치로 해결 예정. 정책: docs/policy/ · 기능 백로그: docs/features/ · 본 문서: docs/architecture.html</p>
+</div>
+</body>
+</html>

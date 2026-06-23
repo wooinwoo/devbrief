@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-const API_BASE = 'http://localhost:4000/api/v1';
+import { API_BASE } from '@/lib/api';
 
 async function safeJson<T>(path: string, fallback: T): Promise<T> {
   try {
@@ -86,7 +86,7 @@ export default async function AdminDashboard() {
           />
         </div>
         <p className="mt-2.5 text-[11.5px]" style={{ color: 'var(--color-fg-subtle)' }}>
-          무료 티어는 분당 4건씩 처리됩니다. 남은 글은 백그라운드에서 채워집니다.
+          요약 큐는 분당 10건씩 처리됩니다. 남은 글은 백그라운드에서 채워집니다.
         </p>
       </section>
 

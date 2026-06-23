@@ -3,20 +3,9 @@
 import Link from 'next/link';
 import { relativeTime } from '@/lib/relative-time';
 import { categoryOf } from '@/lib/category';
+import { useLang, pickTitle } from '@/lib/lang-context';
+import { sourceColor } from '@/lib/source-colors';
 import type { ArticleDto } from './article-card';
-
-const SOURCE_DOT: Record<string, string> = {
-  geeknews: 'oklch(55% 0.16 160)',
-  hackernews: 'oklch(62% 0.18 45)',
-  devto: 'oklch(58% 0.18 290)',
-  techcrunch: 'oklch(58% 0.21 15)',
-  anthropic: 'oklch(62% 0.17 60)',
-  kakao_tech: 'oklch(72% 0.16 90)',
-  toss_tech: 'oklch(58% 0.18 250)',
-  woowahan: 'oklch(64% 0.17 150)',
-  naver_d2: 'oklch(58% 0.18 145)',
-  rss_generic: 'oklch(58% 0.02 290)',
-};
 
 interface Props {
   article: ArticleDto;
@@ -26,6 +15,8 @@ interface Props {
   onTagClick?: (tag: string) => void;
   onBookmark?: (id: string) => void;
   index?: number;
+  /** 카테고리 칩 대신 표시할 배지들 (예: AI 탭의 모델·하네스) */
+  badges?: Array<{ label: string; color: string }>;
 }
 
 /**
@@ -40,10 +31,12 @@ export function ArticleRow({
   onTagClick,
   onBookmark,
   index,
+  badges,
 }: Props) {
+  const { lang } = useLang();
   const cat = categoryOf(article.tags);
-  const dot = SOURCE_DOT[article.source.provider] ?? SOURCE_DOT.rss_generic;
-  const hasKo = article.titleKo && article.title !== article.titleKo;
+  const dot = sourceColor(article.source.provider);
+  const { primary, secondary } = pickTitle(article, lang);
 
   return (
     <li
@@ -71,28 +64,59 @@ export function ArticleRow({
       <div className="min-w-0 flex-1">
         {/* 1행: 카테고리 칩 + 제목 */}
         <div className="flex items-start gap-2">
-          <span
-            className="shrink-0 mt-0.5 text-[10.5px] px-1.5 py-0.5 rounded tracking-wide"
-            style={{ background: cat.soft, color: cat.color, fontWeight: 700 }}
-          >
-            {cat.label}
-          </span>
+          {badges && badges.length > 0 ? (
+            <span className="shrink-0 mt-0.5 flex items-center gap-2">
+              {badges.map((b) => (
+                <span
+                  key={b.label}
+                  className="inline-flex items-center gap-1 text-[10.5px] whitespace-nowrap"
+                  style={{ color: b.color, fontWeight: 700 }}
+                >
+                  <span
+                    aria-hidden
+                    className="inline-block w-1.5 h-1.5 rounded-full"
+                    style={{ background: b.color }}
+                  />
+                  {b.label}
+                </span>
+              ))}
+            </span>
+          ) : (
+            <span
+              className="shrink-0 mt-0.5 text-[10.5px] px-1.5 py-0.5 rounded tracking-wide"
+              style={{ background: cat.soft, color: cat.color, fontWeight: 700 }}
+            >
+              {cat.label}
+            </span>
+          )}
           <Link
             href={`/articles/${article.id}`}
             onClick={onOpen}
             className="min-w-0 flex-1"
           >
             <span
-              className="block text-[15px] leading-[1.4] tracking-[-0.005em] break-keep group-hover:text-(--color-accent-strong) transition-colors"
+              className="block text-[15px] leading-[1.4] tracking-[-0.005em] break-keep group-hover:text-(--color-accent-strong) transition-colors line-clamp-3"
               style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
             >
-              {article.titleKo ?? article.title}
+              {primary}
             </span>
           </Link>
         </div>
 
-        {/* 2행: 소스 + 원제 + 시간 */}
-        <div className="flex items-center gap-2 mt-1.5 pl-[3.25rem] text-[11.5px] flex-wrap">
+        {/* 2행: 한 줄 요약 (없으면 반대 언어 제목) */}
+        {(article.summaryOneLine || secondary) && (
+          <Link
+            href={`/articles/${article.id}`}
+            onClick={onOpen}
+            className="block mt-1 text-[13px] leading-[1.5] line-clamp-1"
+            style={{ color: 'var(--color-fg-muted)' }}
+          >
+            {article.summaryOneLine ?? secondary}
+          </Link>
+        )}
+
+        {/* 3행: 소스 · 시간 · 태그 */}
+        <div className="flex items-center gap-x-2 gap-y-1 mt-1.5 text-[11.5px] flex-wrap">
           <span className="flex items-center gap-1.5 shrink-0">
             <span
               aria-hidden
@@ -107,13 +131,22 @@ export function ArticleRow({
           <span style={{ color: 'var(--color-fg-muted)' }}>
             {relativeTime(article.publishedAt)}
           </span>
-          {hasKo && (
-            <>
-              <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-              <span className="truncate max-w-[280px]" style={{ color: 'var(--color-fg-subtle)' }}>
-                {article.title}
+          {article.tags.slice(0, 3).map((t) =>
+            onTagClick ? (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onTagClick(t)}
+                className="rounded px-1 -mx-0.5 transition-colors hover:bg-(--color-bg-sunken) hover:text-(--color-fg-default)"
+                style={{ color: 'var(--color-fg-subtle)' }}
+              >
+                #{t}
+              </button>
+            ) : (
+              <span key={t} style={{ color: 'var(--color-fg-subtle)' }}>
+                #{t}
               </span>
-            </>
+            ),
           )}
         </div>
       </div>

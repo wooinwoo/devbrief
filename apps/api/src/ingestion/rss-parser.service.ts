@@ -15,6 +15,12 @@ export class RssParserService {
   private readonly logger = new Logger(RssParserService.name);
   private parser = new Parser<Record<string, unknown>, RssItem>({
     timeout: 10_000,
+    // 일부 피드(NAVER D2 등)는 UA 없으면 406 차단 → 브라우저 UA 위장
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.app)',
+      Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml; q=0.9, */*; q=0.8',
+    },
     customFields: {
       item: [
         'content:encoded',

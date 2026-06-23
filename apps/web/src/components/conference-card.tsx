@@ -1,14 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import type { ConferenceDto } from '@/lib/mock-conferences';
-
-function daysUntil(iso: string): number {
-  const target = new Date(iso).getTime();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.ceil((target - today.getTime()) / (1000 * 60 * 60 * 24));
-}
+import { daysUntil } from '@/lib/date-utils';
 
 function fmtDateWeekday(iso: string): string {
   const d = new Date(iso);
@@ -32,7 +27,8 @@ interface Props {
 export function ConferenceCard({ conference: c, index = 0 }: Props) {
   const d = daysUntil(c.startDate);
   const brand = c.brand ?? 'oklch(50% 0.012 245)';
-  const hasImage = !!c.imageUrl;
+  const [imgError, setImgError] = useState(false);
+  const hasImage = !!c.imageUrl && !imgError; // 404 등 로드 실패 시 placeholder 로
 
   return (
     <motion.li
@@ -62,6 +58,7 @@ export function ConferenceCard({ conference: c, index = 0 }: Props) {
               <img
                 src={c.imageUrl!}
                 alt={c.name}
+                onError={() => setImgError(true)}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               {/* 살짝 어두운 오버레이로 텍스트 가독성 확보 */}
@@ -89,18 +86,27 @@ export function ConferenceCard({ conference: c, index = 0 }: Props) {
             D-{d}
           </span>
 
-          {/* 이미지 없을 때 좌하단 큰 D-day */}
+          {/* 이미지 없을 때 — 이름을 포스터처럼 (키비주얼 대용) */}
           {!hasImage && (
-            <div className="absolute inset-0 flex items-end justify-end p-5">
+            <div className="absolute inset-0 flex flex-col justify-center items-start gap-2 p-5">
               <span
-                className="leading-none tabular-nums tracking-[-0.04em]"
+                className="text-[10px] tracking-[0.22em] uppercase"
+                style={{ color: 'oklch(99% 0 0 / 0.72)', fontWeight: 600 }}
+              >
+                Conference
+              </span>
+              <span
+                className="text-[1.25rem] leading-[1.22] tracking-[-0.01em] break-keep"
                 style={{
-                  fontSize: '4rem',
-                  fontWeight: 700,
                   color: 'oklch(99% 0 0)',
+                  fontWeight: 700,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
                 }}
               >
-                {d}
+                {c.name}
               </span>
             </div>
           )}

@@ -4,13 +4,7 @@ import { useMemo, useState } from 'react';
 import { ConferenceCard } from '../conference-card';
 import { FilterSidebar, type FilterGroup } from '../filter-sidebar';
 import type { ConferenceDto } from '@/lib/mock-conferences';
-
-function daysUntil(iso: string): number {
-  const target = new Date(iso).getTime();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.ceil((target - today.getTime()) / (1000 * 60 * 60 * 24));
-}
+import { daysUntil } from '@/lib/date-utils';
 
 type Period = 'soon' | 'month1' | 'month2' | 'later';
 

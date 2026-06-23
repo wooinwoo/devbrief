@@ -45,6 +45,7 @@ model Article {
   publishedAt      DateTime
   summaryOneLine   String? // 한국어 1줄 요약 (영문이면 요약+번역 같이)
   summaryThreeLine String? // 한국어 3줄 요약
+  contentSnippet   String? @db.Text // 요약 재생성용 본문 평문 발췌 (수집 시 저장)
   tags             String[] @default([])
   language         String   @default("en") // ko / en / mixed — Gemini 가 추론
   fetchedAt        DateTime @default(now())
@@ -168,4 +169,31 @@ model DailyDigest {
   generatedAt DateTime @default(now())
 
   @@index([date])
+}
+
+/**
+ * GitHub Trending 급성장 레포. period(daily/weekly)별로 매 수집마다
+ * 통째로 덮어쓴다(deleteMany→createMany) → 누적 없이 상시 ~50행.
+ * velocity(periodStars)는 GitHub 트렌딩 페이지가 직접 제공 → 자체 시계열 불필요.
+ */
+model Repo {
+  id            String   @id @default(cuid())
+  fullName      String // owner/repo
+  owner         String
+  name          String
+  url           String
+  description   String?
+  language      String?
+  languageColor String?
+  stars         Int      @default(0)
+  forks         Int      @default(0)
+  periodStars   Int      @default(0) // 기간 내 증가 star (= velocity 지표)
+  period        String // "daily" | "weekly"
+  category      String   @default("etc") // ai / web / infra / cli / data / etc (설명 기반 추론)
+  rank          Int      @default(0) // 트렌딩 순위 (작을수록 상위)
+  fetchedAt     DateTime @default(now())
+
+  @@unique([fullName, period])
+  @@index([period, rank])
+  @@index([fetchedAt])
 }

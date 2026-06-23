@@ -14,3 +14,7 @@ coverage
 .playwright-mcp/
 *.jpeg
 *.png
+
+# stale next build artifacts
+.next-stale*
+**/.next-stale*

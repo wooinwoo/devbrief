@@ -3,7 +3,7 @@ import { SiteNav } from '@/components/site-nav';
 import { VideoDetail } from '@/components/video-detail';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
 
-const API_BASE = 'http://localhost:4000/api/v1';
+import { API_BASE } from '@/lib/api';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -93,11 +93,12 @@ export default async function VideoDetailPage({ params }: Props) {
 
   return (
     <main
-      className="min-h-screen w-full max-w-3xl px-6 sm:px-10 lg:px-12 pt-12 pb-24 mx-auto"
-      style={{ overflowX: 'clip' }}
+      className="min-h-screen w-full px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32"
     >
       <SiteNav />
-      <VideoDetail video={video} related={related} />
+      <div className="max-w-6xl mx-auto">
+        <VideoDetail video={video} related={related} />
+      </div>
     </main>
   );
 }

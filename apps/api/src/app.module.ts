@@ -11,6 +11,7 @@ import { SummarizationModule } from './summarization/summarization.module';
 import { ArticlesModule } from './articles/articles.module';
 import { ConferencesModule } from './conferences/conferences.module';
 import { VideosModule } from './videos/videos.module';
+import { ReposModule } from './repos/repos.module';
 import { SourcesModule } from './sources/sources.module';
 import { EmbeddingModule } from './embedding/embedding.module';
 import { ChatModule } from './chat/chat.module';
@@ -55,6 +56,7 @@ import { DigestModule } from './digest/digest.module';
     ArticlesModule,
     ConferencesModule,
     VideosModule,
+    ReposModule,
     SourcesModule,
     ChatModule,
     DigestModule,

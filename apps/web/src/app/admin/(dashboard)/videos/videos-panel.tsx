@@ -17,7 +17,7 @@ export interface AdminVideo {
   analyzedAt: string | null;
 }
 
-const API_BASE = 'http://localhost:4000/api/v1';
+import { API_BASE } from '@/lib/api';
 
 const SOURCE_KO: Record<string, string> = {
   official: '유튜버 표시',

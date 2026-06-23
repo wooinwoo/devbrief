@@ -20,7 +20,8 @@ interface ConfSeed {
 const SEEDS: ConfSeed[] = [
   {
     name: 'FECONF 2026',
-    url: 'https://2026.feconf.kr',
+    // 2026 서브도메인 미개설 → 공식 메인(차기 안내 리다이렉트). 2026.feconf.kr 열리면 교체
+    url: 'https://feconf.kr',
     startDate: '2026-10-25',
     location: '서울 / 광운대학교',
     topics: ['Frontend', 'React', 'TypeScript'],
@@ -40,7 +41,8 @@ const SEEDS: ConfSeed[] = [
   },
   {
     name: 'SLASH 26',
-    url: 'https://toss.im/slash-26',
+    // slash-26 미개설(404) → 최근 SLASH 페이지. 26 열리면 교체
+    url: 'https://toss.im/slash-24',
     startDate: '2026-09-04',
     location: '서울 / 그랜드워커힐',
     topics: ['Fintech', 'Backend', 'Mobile'],

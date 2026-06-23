@@ -204,19 +204,80 @@ export class VideoAnalyzerService {
       };
     }
 
-    // Tier 3: Gemini Flash 로 영상 URL 직접 분석
+    // Tier 3: Gemini 로 chapters 만 추출, 요약은 설명 기반(토큰 절약)
     if (this.rawGemini && this.isRealVideoId(videoId)) {
       try {
-        const ai = await this.analyzeWithGemini(videoId, durationSec);
-        this.logger.log(`[${videoId}] tier=ai chapters=${ai.chapters.length} summary=${ai.summary?.length ?? 0}자`);
-        return { ...ai, chapterSource: 'ai' };
+        const chapters = await this.analyzeWithGemini(videoId, durationSec);
+        const summary = summarizeDescription(description);
+        this.logger.log(`[${videoId}] tier=ai chapters=${chapters.length} (요약=설명기반)`);
+        return { chapters, chapterSource: 'ai', summary };
       } catch (e) {
         this.logger.warn(`[${videoId}] Gemini 분석 실패: ${(e as Error).message}`);
       }
     }
 
-    // 모두 실패 — chapter 없음. 그래도 summary 라도 description 기반으로 만들면 좋지만 일단 null.
-    return { chapters: [], chapterSource: null, summary: null };
+    // 모두 실패 — chapter 없어도 요약은 설명 기반으로 최대한 제공
+    return { chapters: [], chapterSource: null, summary: summarizeDescription(description) };
+  }
+
+  /** 자막 트랙(timedtext)을 직접 fetch·파싱 → "[m:ss] text" 라인들. 없으면 null. */
+  private async fetchTranscript(videoId: string): Promise<string | null> {
+    try {
+      const yt = await this.ensureInnertube();
+      const info = await yt.getInfo(videoId);
+      const tracks =
+        (
+          info as unknown as {
+            captions?: {
+              caption_tracks?: Array<{
+                base_url?: string;
+                language_code?: string;
+              }>;
+            };
+          }
+        ).captions?.caption_tracks ?? [];
+      if (!tracks.length) return null;
+
+      // 영어 우선, 없으면 첫 트랙
+      const track =
+        tracks.find((t) => String(t.language_code).startsWith('en')) ??
+        tracks.find((t) => String(t.language_code).startsWith('ko')) ??
+        tracks[0];
+      if (!track?.base_url) return null;
+
+      const res = await fetch(track.base_url);
+      if (!res.ok) return null;
+      const xml = await res.text();
+
+      const matches = [
+        ...xml.matchAll(/<text start="([\d.]+)"[^>]*>([\s\S]*?)<\/text>/g),
+      ];
+      if (!matches.length) return null;
+
+      const decode = (s: string) =>
+        s
+          .replace(/&amp;#39;|&#39;/g, "'")
+          .replace(/&amp;quot;|&quot;/g, '"')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/<[^>]+>/g, '')
+          .trim();
+
+      const lines = matches
+        .map((m) => {
+          const sec = Math.floor(Number(m[1]));
+          const mm = Math.floor(sec / 60);
+          const ss = String(sec % 60).padStart(2, '0');
+          const text = decode(m[2]);
+          return text ? `[${mm}:${ss}] ${text}` : '';
+        })
+        .filter(Boolean);
+      return lines.length ? lines.join('\n') : null;
+    } catch (e) {
+      this.logger.debug(`[${videoId}] transcript 추출 실패: ${(e as Error).message}`);
+      return null;
+    }
   }
 
   private async fetchOfficialChapters(videoId: string): Promise<Chapter[]> {
@@ -245,17 +306,20 @@ export class VideoAnalyzerService {
     return out.sort((a, b) => a.time - b.time);
   }
 
+  // Tier 3 는 chapters 만 Gemini 로 추출 (요약은 설명 기반으로 대체해 출력 토큰 절약)
   private async analyzeWithGemini(
     videoId: string,
     durationSec: number,
-  ): Promise<Omit<AnalysisResult, 'chapterSource'>> {
+  ): Promise<Chapter[]> {
     if (!this.rawGemini) throw new Error('Gemini not configured');
 
-    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const prompt = `이 YouTube 영상을 분석해 다음 JSON 만 출력하세요. JSON 외 텍스트 금지.
+    // 자막(transcript)을 텍스트로 보냄 — fileData(영상) 호출보다 인증/비용에 유리
+    const transcript = await this.fetchTranscript(videoId);
+    if (!transcript) throw new Error('자막 없음 — Gemini chapter 생성 불가');
+
+    const prompt = `다음은 YouTube 영상의 자막(타임스탬프 포함)입니다. 주제 전환을 기준으로 목차(chapters)를 만들어 JSON 만 출력하세요. JSON 외 텍스트 금지.
 
 {
-  "summary": "이 영상이 다루는 핵심 내용 3줄. em dash 금지, 자연스러운 한국어.",
   "chapters": [
     { "time": 0, "label": "장 제목 한 줄" }
   ]
@@ -263,29 +327,21 @@ export class VideoAnalyzerService {
 
 규칙:
 - chapters 는 5~10개. 주제 전환마다 끊고, 균등하게 분포.
-- chapter time 은 초 단위 정수. 0 부터 ${durationSec} 사이.
-- 영상이 짧으면 chapter 수 줄이고, 영상이 길면 늘림.
-- label 은 한 줄, 30자 내외, 마침표 없음.
-- summary 는 마침표 포함 3 문장.`;
+- chapter time 은 초 단위 정수. 0 부터 ${durationSec} 사이. 자막의 타임스탬프를 근거로.
+- label 은 한 줄, 30자 내외, 마침표 없음, 자연스러운 한국어.
+
+[자막]
+${transcript.slice(0, 9000)}`;
 
     const response = await this.rawGemini.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { fileData: { fileUri: youtubeUrl, mimeType: 'video/*' } },
-            { text: prompt },
-          ],
-        },
-      ],
+      model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
     const text = response.text ?? '';
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('Gemini 응답에 JSON 없음');
     const parsed = JSON.parse(match[0]) as {
-      summary?: string;
       chapters?: Array<{ time?: number; label?: string }>;
     };
 
@@ -299,17 +355,24 @@ export class VideoAnalyzerService {
 
     // 중복 time 제거
     const seen = new Set<number>();
-    const dedup = chapters.filter((c) => {
+    return chapters.filter((c) => {
       if (seen.has(c.time)) return false;
       seen.add(c.time);
       return true;
     });
-
-    return {
-      chapters: dedup,
-      summary: parsed.summary?.trim() ?? null,
-    };
   }
+}
+
+/** 설명글로 요약 대체 — Gemini 출력 토큰 절약. 타임스탬프 줄 제거 후 앞부분. */
+function summarizeDescription(desc: string | null): string | null {
+  if (!desc) return null;
+  const clean = desc
+    .replace(/^\s*\(?\d{1,2}:\d{2}(?::\d{2})?\)?.*$/gm, '') // 타임스탬프 줄 제거
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (clean.length < 10) return null;
+  if (clean.length <= 180) return clean;
+  return clean.slice(0, 180).replace(/\s\S*$/, '') + '…';
 }
 
 // ── description 안 timestamp 추출 (apps/web 의 parse-chapters 와 동일 로직) ──

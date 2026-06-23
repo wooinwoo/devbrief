@@ -20,7 +20,7 @@ interface DiscoveredFeed {
   type: 'rss' | 'atom';
 }
 
-const API_BASE = 'http://localhost:4000/api/v1';
+import { API_BASE } from '@/lib/api';
 
 export function SourcesPanel({
   initialSources,

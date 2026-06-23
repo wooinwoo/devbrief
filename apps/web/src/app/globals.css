@@ -3,27 +3,36 @@
 @import 'tailwindcss';
 
 :root {
-  /* 라이트 — 따뜻한 라벤더 화이트 베이스 + 바이올렛 시그니처.
-     순흑/순백(#000/#fff) 안 씀. base 와 카드(elevated) 대비를 키워 면이 떠 보이게. */
-  --bg-base: oklch(96.5% 0.01 290);
-  --bg-elevated: oklch(100% 0.002 290);
-  --bg-sunken: oklch(93.5% 0.014 290);
-  --fg-strong: oklch(27% 0.035 285);
-  --fg-default: oklch(40% 0.028 285);
-  --fg-muted: oklch(54% 0.024 285);
-  --fg-subtle: oklch(67% 0.02 285);
-  --line: oklch(90% 0.012 290);
-  --line-strong: oklch(82% 0.016 290);
-  /* 시그니처 — 바이올렛 (라이트 배경 위 충분히 진하게) */
-  --accent: oklch(54% 0.2 292);
-  --accent-strong: oklch(48% 0.22 292);
-  --accent-soft: oklch(94% 0.04 292); /* 색 면 (digest/featured 배경 틴트) */
-  --accent-glow: oklch(54% 0.2 292 / 0.1);
+  /* 라이트 — 중립 연회색 베이스 + 인디고 시그니처.
+     순흑/순백 안 씀. base 와 카드(elevated) 대비로 면이 떠 보이게. */
+  --bg-base: oklch(99.2% 0.003 265);
+  --bg-elevated: oklch(100% 0.001 265);
+  --bg-sunken: oklch(96.5% 0.006 265);
+  /* 대비 강화 — 본문 또렷하게 (중립 회색, 미세 블루) */
+  --fg-strong: oklch(22% 0.02 265);
+  --fg-default: oklch(34% 0.018 265);
+  --fg-muted: oklch(48% 0.016 265);
+  --fg-subtle: oklch(54% 0.014 265); /* AA 대비 확보 */
+  --line: oklch(90% 0.006 265);
+  --line-strong: oklch(82% 0.01 265);
+  /* 시그니처 — 인디고 블루 (라이트 배경 위 충분히 진하게) */
+  --accent: oklch(50% 0.19 265);
+  --accent-strong: oklch(43% 0.21 265);
+  --accent-soft: oklch(95% 0.035 265); /* 색 면 (digest/featured 배경 틴트) */
+  --accent-glow: oklch(50% 0.19 265 / 0.1);
   --warm: oklch(58% 0.17 45);
-  --bg-tint: oklch(94.5% 0.022 292);
-  /* 카드 그림자 (보라 틴트, 은은하게) */
-  --shadow-card: 0 1px 2px oklch(50% 0.05 290 / 0.04), 0 4px 16px -4px oklch(50% 0.08 290 / 0.07);
-  --shadow-card-hover: 0 2px 4px oklch(50% 0.05 290 / 0.06), 0 12px 28px -6px oklch(50% 0.1 290 / 0.12);
+  --bg-tint: oklch(95% 0.02 265);
+  /* 헤더/푸터 전용 — 흰 본문과 차별되는 진한 잉크(네이비 차콜, 순검정 아님) */
+  --bar-bg: oklch(25% 0.035 265);
+  --bar-fg: oklch(97% 0.005 265);
+  --bar-fg-muted: oklch(72% 0.022 265);
+  --bar-line: oklch(36% 0.025 265);
+  --bar-accent: oklch(72% 0.15 265);
+  /* 카드 그림자 (중립, 은은하게) */
+  --shadow-card: 0 1px 2px oklch(40% 0.02 265 / 0.06), 0 6px 20px -6px oklch(40% 0.04 265 / 0.1);
+  --shadow-card-hover: 0 2px 4px oklch(40% 0.02 265 / 0.08), 0 14px 32px -8px oklch(40% 0.05 265 / 0.14);
+  /* 큰 콘텐츠 지면 패널용 */
+  --shadow-panel: 0 1px 2px oklch(40% 0.02 265 / 0.05), 0 10px 34px -10px oklch(38% 0.04 265 / 0.12);
 }
 
 @theme inline {
@@ -61,9 +70,11 @@ body {
 
 html {
   overflow-x: hidden;
+  /* 스크롤바 공간을 항상 예약 — 페이지마다 스크롤바 유무로 가로 점프(레이아웃 시프트) 방지 */
+  scrollbar-gutter: stable;
 }
 
-/* 미세한 색감 배경 (라이트 — 상단 바이올렛, 하단 인디고/청록 은은하게) */
+/* 미세한 색감 배경 (상단 인디고 한 톤만 은은하게) */
 body::before {
   content: '';
   position: fixed;
@@ -71,9 +82,7 @@ body::before {
   z-index: -10;
   pointer-events: none;
   background-image:
-    radial-gradient(ellipse 85% 50% at 50% -10%, oklch(70% 0.16 292 / 0.09), transparent 64%),
-    radial-gradient(ellipse 55% 45% at 100% 110%, oklch(70% 0.13 260 / 0.06), transparent 58%),
-    radial-gradient(ellipse 45% 35% at 0% 102%, oklch(72% 0.12 200 / 0.05), transparent 60%);
+    radial-gradient(ellipse 85% 45% at 50% -10%, oklch(68% 0.13 265 / 0.06), transparent 62%);
 }
 
 body::after {
@@ -98,6 +107,35 @@ label[for]:not(:disabled) {
 button:disabled,
 [role='button'][aria-disabled='true'] {
   cursor: not-allowed;
+}
+
+/* 키보드 포커스 링 — 전역 (마우스 클릭엔 안 뜨고 키보드 탐색 시만) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* 접근성: 스크린리더 전용 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 가로 스크롤 영역 스크롤바 숨김 (모바일 헤더 탭 등) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* shimmer 인라인 라인 (Top story 좌측) */

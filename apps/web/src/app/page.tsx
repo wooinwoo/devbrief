@@ -5,17 +5,24 @@ import type { DigestDto } from '@/components/daily-digest';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
 import { MOCK_CONFERENCES, type ConferenceDto } from '@/lib/mock-conferences';
+import { MOCK_REPOS, type RepoDto } from '@/lib/mock-repos';
 
-const API_BASE = 'http://localhost:4000/api/v1';
+import { API_BASE } from '@/lib/api';
 
 async function getArticles(): Promise<ArticleDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/articles?limit=30`, {
+    const res = await fetch(`${API_BASE}/articles?limit=100`, {
       cache: 'no-store',
     });
     if (!res.ok) return MOCK_ARTICLES;
     const data = (await res.json()) as ArticleDto[];
-    return data.length > 0 ? data : MOCK_ARTICLES;
+    // 실데이터의 tags/source 누락 방어 (백엔드 응답에 null 가능)
+    const safe = data.map((a) => ({
+      ...a,
+      tags: a.tags ?? [],
+      source: a.source ?? { name: '출처 미상', provider: 'rss_generic' },
+    }));
+    return safe.length > 0 ? safe : MOCK_ARTICLES;
   } catch {
     return MOCK_ARTICLES;
   }
@@ -92,7 +99,7 @@ async function getDigest(): Promise<DigestDto | null> {
 
 async function getVideos(): Promise<VideoDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/videos?limit=5`, {
+    const res = await fetch(`${API_BASE}/videos?limit=48`, {
       cache: 'no-store',
     });
     if (!res.ok) return MOCK_VIDEOS;
@@ -116,18 +123,35 @@ async function getVideos(): Promise<VideoDto[]> {
   }
 }
 
+async function getRepos(): Promise<RepoDto[]> {
+  try {
+    const [w, d] = await Promise.all([
+      fetch(`${API_BASE}/repos?period=weekly`, { cache: 'no-store' }),
+      fetch(`${API_BASE}/repos?period=daily`, { cache: 'no-store' }),
+    ]);
+    if (!w.ok && !d.ok) return MOCK_REPOS;
+    const weekly = w.ok ? ((await w.json()) as RepoDto[]) : [];
+    const daily = d.ok ? ((await d.json()) as RepoDto[]) : [];
+    const merged = [...weekly, ...daily];
+    return merged.length > 0 ? merged : MOCK_REPOS;
+  } catch {
+    return MOCK_REPOS;
+  }
+}
+
 export default async function Home() {
-  const [articles, videos, conferences, digest] = await Promise.all([
+  const [articles, videos, conferences, digest, repos] = await Promise.all([
     getArticles(),
     getVideos(),
     getConferences(),
     getDigest(),
+    getRepos(),
   ]);
 
   return (
     <main
-      className="min-h-screen w-full max-w-[1600px] px-6 sm:px-10 lg:px-16 xl:px-24 pt-12 pb-24 mx-auto"
-      style={{ overflowX: 'clip' }}
+      id="main-content"
+      className="min-h-screen w-full px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32"
     >
       <Suspense fallback={null}>
         <ArticlesView
@@ -135,6 +159,7 @@ export default async function Home() {
           videos={videos}
           conferences={conferences}
           digest={digest}
+          repos={repos}
         />
       </Suspense>
     </main>

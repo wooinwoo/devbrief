@@ -1,0 +1,20 @@
+[Unit]
+Description=Devbrief(pulse) Web - Next.js dev
+After=network-online.target pulse-api.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=/home/rst010/projects/side/devbrief/apps/web
+ExecStart=/home/rst010/.nvm/versions/node/v24.15.0/bin/npx --no-install next dev
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/tmp/pulse-web.log
+StandardError=append:/tmp/pulse-web.log
+
+KillMode=control-group
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target

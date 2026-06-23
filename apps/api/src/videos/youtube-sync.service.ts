@@ -107,6 +107,7 @@ export class YouTubeSyncService {
     const detailMap = new Map(detailRes.data.items.map((d) => [d.id, d]));
 
     let count = 0;
+    let firstThumb: string | null = null;
     for (const it of items) {
       const detail = detailMap.get(it.id.videoId);
       if (!detail) continue;
@@ -116,6 +117,7 @@ export class YouTubeSyncService {
         it.snippet.thumbnails.medium?.url ??
         it.snippet.thumbnails.default?.url ??
         '';
+      if (!firstThumb && thumb) firstThumb = thumb;
       await this.prisma.video.upsert({
         where: { videoId: it.id.videoId },
         create: {
@@ -140,6 +142,14 @@ export class YouTubeSyncService {
         },
       });
       count++;
+    }
+    // 컨퍼런스 대표 이미지가 없으면 첫 발표 영상 썸네일로 채움
+    // (공식 사이트 og:image가 죽은 경우 — FECONF/SLASH 등)
+    if (firstThumb) {
+      await this.prisma.conference.updateMany({
+        where: { id: conferenceId, imageUrl: null },
+        data: { imageUrl: firstThumb },
+      });
     }
     return count;
   }

@@ -39,24 +39,34 @@ export class IngestionController {
     const limit = Math.min(Number(limitStr) || 500, 2000);
 
     const articles = await this.prisma.article.findMany({
-      where: all ? {} : { summaryOneLine: null },
+      // 기본: 한 줄 또는 세 줄 요약이 빠진 글 (무료 추출요약으로 백필)
+      where: all
+        ? {}
+        : { OR: [{ summaryOneLine: null }, { summaryThreeLine: null }] },
       orderBy: { publishedAt: 'desc' },
       take: limit,
-      select: { id: true, title: true, url: true },
+      select: { id: true, title: true, contentSnippet: true },
     });
 
+    const retryOpts = {
+      attempts: 6,
+      backoff: { type: 'exponential', delay: 60_000 },
+      removeOnComplete: 500,
+      removeOnFail: 1000,
+    };
     for (const a of articles) {
-      // snippet 정보 부족 — 제목만으로 일단 추정
-      await this.summarizationQueue.add('summarize', {
-        articleId: a.id,
-        title: a.title,
-        snippet: '',
-      });
-      await this.embeddingQueue.add('embed', {
-        articleId: a.id,
-        title: a.title,
-        snippet: '',
-      });
+      // 저장된 본문 발췌(contentSnippet)로 요약 재생성 — 없으면 제목만 번역
+      const snippet = a.contentSnippet ?? '';
+      await this.summarizationQueue.add(
+        'summarize',
+        { articleId: a.id, title: a.title, snippet },
+        retryOpts,
+      );
+      await this.embeddingQueue.add(
+        'embed',
+        { articleId: a.id, title: a.title, snippet },
+        retryOpts,
+      );
     }
     return { queued: articles.length };
   }

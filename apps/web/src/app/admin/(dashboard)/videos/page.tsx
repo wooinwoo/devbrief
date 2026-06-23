@@ -1,6 +1,6 @@
 import { VideosPanel, type AdminVideo } from './videos-panel';
 
-const API_BASE = 'http://localhost:4000/api/v1';
+import { API_BASE } from '@/lib/api';
 
 async function getVideos(): Promise<AdminVideo[]> {
   try {

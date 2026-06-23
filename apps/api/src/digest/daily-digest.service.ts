@@ -71,13 +71,8 @@ export class DailyDigestService {
       return existing.items as unknown as DigestPayload;
     }
 
-    if (!this.gemini.isAvailable()) {
-      this.logger.warn('Gemini 미설정 — digest skip');
-      return null;
-    }
-
     // 그 날 (또는 그 직전) 들어온 글 30개
-    const articles = await this.prisma.article.findMany({
+    let articles = await this.prisma.article.findMany({
       where: {
         OR: [
           { fetchedAt: { gte: today, lt: tomorrow } },
@@ -89,9 +84,27 @@ export class DailyDigestService {
       include: { source: { select: { name: true } } },
     });
 
+    // 당일 글이 부족하면(수집 공백·주말 등) 최신 글로 폴백 → 다이제스트가 비지 않게.
+    // 개인 프로젝트 특성상 매일 수집이 돌지 않을 수 있어 "오늘의 핵심"을 최근 글 기준으로 채운다.
+    if (articles.length < 5) {
+      this.logger.log(
+        `당일 글 ${articles.length}개 — 최신 글로 폴백해 digest 생성`,
+      );
+      articles = await this.prisma.article.findMany({
+        orderBy: { publishedAt: 'desc' },
+        take: 30,
+        include: { source: { select: { name: true } } },
+      });
+    }
+
     if (articles.length === 0) {
-      this.logger.log('오늘 들어온 글 없음 — digest skip');
+      this.logger.log('글이 하나도 없음 — digest skip');
       return null;
+    }
+
+    // Gemini 키 없으면 곧장 무료 휴리스틱
+    if (!this.gemini.isAvailable()) {
+      return this.generateHeuristic(today, articles);
     }
 
     const input: ArticleInput[] = articles.map((a) => ({
@@ -119,8 +132,11 @@ export class DailyDigestService {
         maxTokens: 8000,
       });
     } catch (e) {
-      this.logger.warn(`digest 생성 실패: ${(e as Error).message}`);
-      return null;
+      // 키 만료/한도 등 — 휴리스틱으로 폴백 (다이제스트를 비우지 않는다)
+      this.logger.warn(
+        `digest Gemini 실패 → 휴리스틱 폴백: ${(e as Error).message.slice(0, 100)}`,
+      );
+      return this.generateHeuristic(today, articles);
     }
 
     // 유효한 articleId 만 유지
@@ -152,6 +168,100 @@ export class DailyDigestService {
       `Digest 생성 완료: ${today.toISOString().slice(0, 10)} (${result.items.length} items)`,
     );
     return result;
+  }
+
+  /**
+   * 무료 휴리스틱 다이제스트 — LLM 없이 "오늘의 5선".
+   * 점수 = 소스 가중치 + 최신성 + 한국어화 가점. headline/takeaway는 기존 필드 재사용.
+   */
+  private async generateHeuristic(
+    today: Date,
+    articles: Array<{
+      id: string;
+      title: string;
+      titleKo: string | null;
+      summaryOneLine: string | null;
+      publishedAt: Date;
+      tags: string[];
+      source: { name: string };
+    }>,
+  ): Promise<DigestPayload> {
+    // 큐레이션 매체에 가중치 (개인 잡담성 소스보다 우선)
+    const SOURCE_WEIGHT: Record<string, number> = {
+      GeekNews: 5,
+      'Hacker News': 4,
+      TechCrunch: 4,
+      'NAVER D2': 4,
+      '토스 기술블로그': 4,
+      '카카오 기술블로그': 4,
+      우아한형제들: 4,
+      OpenAI: 4,
+      'Google DeepMind': 4,
+      'Simon Willison': 3,
+      'Latent Space': 3,
+      'Hugging Face': 2,
+      'dev.to': 1,
+    };
+    const now = Date.now();
+    const scored = articles
+      .map((a) => {
+        const w = SOURCE_WEIGHT[a.source.name] ?? 2;
+        const ageH = (now - new Date(a.publishedAt).getTime()) / 3.6e6;
+        const recency = Math.max(0, 4 - ageH / 12); // 0~4 (이틀이면 소멸)
+        // 한국어로 보여줄 수 있는 글 강하게 우선 — headline은 titleKo ?? title 이라
+        // 번역 안 된 순수 영문은 한국어 다이제스트에 영문으로 박혀 어색하다.
+        const isKo = !!a.titleKo || this.hasKo(a.title);
+        const koBonus = isKo ? 6 : 0;
+        const enPenalty = isKo ? 0 : 4; // 영문 미번역 글 감점
+        const tagBonus = Math.min(a.tags.length, 3) * 0.3;
+        return { a, score: w + recency + koBonus + tagBonus - enPenalty };
+      })
+      .sort((x, y) => y.score - x.score);
+
+    // 소스 쏠림 방지 — 같은 소스 최대 2개
+    const perSource = new Map<string, number>();
+    const picked: typeof scored = [];
+    for (const s of scored) {
+      const n = perSource.get(s.a.source.name) ?? 0;
+      if (n >= 2) continue;
+      perSource.set(s.a.source.name, n + 1);
+      picked.push(s);
+      if (picked.length >= 5) break;
+    }
+
+    const items = picked.map(({ a }) => {
+      // 요약이 없거나 URL/메타 쓰레기면 takeaway를 비운다 (소스명 폴백 금지)
+      const s = (a.summaryOneLine ?? '').trim();
+      const clean = s && !/^https?:\/\/|^기사 URL/i.test(s) ? s.slice(0, 80) : '';
+      return {
+        articleId: a.id,
+        headline: (a.titleKo ?? a.title).slice(0, 60),
+        takeaway: clean,
+      };
+    });
+
+    const result: DigestPayload = {
+      intro: `오늘 들어온 ${articles.length}개 글에서 추린 핵심`,
+      items,
+    };
+
+    await this.prisma.dailyDigest.upsert({
+      where: { date: today },
+      create: { date: today, intro: result.intro, items: result.items as never },
+      update: {
+        intro: result.intro,
+        items: result.items as never,
+        generatedAt: new Date(),
+      },
+    });
+    this.logger.log(
+      `Digest(휴리스틱) 생성: ${today.toISOString().slice(0, 10)} (${items.length} items)`,
+    );
+    return result;
+  }
+
+  private hasKo(s: string): boolean {
+    return /[가-힣]/.test(s);
   }
 
   async getForDate(date: Date) {

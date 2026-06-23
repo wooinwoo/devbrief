@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { formatDuration } from '@/lib/format-duration';
+import { formatViews } from '@/lib/format-views';
 import type { VideoDto } from '@/lib/mock-videos';
 
 function relativeShort(iso: string): string {
@@ -24,7 +26,8 @@ interface Props {
  * 썸네일 없으면 brand 그라데이션 + 큰 duration fallback.
  */
 export function VideoCard({ video: v, index = 0 }: Props) {
-  const hasThumb = !!v.thumbnailUrl;
+  const [imgError, setImgError] = useState(false);
+  const hasThumb = !!v.thumbnailUrl && !imgError;
   const brand = v.brand ?? 'oklch(45% 0.012 245)';
 
   return (
@@ -53,6 +56,7 @@ export function VideoCard({ video: v, index = 0 }: Props) {
               <img
                 src={v.thumbnailUrl}
                 alt={v.title}
+                onError={() => setImgError(true)}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div
@@ -156,7 +160,7 @@ export function VideoCard({ video: v, index = 0 }: Props) {
         {/* 메타 */}
         <div className="mt-2 flex items-center gap-2 text-[11.5px]">
           <span style={{ color: 'var(--color-fg-muted)' }}>
-            조회수 {Math.round(v.views / 1000)}K
+            조회수 {formatViews(v.views)}회
           </span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
           <span style={{ color: 'var(--color-fg-muted)' }}>

@@ -54,7 +54,7 @@ export function DailyDigest({ digest }: Props) {
           className="text-[10px] tracking-[0.2em] uppercase"
           style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
         >
-          요약 · Gemini
+          오늘의 선별
         </span>
       </div>
 
@@ -91,12 +91,14 @@ export function DailyDigest({ digest }: Props) {
                 >
                   {it.headline}
                 </span>
-                <span
-                  className="block text-[12px] mt-1 leading-[1.5]"
-                  style={{ color: 'var(--color-fg-muted)' }}
-                >
-                  {it.takeaway}
-                </span>
+                {it.takeaway && (
+                  <span
+                    className="block text-[12px] mt-1 leading-[1.5]"
+                    style={{ color: 'var(--color-fg-muted)' }}
+                  >
+                    {it.takeaway}
+                  </span>
+                )}
               </div>
             </Link>
           </li>

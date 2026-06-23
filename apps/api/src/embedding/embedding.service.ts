@@ -33,8 +33,18 @@ export class EmbeddingService {
       this.logger.debug(`[${articleId}] embed skip (Gemini 미설정)`);
       return;
     }
-    const content = `${title}\n\n${snippet}`.slice(0, 8000);
-    const vector = await this.embedDocument(content);
+    // 임베딩은 무료 대안이 없다(의미검색 전용). 키 만료/한도 시 재시도 폭주를
+    // 막기 위해 조용히 skip — 검색은 키 복구 시 reanalyze로 채운다.
+    let vector: number[];
+    try {
+      const content = `${title}\n\n${snippet}`.slice(0, 8000);
+      vector = await this.embedDocument(content);
+    } catch (e) {
+      this.logger.debug(
+        `[${articleId}] embed skip (실패): ${(e as Error).message.slice(0, 80)}`,
+      );
+      return;
+    }
     const literal = `[${vector.join(',')}]`;
 
     await this.prisma.$executeRawUnsafe(

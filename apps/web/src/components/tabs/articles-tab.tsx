@@ -1,25 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArticleRow } from '../article-row';
 import { FeaturedArticle } from '../featured-article';
 import { SectionHeader } from '../section-header';
 import { FilterSidebar, type FilterGroup } from '../filter-sidebar';
+import { Pagination } from '../pagination';
+import { SidebarWidgets } from '../sidebar-widgets';
 import type { ArticleDto } from '../article-card';
+import type { ConferenceDto } from '@/lib/mock-conferences';
+import type { VideoDto } from '@/lib/mock-videos';
 import { groupByTime } from '@/lib/group-articles';
+import { sourceColor } from '@/lib/source-colors';
 
-const SOURCE_DOT: Record<string, string> = {
-  geeknews: 'oklch(55% 0.16 160)',
-  hackernews: 'oklch(62% 0.18 45)',
-  devto: 'oklch(58% 0.18 290)',
-  techcrunch: 'oklch(58% 0.21 15)',
-  anthropic: 'oklch(62% 0.17 60)',
-  kakao_tech: 'oklch(70% 0.16 90)',
-  toss_tech: 'oklch(58% 0.18 250)',
-  woowahan: 'oklch(64% 0.17 150)',
-  naver_d2: 'oklch(58% 0.18 145)',
-  rss_generic: 'oklch(58% 0.02 290)',
-};
 
 interface Props {
   articles: ArticleDto[];
@@ -27,6 +20,10 @@ interface Props {
   bookmarkSet?: Set<string>;
   onOpen: (id: string) => void;
   onBookmark?: (id: string) => void;
+  emptyLabel?: string;
+  conferences?: ConferenceDto[];
+  videos?: VideoDto[];
+  onNavigate?: (tab: 'conferences' | 'videos') => void;
 }
 
 const SECTION_HINT: Record<string, string> = {
@@ -43,6 +40,10 @@ export function ArticlesTab({
   bookmarkSet,
   onOpen,
   onBookmark,
+  emptyLabel = '조건에 맞는 글이 없어요.',
+  conferences,
+  videos,
+  onNavigate,
 }: Props) {
   const [query, setQuery] = useState('');
   const [source, setSource] = useState<string | null>(null);
@@ -62,25 +63,37 @@ export function ArticlesTab({
         value,
         label: name,
         count,
-        color: SOURCE_DOT[value] ?? SOURCE_DOT.rss_generic,
+        color: sourceColor(value),
       }));
   }, [articles]);
 
   const categoryOptions = useMemo(() => {
-    const map = new Map<string, number>();
+    // 대소문자만 다른 태그(#AI/#ai, #WWDC/#wwdc)는 하나로 합친다.
+    // value 는 lowercase 정규화 키, label 은 가장 많이 쓰인 원형 표기.
+    const map = new Map<string, { count: number; forms: Map<string, number> }>();
     for (const a of articles)
-      for (const t of a.tags) map.set(t, (map.get(t) ?? 0) + 1);
+      for (const t of a.tags) {
+        const key = t.toLowerCase();
+        const cur = map.get(key) ?? { count: 0, forms: new Map() };
+        cur.count += 1;
+        cur.forms.set(t, (cur.forms.get(t) ?? 0) + 1);
+        map.set(key, cur);
+      }
     return [...map.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([value, count]) => ({ value, label: `#${value}`, count }));
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 6)
+      .map(([value, { count, forms }]) => {
+        const label = [...forms.entries()].sort((a, b) => b[1] - a[1])[0][0];
+        return { value, label: `#${label}`, count };
+      });
   }, [articles]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return articles.filter((a) => {
       if (source && a.source.provider !== source) return false;
-      if (category && !a.tags.includes(category)) return false;
+      if (category && !a.tags.some((t) => t.toLowerCase() === category))
+        return false;
       if (hideRead && readSet.has(a.id)) return false;
       if (q) {
         const hay =
@@ -92,8 +105,31 @@ export function ArticlesTab({
   }, [articles, query, source, category, hideRead, readSet]);
 
   const isFiltering = !!query.trim() || !!source || !!category || hideRead;
-  const [featured, ...rest] = filtered;
-  const grouped = useMemo(() => groupByTime(rest), [rest]);
+
+  // 페이지네이션. 필터 조건이 바뀌면 1페이지로 리셋.
+  const PER_PAGE = 20;
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [query, source, category, hideRead]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * PER_PAGE;
+  const pageSlice = filtered.slice(start, start + PER_PAGE);
+
+  const goPage = (p: number) => {
+    setPage(p);
+    if (typeof window !== 'undefined')
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 비필터 1페이지 최상단에만 머리기사(featured), 나머지는 시간대별 그룹.
+  const showFeatured = !isFiltering && safePage === 1 && pageSlice.length > 0;
+  const featured = showFeatured ? pageSlice[0] : null;
+  const rows = showFeatured ? pageSlice.slice(1) : pageSlice;
+  const rowIndexBase = showFeatured ? 1 : start;
+  const grouped = useMemo(() => groupByTime(rows), [rows]);
 
   const groups: FilterGroup[] = [
     {
@@ -116,6 +152,7 @@ export function ArticlesTab({
     <button
       type="button"
       onClick={() => setHideRead(!hideRead)}
+      aria-pressed={hideRead}
       className="w-full text-left px-2.5 py-1.5 rounded-md text-[12.5px] transition-colors"
       style={{
         background: hideRead ? 'var(--color-bg-sunken)' : 'transparent',
@@ -133,18 +170,27 @@ export function ArticlesTab({
         groups={groups}
         search={{ value: query, onChange: setQuery, placeholder: '글 검색' }}
         extra={hideReadToggle}
+        footer={
+          conferences && videos && onNavigate ? (
+            <SidebarWidgets
+              conferences={conferences}
+              videos={videos}
+              onNavigate={onNavigate}
+            />
+          ) : undefined
+        }
       />
 
       <div className="flex-1 min-w-0">
         {filtered.length === 0 ? (
           <p className="py-12 text-center text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
-            조건에 맞는 글이 없어요.
+            {emptyLabel}
           </p>
         ) : isFiltering ? (
           <>
             <SectionHeader label="검색 결과" count={filtered.length} hint="matched" />
-            <ul>
-              {filtered.map((a, i) => (
+            <ul className="grid xl:grid-cols-2 gap-x-10">
+              {pageSlice.map((a, i) => (
                 <ArticleRow
                   key={a.id}
                   article={a}
@@ -153,10 +199,15 @@ export function ArticlesTab({
                   onOpen={() => onOpen(a.id)}
                   onTagClick={setCategory}
                   onBookmark={onBookmark}
-                  index={i}
+                  index={start + i}
                 />
               ))}
             </ul>
+            <Pagination
+              page={safePage}
+              totalPages={totalPages}
+              onChange={goPage}
+            />
           </>
         ) : (
           <>
@@ -168,9 +219,11 @@ export function ArticlesTab({
               />
             )}
             {grouped.map((group, gi) => {
-              const base = grouped
-                .slice(0, gi)
-                .reduce((s, g) => s + g.articles.length, 0);
+              const base =
+                rowIndexBase +
+                grouped
+                  .slice(0, gi)
+                  .reduce((s, g) => s + g.articles.length, 0);
               return (
                 <section key={group.label} className="mb-8">
                   <SectionHeader
@@ -178,7 +231,7 @@ export function ArticlesTab({
                     count={group.articles.length}
                     hint={SECTION_HINT[group.label] ?? 'today'}
                   />
-                  <ul>
+                  <ul className="grid xl:grid-cols-2 gap-x-10">
                     {group.articles.map((a, i) => (
                       <ArticleRow
                         key={a.id}
@@ -195,6 +248,11 @@ export function ArticlesTab({
                 </section>
               );
             })}
+            <Pagination
+              page={safePage}
+              totalPages={totalPages}
+              onChange={goPage}
+            />
           </>
         )}
       </div>

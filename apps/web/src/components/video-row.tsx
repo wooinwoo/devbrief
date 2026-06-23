@@ -3,12 +3,7 @@
 import { motion } from 'motion/react';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
 import { formatDuration } from '@/lib/format-duration';
-
-function formatViews(n: number): string {
-  if (n >= 10_000) return `${(n / 1000).toFixed(0)}K`;
-  if (n >= 1_000) return `${(n / 1000).toFixed(1)}K`;
-  return n.toString();
-}
+import { formatViews } from '@/lib/format-views';
 
 function relativeShort(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
