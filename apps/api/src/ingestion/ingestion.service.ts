@@ -46,13 +46,26 @@ export class IngestionService {
       })
       .slice(0, this.maxPerSource);
 
+    // url별 findUnique N+1 제거 — 후보 url을 한 번에 조회해 Set으로 중복 판정.
+    const candidateUrls = items
+      .map((it) => it.link)
+      .filter((u): u is string => typeof u === 'string' && u.length > 0);
+    const existingRows = candidateUrls.length
+      ? await this.prisma.article.findMany({
+          where: { url: { in: candidateUrls } },
+          select: { url: true },
+        })
+      : [];
+    const existingUrls = new Set(existingRows.map((r) => r.url));
+
     for (const item of items) {
       const url = item.link;
       const title = item.title;
       if (!url || !title) continue;
 
-      const existed = await this.prisma.article.findUnique({ where: { url } });
-      if (existed) continue;
+      if (existingUrls.has(url)) continue;
+      // 같은 피드 안에 동일 url이 중복으로 실린 경우도 1회만 처리.
+      existingUrls.add(url);
 
       const imageUrl = await this.rss.resolveImageUrl(item);
 

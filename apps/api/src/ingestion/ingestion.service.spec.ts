@@ -22,7 +22,7 @@ describe('IngestionService', () => {
           provide: PrismaService,
           useValue: {
             source: { findMany: jest.fn() },
-            article: { findUnique: jest.fn(), create: jest.fn() },
+            article: { findMany: jest.fn(), create: jest.fn() },
           },
         },
         {
@@ -55,7 +55,7 @@ describe('IngestionService', () => {
           },
         ],
       } as never);
-      (prisma.article.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.article.findMany as jest.Mock).mockResolvedValue([]);
       (prisma.article.create as jest.Mock).mockResolvedValue({
         id: 'art-1',
         title: 'New article',
@@ -91,9 +91,9 @@ describe('IngestionService', () => {
       rss.parse.mockResolvedValue({
         items: [{ title: 'dup', link: 'https://example.com/dup' }],
       } as never);
-      (prisma.article.findUnique as jest.Mock).mockResolvedValue({
-        id: 'existing',
-      });
+      (prisma.article.findMany as jest.Mock).mockResolvedValue([
+        { url: 'https://example.com/dup' },
+      ]);
 
       const count = await service.ingestSource('src-1', 'https://feed.com/rss');
 
@@ -109,6 +109,7 @@ describe('IngestionService', () => {
           { link: 'https://example.com/x' }, // title 없음
         ],
       } as never);
+      (prisma.article.findMany as jest.Mock).mockResolvedValue([]);
 
       const count = await service.ingestSource('src-1', 'https://feed.com/rss');
 
@@ -121,7 +122,7 @@ describe('IngestionService', () => {
       rss.parse.mockResolvedValue({
         items: [{ title: longTitle, link: 'https://example.com/long' }],
       } as never);
-      (prisma.article.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.article.findMany as jest.Mock).mockResolvedValue([]);
       (prisma.article.create as jest.Mock).mockResolvedValue({ id: 'art-2' });
       rss.resolveImageUrl.mockResolvedValue(null);
 
@@ -135,7 +136,7 @@ describe('IngestionService', () => {
       rss.parse.mockResolvedValue({
         items: [{ title: 'no-date', link: 'https://example.com/nd' }],
       } as never);
-      (prisma.article.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.article.findMany as jest.Mock).mockResolvedValue([]);
       (prisma.article.create as jest.Mock).mockResolvedValue({ id: 'art-3' });
       rss.resolveImageUrl.mockResolvedValue(null);
 
