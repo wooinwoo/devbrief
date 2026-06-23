@@ -95,36 +95,39 @@ export class IngestionService {
       });
       newCount++;
 
-      await this.summarizationQueue.add(
-        'summarize',
-        {
-          articleId: article.id,
-          title: article.title,
-          snippet: String(snippet).slice(0, 4000),
-        },
-        // 한도/일시 장애 시 지수 backoff 재시도 (1분 → 2분 → 4분 ...)
-        {
-          attempts: 6,
-          backoff: { type: 'exponential', delay: 60_000 },
-          removeOnComplete: 500,
-          removeOnFail: 1000,
-        },
-      );
-      await this.embeddingQueue.add(
-        'embed',
-        {
-          articleId: article.id,
-          title: article.title,
-          snippet: String(snippet).slice(0, 2000),
-        },
-        // summarization 과 동일한 지수 backoff 재시도
-        {
-          attempts: 6,
-          backoff: { type: 'exponential', delay: 60_000 },
-          removeOnComplete: 500,
-          removeOnFail: 1000,
-        },
-      );
+      // summarization/embedding 큐 add 는 서로 독립이라 병렬로 적재한다.
+      await Promise.all([
+        this.summarizationQueue.add(
+          'summarize',
+          {
+            articleId: article.id,
+            title: article.title,
+            snippet: String(snippet).slice(0, 4000),
+          },
+          // 한도/일시 장애 시 지수 backoff 재시도 (1분 → 2분 → 4분 ...)
+          {
+            attempts: 6,
+            backoff: { type: 'exponential', delay: 60_000 },
+            removeOnComplete: 500,
+            removeOnFail: 1000,
+          },
+        ),
+        this.embeddingQueue.add(
+          'embed',
+          {
+            articleId: article.id,
+            title: article.title,
+            snippet: String(snippet).slice(0, 2000),
+          },
+          // summarization 과 동일한 지수 backoff 재시도
+          {
+            attempts: 6,
+            backoff: { type: 'exponential', delay: 60_000 },
+            removeOnComplete: 500,
+            removeOnFail: 1000,
+          },
+        ),
+      ]);
     }
 
     return newCount;

@@ -76,8 +76,9 @@ export class DailyDigestService {
    */
   async generateForToday(opts: { force?: boolean } = {}): Promise<DigestPayload | null> {
     const today = this.dayStart();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // 다음 날 경계 = today + 24h. setDate(getDate()+1)는 로컬타임 의존이라 KST 경계와
+    // 어긋날 수 있어 ms 덧셈으로 타임존 독립 처리 (서울 DST 없어 24h 고정 안전).
+    const tomorrow = new Date(today.getTime() + 86_400_000);
 
     const existing = await this.prisma.dailyDigest.findUnique({
       where: { date: today },
