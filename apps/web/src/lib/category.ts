@@ -31,26 +31,46 @@ export const CATEGORIES: Record<string, Category> = {
   etc: { key: 'etc', label: '기타', color: 'oklch(55% 0.02 285)', soft: 'oklch(94% 0.008 285)' },
 };
 
+// 유니코드 인식 단어 경계.
+// JS의 `\b`는 ASCII(`\w`) 기준이라 한글 앞뒤를 단어 경계로 보지 못해
+// 한글 키워드("백엔드" 등)가 전혀 매칭되지 않는다.
+// 대신 letter/number(한글 포함 \p{L}\p{N}) 가 아닌 곳을 경계로 삼는 lookbehind/lookahead를 쓴다.
+// - ASCII 오탐 방지 유지: "java" in "javascript" → 뒤가 letter라 경계 불일치(미매칭).
+// - 한글 매칭: "백엔드" 단독/구두점·공백 경계에서 매칭.
+const WB_BEFORE = '(?<![\\p{L}\\p{N}])';
+const WB_AFTER = '(?![\\p{L}\\p{N}])';
+
+const bounded = (alternation: string): RegExp =>
+  new RegExp(`${WB_BEFORE}(?:${alternation})${WB_AFTER}`, 'iu');
+
 // 태그 키워드 → 카테고리
 const TAG_MAP: Array<[RegExp, string]> = [
   [
-    /\b(ai|llm|gpt|codex|claude|anthropic|openai|gemini|deepmind|glm|llama|qwen|deepseek|mistral|gemma|phi|grok|ml|machine.?learning|딥러닝|머신러닝|에이전트|agent|harness|benchmark|eval|sota|leaderboard|rag|mcp|vllm|vector|embedding|임베딩|모델|추론|inference|fine.?tun|transformer|diffusion)\b/i,
+    bounded(
+      'ai|llm|gpt|codex|claude|anthropic|openai|gemini|deepmind|glm|llama|qwen|deepseek|mistral|gemma|phi|grok|ml|machine.?learning|딥러닝|머신러닝|에이전트|agent|harness|benchmark|eval|sota|leaderboard|rag|mcp|vllm|vector|embedding|임베딩|모델|추론|inference|fine.?tun|transformer|diffusion',
+    ),
     'ai',
   ],
   [
-    /\b(frontend|react|vue|svelte|next|css|tailwind|webdev|ui|ux|rsc|javascript|typescript|browser|웹)\b/i,
+    bounded(
+      'frontend|react|vue|svelte|next|css|tailwind|webdev|ui|ux|rsc|javascript|typescript|browser|웹',
+    ),
     'frontend',
   ],
   [
-    /\b(backend|server|api|nest|spring|node|go|rust|java|kotlin|db|database|postgres|sql|아키텍처|서버|백엔드)\b/i,
+    bounded(
+      'backend|server|api|nest|spring|node|go|rust|java|kotlin|db|database|postgres|sql|아키텍처|서버|백엔드',
+    ),
     'backend',
   ],
   [
-    /\b(infra|devops|kubernetes|k8s|docker|cloud|aws|gcp|terraform|ci|cd|observability|인프라|클라우드|운영)\b/i,
+    bounded(
+      'infra|devops|kubernetes|k8s|docker|cloud|aws|gcp|terraform|ci|cd|observability|인프라|클라우드|운영',
+    ),
     'infra',
   ],
-  [/\b(data|dataengineering|analytics|bigdata|spark|kafka|etl|데이터|분석)\b/i, 'data'],
-  [/\b(mobile|ios|android|swift|flutter|reactnative|모바일)\b/i, 'mobile'],
+  [bounded('data|dataengineering|analytics|bigdata|spark|kafka|etl|데이터|분석'), 'data'],
+  [bounded('mobile|ios|android|swift|flutter|reactnative|모바일'), 'mobile'],
 ];
 
 /** 글 태그 배열 → 대표 카테고리 1개 */

@@ -28,14 +28,31 @@ describe('categoryOf', () => {
     expect(categoryOf(['flutter']).key).toBe('mobile');
   });
 
-  // 알려진 한계(버그): TAG_MAP 정규식이 \b(워드 경계)를 쓰는데
-  // \b는 ASCII 단어 문자만 인식하므로 한글 키워드(머신러닝/백엔드/인프라/데이터/모바일 등)는
-  // 매칭되지 않고 항상 etc로 떨어진다. 현재 동작을 명시적으로 고정한다.
-  it('한글 단독 키워드는 \\b 한계로 매칭 실패 → etc (현재 동작 고정)', () => {
-    expect(categoryOf(['머신러닝']).key).toBe('etc');
-    expect(categoryOf(['백엔드']).key).toBe('etc');
-    expect(categoryOf(['인프라']).key).toBe('etc');
-    expect(categoryOf(['모바일']).key).toBe('etc');
+  // 유니코드 경계 적용 후: 한글 단독 키워드도 올바른 카테고리로 분류된다.
+  it('한글 단독 키워드 → 올바른 카테고리', () => {
+    expect(categoryOf(['머신러닝']).key).toBe('ai');
+    expect(categoryOf(['딥러닝']).key).toBe('ai');
+    expect(categoryOf(['에이전트']).key).toBe('ai');
+    expect(categoryOf(['백엔드']).key).toBe('backend');
+    expect(categoryOf(['서버']).key).toBe('backend');
+    expect(categoryOf(['아키텍처']).key).toBe('backend');
+    expect(categoryOf(['인프라']).key).toBe('infra');
+    expect(categoryOf(['클라우드']).key).toBe('infra');
+    expect(categoryOf(['데이터']).key).toBe('data');
+    expect(categoryOf(['분석']).key).toBe('data');
+    expect(categoryOf(['모바일']).key).toBe('mobile');
+    expect(categoryOf(['웹']).key).toBe('frontend');
+  });
+
+  it('한글 키워드가 다른 한글/공백과 섞여도 매칭', () => {
+    expect(categoryOf(['백엔드 프레임워크']).key).toBe('backend');
+    expect(categoryOf(['최신 머신러닝 동향']).key).toBe('ai');
+    expect(categoryOf(['클라우드 인프라']).key).toBe('infra');
+  });
+
+  it('ASCII 오탐 방지 유지 — "java"는 "javascript" 안에서 backend로 매칭되지 않음', () => {
+    // javascript는 frontend로 매칭(backend의 java가 아님)
+    expect(categoryOf(['javascript']).key).toBe('frontend');
   });
 
   it('한글이 ASCII 키워드와 섞이면(예: "AI 에이전트") 매칭 가능', () => {
