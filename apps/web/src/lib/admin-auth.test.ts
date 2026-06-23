@@ -3,8 +3,8 @@ import { ADMIN_COOKIE, checkPassword, sessionToken, verifyToken } from './admin-
 
 describe('admin-auth', () => {
   beforeEach(() => {
-    // 기본값('pulse') 경로 검증 위해 env 미설정 상태로 (stubEnv(undefined)는 키 제거)
-    vi.stubEnv('ADMIN_PASSWORD', undefined);
+    // 기본은 비밀번호 설정 상태로 검증 (미설정 거부는 별도 describe).
+    vi.stubEnv('ADMIN_PASSWORD', 'pulse');
   });
 
   afterEach(() => {
@@ -33,7 +33,7 @@ describe('admin-auth', () => {
   });
 
   it('verifyToken — 올바른 토큰만 통과', async () => {
-    const valid = await sessionToken(); // 기본 'pulse'
+    const valid = await sessionToken(); // 'pulse' 기반
     expect(await verifyToken(valid)).toBe(true);
   });
 
@@ -56,5 +56,22 @@ describe('admin-auth', () => {
     // verifyToken도 custom-pw 기반 토큰만 통과
     const token = await sessionToken('custom-pw');
     expect(await verifyToken(token)).toBe(true);
+  });
+
+  describe('ADMIN_PASSWORD 미설정 — 폴백 없이 모두 거부', () => {
+    beforeEach(() => {
+      vi.stubEnv('ADMIN_PASSWORD', undefined);
+    });
+
+    it('checkPassword 는 어떤 입력도 거부 (빈 비번 포함)', async () => {
+      expect(await checkPassword('pulse')).toBe(false);
+      expect(await checkPassword('')).toBe(false);
+      expect(await checkPassword('anything')).toBe(false);
+    });
+
+    it('verifyToken 은 어떤 토큰도 거부', async () => {
+      const token = await sessionToken('pulse');
+      expect(await verifyToken(token)).toBe(false);
+    });
   });
 });
