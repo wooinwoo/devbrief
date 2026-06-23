@@ -65,6 +65,25 @@ describe('ArticlesController', () => {
       expect(args.where?.id?.in).toEqual(['exists', 'ghost']);
     });
 
+    it('중복 id 는 제거하고 조회한다', async () => {
+      await controller.batch('a,a,b,b,b,c');
+
+      const args = findMany.mock.calls[0][0] as FindManyArgs;
+      expect(args.where?.id?.in).toEqual(['a', 'b', 'c']);
+    });
+
+    it('상한은 중복 제거 후 고유 id 기준으로 적용된다', async () => {
+      // 120개 고유 id 를 각각 2번씩 → 240개 토큰. 중복 제거 후 120개 중 100개만.
+      const unique = Array.from({ length: 120 }, (_, i) => `u${i}`);
+      const dup = unique.flatMap((id) => [id, id]);
+      await controller.batch(dup.join(','));
+
+      const args = findMany.mock.calls[0][0] as FindManyArgs;
+      expect(args.where?.id?.in).toHaveLength(100);
+      expect(args.where?.id?.in?.[0]).toBe('u0');
+      expect(args.where?.id?.in?.[99]).toBe('u99');
+    });
+
     it('100개 상한을 초과하면 앞 100개만 조회한다', async () => {
       const ids = Array.from({ length: 150 }, (_, i) => `id${i}`);
       await controller.batch(ids.join(','));

@@ -27,11 +27,12 @@ export class ArticlesController {
    */
   @Get('batch')
   async batch(@Query('ids') idsStr?: string) {
-    const ids = (idsStr ?? '')
+    // 중복 id 를 먼저 제거한 뒤 상한을 적용한다(상한이 고유 id 기준이 되도록).
+    const parsed = (idsStr ?? '')
       .split(',')
       .map((s) => s.trim())
-      .filter((s) => s.length > 0)
-      .slice(0, BATCH_MAX_IDS);
+      .filter((s) => s.length > 0);
+    const ids = [...new Set(parsed)].slice(0, BATCH_MAX_IDS);
 
     if (ids.length === 0) return [];
 
