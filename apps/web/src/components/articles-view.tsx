@@ -30,7 +30,7 @@ interface Props {
   repos?: RepoDto[];
 }
 
-type Tab = 'all' | 'ai' | 'articles' | 'conferences' | 'videos' | 'repos' | 'saved';
+type Tab = 'all' | 'ai' | 'articles' | 'conferences' | 'videos' | 'repos';
 
 const TABS: Array<{ id: Tab; label: string; title: string }> = [
   { id: 'all', label: '오늘', title: '오늘의 흐름' },
@@ -39,7 +39,6 @@ const TABS: Array<{ id: Tab; label: string; title: string }> = [
   { id: 'conferences', label: '컨퍼런스', title: '개발자 컨퍼런스' },
   { id: 'videos', label: '발표 영상', title: '발표 영상' },
   { id: 'repos', label: '오픈소스', title: '급성장 오픈소스' },
-  { id: 'saved', label: '저장', title: '저장한 글' },
 ];
 
 export function ArticlesView({
@@ -138,8 +137,6 @@ export function ArticlesView({
             value: repos.filter((r) => r.period === 'daily').length,
           },
         ];
-      case 'saved':
-        return [{ label: '저장한 글', value: savedArticles.length, accent: true }];
       default:
         return [
           { label: '전체', value: articles.length },
@@ -201,21 +198,29 @@ export function ArticlesView({
                   }}
                 >
                   {t.label}
-                  {t.id === 'saved' && savedArticles.length > 0 && (
-                    <span
-                      className="ml-1 tabular-nums text-[11px] px-1.5 py-px rounded-full align-middle"
-                      style={{
-                        background: isActive ? 'var(--bar-accent)' : 'oklch(100% 0 0 / 0.12)',
-                        color: isActive ? 'oklch(20% 0.03 265)' : 'var(--bar-fg-muted)',
-                        fontWeight: 700,
-                      }}
-                    >
-                      {savedArticles.length}
-                    </span>
-                  )}
                 </button>
               );
             })}
+            {/* 저장: 메인 목록에 의존하지 않는 전용 페이지(/bookmarks)로 분리 */}
+            <Link
+              href="/bookmarks"
+              className="shrink-0 px-3 sm:px-3.5 py-2 rounded-lg text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors relative hover:bg-[oklch(100%_0_0/0.1)]"
+              style={{ color: 'var(--bar-fg-muted)', fontWeight: 500 }}
+            >
+              저장
+              {savedArticles.length > 0 && (
+                <span
+                  className="ml-1 tabular-nums text-[11px] px-1.5 py-px rounded-full align-middle"
+                  style={{
+                    background: 'oklch(100% 0 0 / 0.12)',
+                    color: 'var(--bar-fg-muted)',
+                    fontWeight: 700,
+                  }}
+                >
+                  {savedArticles.length}
+                </span>
+              )}
+            </Link>
           </nav>
 
           {/* 우측 날짜 + 언어 토글 */}
@@ -302,16 +307,6 @@ export function ArticlesView({
         {tab === 'conferences' && <ConferencesTab conferences={conferences} />}
         {tab === 'videos' && <VideosTab videos={videos} />}
         {tab === 'repos' && <ReposTab repos={repos} />}
-        {tab === 'saved' && (
-          <ArticlesTab
-            articles={savedArticles}
-            readSet={readSet}
-            bookmarkSet={bookmarkSet}
-            onOpen={handleOpen}
-            onBookmark={handleBookmark}
-            emptyLabel="아직 저장한 글이 없어요. 각 글 오른쪽의 북마크 아이콘을 눌러 모아 보세요."
-          />
-        )}
       </div>
 
       <PageFooter total={articles.length} />

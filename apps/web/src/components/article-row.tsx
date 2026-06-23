@@ -14,6 +14,8 @@ interface Props {
   onOpen?: () => void;
   onTagClick?: (tag: string) => void;
   onBookmark?: (id: string) => void;
+  /** 읽음/안읽음 토글 — 넘기면 북마크 옆에 토글 버튼 노출 */
+  onToggleRead?: (id: string) => void;
   index?: number;
   /** 카테고리 칩 대신 표시할 배지들 (예: AI 탭의 모델·하네스) */
   badges?: Array<{ label: string; color: string }>;
@@ -30,6 +32,7 @@ export function ArticleRow({
   onOpen,
   onTagClick,
   onBookmark,
+  onToggleRead,
   index,
   badges,
 }: Props) {
@@ -147,27 +150,42 @@ export function ArticleRow({
         </div>
       </div>
 
-      {/* 우측: 북마크 */}
-      {onBookmark && (
-        <button
-          type="button"
-          onClick={() => onBookmark(article.id)}
-          aria-label={bookmarked ? '북마크 해제' : '북마크'}
-          className="shrink-0 self-start p-1 -mr-1 transition-opacity"
-          style={{
-            opacity: bookmarked ? 1 : 0.25,
-            color: bookmarked ? 'var(--color-accent)' : 'var(--color-fg-muted)',
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              d="M4 2.5h8a.5.5 0 0 1 .5.5v10.2a.3.3 0 0 1-.48.24L8 11l-4.02 2.94a.3.3 0 0 1-.48-.24V3a.5.5 0 0 1 .5-.5Z"
-              fill={bookmarked ? 'currentColor' : 'none'}
-              stroke="currentColor"
-              strokeWidth="1.3"
-            />
-          </svg>
-        </button>
+      {/* 우측: 읽음 토글 + 북마크 */}
+      {(onBookmark || onToggleRead) && (
+        <div className="shrink-0 self-start flex items-center gap-1">
+          {onToggleRead && (
+            <button
+              type="button"
+              onClick={() => onToggleRead(article.id)}
+              aria-label={read ? '안읽음으로 표시' : '읽음으로 표시'}
+              className="min-h-[44px] px-2 text-[11.5px] transition-colors hover:text-(--color-fg-strong)"
+              style={{ color: 'var(--color-fg-subtle)', fontWeight: 600 }}
+            >
+              {read ? '안읽음' : '읽음'}
+            </button>
+          )}
+          {onBookmark && (
+            <button
+              type="button"
+              onClick={() => onBookmark(article.id)}
+              aria-label={bookmarked ? '북마크 해제' : '북마크'}
+              className="grid place-items-center min-h-[44px] min-w-[44px] -mr-1 transition-opacity"
+              style={{
+                opacity: bookmarked ? 1 : 0.25,
+                color: bookmarked ? 'var(--color-accent)' : 'var(--color-fg-muted)',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M4 2.5h8a.5.5 0 0 1 .5.5v10.2a.3.3 0 0 1-.48.24L8 11l-4.02 2.94a.3.3 0 0 1-.48-.24V3a.5.5 0 0 1 .5-.5Z"
+                  fill={bookmarked ? 'currentColor' : 'none'}
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
       )}
     </li>
   );

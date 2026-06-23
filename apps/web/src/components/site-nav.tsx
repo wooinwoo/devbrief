@@ -10,7 +10,7 @@ const TABS = [
   { href: '/?tab=conferences', label: '컨퍼런스' },
   { href: '/?tab=videos', label: '발표 영상' },
   { href: '/?tab=repos', label: '오픈소스' },
-  { href: '/?tab=saved', label: '저장' },
+  { href: '/bookmarks', label: '저장' },
 ];
 
 /** 글/영상 상세 상단 네비 — 메인 헤더와 동일한 비주얼 언어. */

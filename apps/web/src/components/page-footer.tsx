@@ -21,7 +21,7 @@ const NAV = [
   { href: '/?tab=articles', label: '개발 뉴스' },
   { href: '/?tab=conferences', label: '컨퍼런스' },
   { href: '/?tab=videos', label: '발표 영상' },
-  { href: '/?tab=saved', label: '저장한 글' },
+  { href: '/bookmarks', label: '저장한 글' },
 ];
 
 export function PageFooter({ total }: Props) {
