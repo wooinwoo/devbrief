@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE } from '@/lib/api';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -106,7 +107,7 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
     setStreaming(true);
 
     try {
-      const res = await fetch('http://localhost:4000/api/v1/chat/stream', {
+      const res = await fetch(`${API_BASE}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: text }),
