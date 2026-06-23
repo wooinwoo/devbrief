@@ -103,6 +103,10 @@ export class VideoAnalyzerService {
     const description =
       (info as unknown as { basic_info: { short_description?: string } }).basic_info
         .short_description ?? null;
+    // 실제 발행일 — youtubei.js basic_info.start_timestamp(Date|null). 없으면 현재 시각 폴백.
+    const startTs = (basic as unknown as { start_timestamp?: Date | string | null })
+      .start_timestamp;
+    const publishedAt = startTs ? new Date(startTs) : new Date();
 
     const video = await this.prisma.video.upsert({
       where: { videoId },
@@ -114,9 +118,10 @@ export class VideoAnalyzerService {
         thumbnailUrl: thumb,
         durationSec,
         views,
-        publishedAt: new Date(),
+        publishedAt,
         description,
       },
+      // 재수집 시 publishedAt은 갱신하지 않는다 — 폴백(new Date())으로 기존 발행일을 덮어쓰지 않게.
       update: {
         title,
         channel,
