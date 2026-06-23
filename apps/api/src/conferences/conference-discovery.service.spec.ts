@@ -9,8 +9,10 @@ describe('ConferenceDiscoveryService', () => {
     article: { findMany: jest.Mock };
     conference: {
       findUnique: jest.Mock;
+      findMany: jest.Mock;
       findFirst: jest.Mock;
       create: jest.Mock;
+      createMany: jest.Mock;
     };
   };
   let gemini: {
@@ -23,8 +25,10 @@ describe('ConferenceDiscoveryService', () => {
       article: { findMany: jest.fn() },
       conference: {
         findUnique: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn(),
         create: jest.fn(),
+        createMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
     };
     gemini = {
@@ -101,9 +105,9 @@ describe('ConferenceDiscoveryService', () => {
   });
 
   describe('saveProposals', () => {
-    it('URL 있고 신규면 PROPOSED 로 create', async () => {
-      prisma.conference.findUnique.mockResolvedValue(null);
-      prisma.conference.create.mockResolvedValue({ id: 'c1' });
+    it('URL 있고 신규면 PROPOSED 로 createMany', async () => {
+      prisma.conference.findMany.mockResolvedValue([]);
+      prisma.conference.createMany.mockResolvedValue({ count: 1 });
 
       const result = await service.saveProposals(
         [
@@ -120,18 +124,21 @@ describe('ConferenceDiscoveryService', () => {
       );
 
       expect(result).toEqual({ saved: 1, skipped: 0 });
-      expect(prisma.conference.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          name: 'KubeCon 2026',
-          url: 'https://kubecon.io/2026',
-          status: 'PROPOSED',
-          discoveredFromArticleId: 'art-1',
-        }),
+      expect(prisma.conference.createMany).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'KubeCon 2026',
+            url: 'https://kubecon.io/2026',
+            status: 'PROPOSED',
+            discoveredFromArticleId: 'art-1',
+          }),
+        ]),
+        skipDuplicates: true,
       });
     });
 
     it('이미 등록된 URL은 skip', async () => {
-      prisma.conference.findUnique.mockResolvedValue({ id: 'existing' });
+      prisma.conference.findMany.mockResolvedValue([{ url: 'https://feconf.kr' }]);
       const result = await service.saveProposals(
         [
           {

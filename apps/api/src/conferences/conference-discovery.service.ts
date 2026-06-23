@@ -73,64 +73,86 @@ export class ConferenceDiscoveryService {
     let saved = 0;
     let skipped = 0;
 
-    for (const c of candidates) {
-      if (!c.startDate) {
-        // 날짜 미상은 후보로 부적합
-        skipped++;
-        continue;
-      }
+    // 날짜 있는 후보만 유효 — 미상은 부적합
+    const dated = candidates.filter((c) => {
+      if (c.startDate) return true;
+      skipped++;
+      return false;
+    });
 
-      try {
-        if (c.url) {
-          const existing = await this.prisma.conference.findUnique({
-            where: { url: c.url },
-          });
-          if (existing) {
-            skipped++;
-            continue;
-          }
-          await this.prisma.conference.create({
-            data: {
-              name: c.name,
-              url: c.url,
-              startDate: new Date(c.startDate),
-              endDate: c.endDate ? new Date(c.endDate) : null,
-              location: c.location ?? '미정',
-              topics: c.topics ?? [],
-              status: 'PROPOSED',
-              discoveredFromArticleId: sourceArticleId,
-              discoveredAt: new Date(),
-            },
-          });
-          saved++;
-        } else {
-          // URL 없는 후보는 이름 + 날짜로 중복 체크 (간단 dedupe)
-          const dup = await this.prisma.conference.findFirst({
-            where: { name: c.name, startDate: new Date(c.startDate) },
-          });
-          if (dup) {
-            skipped++;
-            continue;
-          }
-          // URL 없는 후보는 임시 unique url (placeholder)
-          await this.prisma.conference.create({
-            data: {
-              name: c.name,
-              url: `proposed://${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-              startDate: new Date(c.startDate),
-              endDate: c.endDate ? new Date(c.endDate) : null,
-              location: c.location ?? '미정',
-              topics: c.topics ?? [],
-              status: 'PROPOSED',
-              discoveredFromArticleId: sourceArticleId,
-              discoveredAt: new Date(),
-            },
-          });
-          saved++;
+    // URL 있는 후보의 중복 판정을 위해 url 목록을 한 번에 조회 (N+1 제거).
+    const urls = dated
+      .map((c) => c.url)
+      .filter((u): u is string => typeof u === 'string' && u.length > 0);
+    const existing = urls.length
+      ? await this.prisma.conference.findMany({
+          where: { url: { in: urls } },
+          select: { url: true },
+        })
+      : [];
+    const existingUrls = new Set(existing.map((r) => r.url));
+
+    type CreateData = Parameters<typeof this.prisma.conference.create>[0]['data'];
+    const toCreate: CreateData[] = [];
+
+    for (const c of dated) {
+      const startDate = new Date(c.startDate as string);
+
+      if (c.url) {
+        // 기존 DB + 같은 배치 내 중복 모두 차단
+        if (existingUrls.has(c.url)) {
+          skipped++;
+          continue;
         }
+        existingUrls.add(c.url);
+        toCreate.push({
+          name: c.name,
+          url: c.url,
+          startDate,
+          endDate: c.endDate ? new Date(c.endDate) : null,
+          location: c.location ?? '미정',
+          topics: c.topics ?? [],
+          status: 'PROPOSED',
+          discoveredFromArticleId: sourceArticleId,
+          discoveredAt: new Date(),
+        });
+      } else {
+        // URL 없는 후보는 이름 + 날짜로 중복 체크 (간단 dedupe)
+        const dup = await this.prisma.conference.findFirst({
+          where: { name: c.name, startDate },
+          select: { id: true },
+        });
+        if (dup) {
+          skipped++;
+          continue;
+        }
+        // URL 없는 후보는 임시 unique url (placeholder)
+        toCreate.push({
+          name: c.name,
+          url: `proposed://${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          startDate,
+          endDate: c.endDate ? new Date(c.endDate) : null,
+          location: c.location ?? '미정',
+          topics: c.topics ?? [],
+          status: 'PROPOSED',
+          discoveredFromArticleId: sourceArticleId,
+          discoveredAt: new Date(),
+        });
+      }
+    }
+
+    if (toCreate.length) {
+      try {
+        // 신규 후보를 일괄 적재. createMany 는 중복(unique 충돌) 행을 skip.
+        const r = await this.prisma.conference.createMany({
+          data: toCreate as never,
+          skipDuplicates: true,
+        });
+        saved += r.count;
+        skipped += toCreate.length - r.count;
       } catch (e) {
-        this.logger.warn(`후보 저장 실패 [${c.name}]: ${(e as Error).message}`);
-        skipped++;
+        this.logger.warn(`후보 일괄 저장 실패 (${toCreate.length}건): ${(e as Error).message}`);
+        skipped += toCreate.length;
       }
     }
 
