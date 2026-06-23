@@ -42,4 +42,37 @@ describe('readTracking', () => {
     localStorage.setItem('pulse.read.v1', 'invalid-json');
     expect(readTracking.load().size).toBe(0);
   });
+
+  it('remove — 읽음 표시 해제 후 persist', () => {
+    readTracking.add('art-1');
+    readTracking.add('art-2');
+    readTracking.remove('art-1');
+
+    const reloaded = readTracking.load();
+    expect(reloaded.has('art-1')).toBe(false);
+    expect(reloaded.has('art-2')).toBe(true);
+    expect(reloaded.size).toBe(1);
+  });
+
+  it('remove — 없는 id 제거해도 오류 없음', () => {
+    readTracking.add('art-1');
+    readTracking.remove('missing');
+    expect(readTracking.load().size).toBe(1);
+  });
+
+  it('toggle — 없으면 추가, 있으면 제거', () => {
+    let set = readTracking.toggle('art-x');
+    expect(set.has('art-x')).toBe(true);
+    expect(readTracking.has('art-x')).toBe(true);
+
+    set = readTracking.toggle('art-x');
+    expect(set.has('art-x')).toBe(false);
+    expect(readTracking.has('art-x')).toBe(false);
+  });
+
+  it('toggle은 매번 새 Set 인스턴스 반환 (불변)', () => {
+    const first = readTracking.toggle('a');
+    const second = readTracking.toggle('b');
+    expect(first).not.toBe(second);
+  });
 });

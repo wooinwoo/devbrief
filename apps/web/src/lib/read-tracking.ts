@@ -27,6 +27,18 @@ export const readTracking = {
     set.add(id);
     persist(set);
   },
+  remove(id: string) {
+    const set = load();
+    set.delete(id);
+    persist(set);
+  },
+  toggle(id: string): Set<string> {
+    const set = load();
+    if (set.has(id)) set.delete(id);
+    else set.add(id);
+    persist(set);
+    return new Set(set);
+  },
   has(id: string, set?: Set<string>) {
     return (set ?? load()).has(id);
   },
