@@ -55,6 +55,7 @@ Devbrief는 여러 소스를 한 파이프라인으로 모아 **자동 수집 �
 | **큐 / 캐시** | Redis + BullMQ (수집·요약·임베딩·영상분석 워커) |
 | **수집** | `rss-parser` / `cheerio` (트렌딩 스크래핑) / `youtubei.js` (YouTube 메타·자막) |
 | **인프라** | Docker Compose (Postgres + Redis) / pnpm workspace 모노레포 / Biome |
+| **테스트** | Vitest (web 단위 테스트 101개 / 14 파일) |
 
 ## 아키텍처
 
@@ -113,9 +114,7 @@ flowchart LR
 
 ### 모노레포 구조
 
-`pnpm workspace`로 4개 패키지를 묶습니다. (내부 패키지 스코프는 `@devbrief/*`)
-
-> 내부 npm 패키지 스코프는 서비스명에 맞춰 `@devbrief/*`로 통일했습니다. (구 코드네임 `@pulse/*`에서 변경)
+`pnpm workspace`로 4개 패키지를 묶습니다. 내부 npm 패키지 스코프는 `@devbrief/*`로 통일했습니다.
 
 - **apps/web** — Next.js 사용자 UI + 어드민 대시보드 (RAG 챗봇은 어드민 화면에 포함)
 - **apps/api** — NestJS 수집 파이프라인, RAG, cron, BullMQ 워커
@@ -144,6 +143,15 @@ flowchart LR
 5. **비공식 API 사용에 대한 인지.** GitHub 트렌딩은 공식 API가 없어 HTML 스크래핑으로,
    번역 폴백은 비공식 엔드포인트로 처리합니다. 깨질 수 있는 트레이드오프를 알고 선택한 부분이라,
    스크래핑은 견고한 셀렉터 + fallback을, 번역은 호출부 rate limit으로 IP 차단 위험을 완화했습니다.
+
+6. **Next.js 16 proxy 기반 어드민 보호.** `apps/web/src/proxy.ts`에서 `/admin/*` 전 경로를
+   가로채 토큰을 검증하고, 미인증 시 `/admin/login`으로 redirect합니다. Next.js 16의 새 규약에 맞춰
+   기존 `middleware.ts`를 `proxy.ts`로 마이그레이션했습니다.
+
+7. **한글 키워드 카테고리 매칭.** 글 태그를 6개 대분류로 분류할 때, JS의 `\b`가 ASCII(`\w`) 기준이라
+   "백엔드" 같은 한글 키워드가 전혀 매칭되지 않던 버그를 수정했습니다. `\p{L}\p{N}` 유니코드 속성
+   기반 lookbehind/lookahead 경계로 바꿔 한글을 매칭하면서도 "java" in "javascript" 같은 ASCII 오탐은
+   막습니다 (`apps/web/src/lib/category.ts`).
 
 ## 로컬 실행
 
@@ -200,6 +208,7 @@ curl -X POST http://localhost:4000/api/v1/conferences/discover
 
 ```bash
 pnpm lint && pnpm typecheck && pnpm build
+pnpm --filter @devbrief/web test    # web 단위 테스트 (Vitest, 101 tests / 14 files)
 ```
 
 ## 폴더 구조
@@ -211,7 +220,8 @@ devbrief/
 │  │  └─ src/
 │  │     ├─ app/           App Router 페이지 (홈/articles/conferences/videos/admin, /chat→/admin/chat)
 │  │     ├─ components/    카드/챗봇/대시보드 UI
-│  │     └─ lib/
+│  │     ├─ lib/           category 분류 / admin 인증 등 (Vitest 단위 테스트 포함)
+│  │     └─ proxy.ts       /admin/* 인증 가드 (Next.js 16 proxy 규약)
 │  └─ api/                 NestJS 11 (수집 + RAG + cron + 큐)
 │     └─ src/
 │        ├─ ingestion/     RSS 수집 + cron + BullMQ producer
