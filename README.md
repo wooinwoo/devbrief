@@ -112,6 +112,8 @@ flowchart LR
 
 `pnpm workspace`로 4개 패키지를 묶습니다. (내부 패키지 스코프는 `@pulse/*`)
 
+> 내부 npm 패키지 스코프 `@pulse/*`는 구 코드네임입니다. 서비스명은 Devbrief이며, 스코프 변경은 빌드 영향 범위가 커서 의도적으로 유지합니다.
+
 - **apps/web** — Next.js 사용자 UI, 챗봇, 어드민 대시보드
 - **apps/api** — NestJS 수집 파이프라인, RAG, cron, BullMQ 워커
 - **packages/db** — Prisma 스키마 + 마이그레이션 (모든 앱이 공유)

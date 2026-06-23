@@ -16,7 +16,7 @@ async function bootstrap() {
 
   const port = Number(process.env.API_PORT ?? 4000);
   await app.listen(port);
-  console.log(`Pulse API listening on http://localhost:${port}/api/v1`);
+  console.log(`Devbrief API listening on http://localhost:${port}/api/v1`);
 }
 
 bootstrap();

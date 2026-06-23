@@ -1,4 +1,4 @@
-// Pulse DB schema
+// Devbrief DB schema
 // pgvector extension 사용 (Article.embedding)
 
 generator client {

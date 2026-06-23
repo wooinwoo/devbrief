@@ -90,7 +90,7 @@ describe('ChatService', () => {
       expect(chunks).toEqual(['답변']);
       const callArg = gemini.streamText.mock.calls[0][0];
       expect(callArg.prompt).toContain('(관련 글 없음)');
-      expect(callArg.system).toMatch(/Pulse/);
+      expect(callArg.system).toMatch(/Devbrief/);
     });
 
     it('컨텍스트 글들이 [1] [2] 형식으로 prompt에 포함 + titleKo 우선', async () => {

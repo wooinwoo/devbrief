@@ -99,8 +99,7 @@ export class RssDiscoveryService {
         maxContentLength: 2_000_000,
         responseType: 'text',
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (compatible; PulseBot/1.0; +https://pulse.dev)',
+          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.dev)',
         },
       });
       return res.data;

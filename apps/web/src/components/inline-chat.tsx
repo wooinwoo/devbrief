@@ -315,7 +315,7 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
                   className="text-[10px] mb-1.5 tracking-[0.2em] uppercase"
                   style={{ color: 'var(--color-fg-subtle)' }}
                 >
-                  {m.role === 'user' ? 'You' : 'Pulse'}
+                  {m.role === 'user' ? 'You' : 'Devbrief'}
                 </p>
                 {m.role === 'assistant' && !streaming && m.content ? (
                   <AnswerText

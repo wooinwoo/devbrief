@@ -13,7 +13,7 @@ interface RetrievedArticle {
   sourceName: string;
 }
 
-const SYSTEM_PROMPT = `당신은 한국 개발자 잭의 개인 기술 정보 비서 Pulse 입니다.
+const SYSTEM_PROMPT = `당신은 한국 개발자 잭의 개인 기술 정보 비서 Devbrief 입니다.
 주어진 컨텍스트 (수집된 글 목록) 위에서 자연스러운 한국어로 답합니다.
 
 규칙:

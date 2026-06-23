@@ -21,8 +21,7 @@ export class BrandColorService {
         timeout: timeoutMs,
         maxContentLength: 5_000_000,
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (compatible; PulseBot/1.0; +https://pulse.dev)',
+          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.dev)',
         },
       });
       const buf = Buffer.from(res.data);

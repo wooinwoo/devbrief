@@ -1,7 +1,7 @@
 {
   "name": "@pulse/api",
   "version": "0.0.1",
-  "description": "Pulse backend: 수집 파이프라인 + 챗봇 RAG",
+  "description": "Devbrief backend: 수집 파이프라인 + 챗봇 RAG",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
