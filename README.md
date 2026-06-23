@@ -1,9 +1,10 @@
 # Devbrief
 
-> 매일 쏟아지는 기술 정보를 한 곳에서. 자동으로 모으고, AI가 요약하고, 챗봇이 답한다.
+> 매일 쏟아지는 기술 정보를 한 곳에서. 자동으로 모으고, AI가 한국어로 요약한다.
 
-RSS 글, 컨퍼런스, GitHub 트렌딩, 발표 영상을 자동 수집해 한국어로 요약하고,
-pgvector 기반 RAG로 자연어 질문에 답하는 개인용 기술 큐레이션 도구입니다.
+RSS 글, 컨퍼런스, GitHub 트렌딩, 발표 영상을 자동 수집해 한국어로 요약하는
+개인용 기술 큐레이션 도구입니다. 수집한 글은 pgvector로 임베딩해 두며,
+이 임베딩을 활용한 RAG 챗봇은 운영 비용 때문에 어드민 전용 도구로 제공합니다.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
@@ -23,8 +24,9 @@ pgvector 기반 RAG로 자연어 질문에 답하는 개인용 기술 큐레이�
 - 텍스트 다이제스트 메일은 검색도 인터랙션도 안 됩니다.
 - 범용 챗봇은 한국 소스에 약하고, 내가 어떤 글을 봤는지 모릅니다.
 
-Devbrief는 여러 소스를 한 파이프라인으로 모아 **자동 수집 → AI 한국어 요약 → 의미 검색 기반 챗봇**까지
+Devbrief는 여러 소스를 한 파이프라인으로 모아 **자동 수집 → AI 한국어 요약 → 의미 임베딩**까지
 한 곳에서 처리합니다. 매일 정해진 시각에 cron이 돌아 사람 손 없이 최신 정보가 채워집니다.
+쌓인 임베딩 위에서 동작하는 RAG 챗봇은 운영자가 데이터를 점검할 때 쓰는 어드민 도구로 붙어 있습니다.
 
 ## 주요 기능
 
@@ -35,7 +37,7 @@ Devbrief는 여러 소스를 한 파이프라인으로 모아 **자동 수집 �
 | **글 수집** | 다수 RSS 소스에서 신규 글 수집 → 썸네일/본문 발췌 저장 → 요약·임베딩 큐로 push | 매일 09:00 KST cron + 수동 트리거 |
 | **AI 요약** | Gemini로 한국어 한 줄/세 줄 요약 + 영문 제목 번역 + 언어 판별. 실패 시 무료 경로 폴백 | 수집 직후 BullMQ 워커 |
 | **의미 임베딩** | 글을 768차원 벡터로 임베딩해 pgvector 컬럼에 저장 | 수집 직후 BullMQ 워커 |
-| **RAG 챗봇** | 질문을 임베딩해 코사인 유사도 Top-K 글 검색 → 컨텍스트로 Gemini 스트리밍 답변, 출처 표기 | 사용자 질의 (SSE 스트림) |
+| **RAG 챗봇** *(어드민 전용)* | 질문을 임베딩해 코사인 유사도 Top-K 글 검색 → 컨텍스트로 Gemini 스트리밍 답변, 출처 표기 | 어드민 질의 (SSE 스트림) |
 | **컨퍼런스 자동 발견** | 수집한 글 본문을 LLM NER로 분석해 미래 컨퍼런스 후보 추출 → 운영자 승인 흐름 | 매일 00:00 KST cron + 어드민 승인 |
 | **GitHub 트렌딩** | `github.com/trending` 페이지 스크래핑 → daily/weekly 급성장 레포 갱신 | 매일 08:30 KST cron |
 | **발표 영상 분석** | YouTube 메타 수집 → 공식 챕터/설명 타임스탬프/자막 기반 AI 챕터·요약 3단 폴백 | 매주 월 04:00 KST cron + 수동 |
@@ -91,9 +93,9 @@ flowchart LR
   Q1 --> SUM --> PG
   Q2 --> EMB --> PG
 
-  subgraph App["사용자"]
-    WEB["Next.js 웹"]
-    CHAT["RAG 챗봇"]
+  subgraph App["프론트엔드"]
+    WEB["Next.js 웹 (사용자)"]
+    CHAT["RAG 챗봇 (어드민 전용)"]
   end
 
   PG --> WEB
@@ -105,8 +107,9 @@ flowchart LR
 
 요약하면, 각 cron이 소스에서 데이터를 가져와 즉시 **BullMQ 큐에 작업을 쌓고**,
 워커가 비동기로 Gemini를 호출해 요약·임베딩을 채웁니다.
-챗봇은 사용자 질문을 같은 임베딩 모델로 벡터화해 pgvector 코사인 유사도로 관련 글을 찾고,
-그 글들을 컨텍스트로 답을 스트리밍합니다.
+챗봇은 질문을 같은 임베딩 모델로 벡터화해 pgvector 코사인 유사도로 관련 글을 찾고,
+그 글들을 컨텍스트로 답을 스트리밍합니다. 이 챗봇은 운영 비용 때문에 일반 사용자에게는 열지 않고
+어드민 화면(`/admin/chat`)에서만 데이터 점검용으로 쓰도록 했습니다.
 
 ### 모노레포 구조
 
@@ -114,16 +117,17 @@ flowchart LR
 
 > 내부 npm 패키지 스코프 `@pulse/*`는 구 코드네임입니다. 서비스명은 Devbrief이며, 스코프 변경은 빌드 영향 범위가 커서 의도적으로 유지합니다.
 
-- **apps/web** — Next.js 사용자 UI, 챗봇, 어드민 대시보드
+- **apps/web** — Next.js 사용자 UI + 어드민 대시보드 (RAG 챗봇은 어드민 화면에 포함)
 - **apps/api** — NestJS 수집 파이프라인, RAG, cron, BullMQ 워커
 - **packages/db** — Prisma 스키마 + 마이그레이션 (모든 앱이 공유)
 - **packages/shared** — 공유 TypeScript 타입
 
 ## 기술적으로 신경 쓴 점
 
-1. **pgvector 기반 RAG 검색.** 질문을 `RETRIEVAL_QUERY`로, 문서를 `RETRIEVAL_DOCUMENT`로 임베딩해
+1. **pgvector 기반 RAG 검색 (어드민 도구).** 질문을 `RETRIEVAL_QUERY`로, 문서를 `RETRIEVAL_DOCUMENT`로 임베딩해
    `embedding <=> $1::vector` 코사인 거리로 Top-K를 뽑습니다. 검색 결과를 컨텍스트로 넣고
-   답변에 `[1] [2]` 형식 출처를 강제해 환각을 줄였습니다.
+   답변에 `[1] [2]` 형식 출처를 강제해 환각을 줄였습니다. 일반 사용자 단가 부담 때문에
+   이 챗봇은 어드민 전용으로 두고, `/chat` 진입은 `/admin/chat`으로 우회시켜 운영자만 쓰게 했습니다.
 
 2. **BullMQ 비동기 수집 파이프라인.** 수집과 AI 처리를 분리했습니다. 수집은 글을 DB에 넣고
    즉시 `summarization`/`embedding` 큐에 작업만 넣고 끝납니다. 요약 작업은 지수 백오프
@@ -201,9 +205,9 @@ pnpm lint && pnpm typecheck && pnpm build
 ```text
 devbrief/
 ├─ apps/
-│  ├─ web/                 Next.js 16 (사용자 UI + 챗봇 + 어드민)
+│  ├─ web/                 Next.js 16 (사용자 UI + 어드민, 챗봇은 어드민 전용)
 │  │  └─ src/
-│  │     ├─ app/           App Router 페이지 (홈/articles/chat/conferences/videos/admin)
+│  │     ├─ app/           App Router 페이지 (홈/articles/conferences/videos/admin, /chat→/admin/chat)
 │  │     ├─ components/    카드/챗봇/대시보드 UI
 │  │     └─ lib/
 │  └─ api/                 NestJS 11 (수집 + RAG + cron + 큐)
