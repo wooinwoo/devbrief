@@ -50,10 +50,7 @@ export default async function ConferencesPage() {
   });
 
   return (
-    <main
-      className="min-h-screen px-6 sm:px-10 lg:px-16 xl:px-24 pt-12 pb-24 mx-auto"
-      style={{ overflowX: 'clip' }}
-    >
+    <main className="min-h-screen px-6 sm:px-10 lg:px-16 xl:px-24 pt-12 pb-24 mx-auto overflow-x-clip">
       <SiteNav />
       <header className="mb-10">
         <h1
