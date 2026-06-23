@@ -6,6 +6,8 @@ RSS 글, 컨퍼런스, GitHub 트렌딩, 발표 영상을 자동 수집해 한�
 개인용 기술 큐레이션 도구입니다. 수집한 글은 pgvector로 임베딩해 두며,
 이 임베딩을 활용한 RAG 챗봇은 운영 비용 때문에 어드민 전용 도구로 제공합니다.
 
+[![CI](https://github.com/wooinwoo/devbrief/actions/workflows/ci.yml/badge.svg)](https://github.com/wooinwoo/devbrief/actions/workflows/ci.yml)
+
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
