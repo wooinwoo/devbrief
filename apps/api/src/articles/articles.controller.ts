@@ -1,12 +1,16 @@
 import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ArticlesService } from './articles.service';
 
 /** 한 번에 배치 조회할 수 있는 글 id 최대 개수 */
 const BATCH_MAX_IDS = 100;
 
 @Controller('articles')
 export class ArticlesController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private articles: ArticlesService,
+  ) {}
 
   @Get()
   async list(@Query('source') source?: string, @Query('limit') limitStr?: string) {
@@ -40,6 +44,17 @@ export class ArticlesController {
       where: { id: { in: ids } },
       include: { source: true },
     });
+  }
+
+  /**
+   * 비슷한 글 추천. 기준 글의 embedding 으로 코사인 유사도(pgvector) Top-K.
+   * 읽기 전용 GET 이라 어드민 가드 불필요. `:id` 단건 라우트보다 먼저 선언해
+   * `/related` 가 단건 라우트에 흡수되지 않게 한다.
+   */
+  @Get(':id/related')
+  async related(@Param('id') id: string, @Query('limit') limitStr?: string) {
+    const limit = Number(limitStr);
+    return this.articles.findRelated(id, Number.isFinite(limit) ? limit : undefined);
   }
 
   @Get(':id')

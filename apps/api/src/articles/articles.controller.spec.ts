@@ -1,6 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { ArticlesController } from './articles.controller';
+import { ArticlesService } from './articles.service';
 
 type FindManyArgs = {
   where?: { id?: { in?: string[] } };
@@ -10,9 +11,11 @@ type FindManyArgs = {
 describe('ArticlesController', () => {
   let controller: ArticlesController;
   let findMany: jest.Mock;
+  let findRelated: jest.Mock;
 
   beforeEach(async () => {
     findMany = jest.fn().mockResolvedValue([]);
+    findRelated = jest.fn().mockResolvedValue([]);
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ArticlesController],
       providers: [
@@ -20,6 +23,7 @@ describe('ArticlesController', () => {
           provide: PrismaService,
           useValue: { article: { findMany, findUnique: jest.fn() } },
         },
+        { provide: ArticlesService, useValue: { findRelated } },
       ],
     }).compile();
 
@@ -92,6 +96,28 @@ describe('ArticlesController', () => {
       expect(args.where?.id?.in).toHaveLength(100);
       expect(args.where?.id?.in?.[0]).toBe('id0');
       expect(args.where?.id?.in?.[99]).toBe('id99');
+    });
+  });
+
+  describe('related', () => {
+    it('limit 없이 호출하면 서비스 기본값(undefined)을 위임한다', async () => {
+      const rows = [{ id: 'b' }];
+      findRelated.mockResolvedValue(rows);
+
+      const result = await controller.related('a', undefined);
+
+      expect(result).toBe(rows);
+      expect(findRelated).toHaveBeenCalledWith('a', undefined);
+    });
+
+    it('정수 limit 은 숫자로 변환해 위임한다', async () => {
+      await controller.related('a', '8');
+      expect(findRelated).toHaveBeenCalledWith('a', 8);
+    });
+
+    it('숫자가 아닌 limit 은 undefined 로 위임한다 (서비스가 기본값 적용)', async () => {
+      await controller.related('a', 'abc');
+      expect(findRelated).toHaveBeenCalledWith('a', undefined);
     });
   });
 });
