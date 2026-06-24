@@ -379,10 +379,7 @@ function summarizeDescription(desc: string | null): string | null {
 }
 
 // ── description 안 timestamp 추출 (apps/web 의 parse-chapters 와 동일 로직) ──
-function parseChaptersFromDescription(
-  description: string | null,
-  durationSec: number,
-): Chapter[] {
+function parseChaptersFromDescription(description: string | null, durationSec: number): Chapter[] {
   if (!description) return [];
   const lines = description.split('\n');
   const RE = /^[\s\[\-(]*((?:\d{1,2}:)?\d{1,2}:\d{2})[\s\)\]\-:.|]*(.+)$/;
