@@ -177,6 +177,14 @@ function SearchField({
           setDraft(e.target.value);
           onChange(e.target.value);
         }}
+        onKeyDown={(e) => {
+          // Esc 로 검색어 비우기 — 입력값이 있을 때만 가로채 다른 Esc 동작과 충돌하지 않게.
+          if (e.key === 'Escape' && draft) {
+            e.preventDefault();
+            setDraft('');
+            onChange('');
+          }
+        }}
         placeholder={label}
         className="w-full pl-3 pr-8 py-2 text-[13px] rounded-lg border outline-none transition-colors focus:border-(--color-accent)"
         style={{
