@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 import { API_BASE } from '@/lib/api';
 
+import { CollectionStats } from './collection-stats';
+
 async function safeJson<T>(path: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(`${API_BASE}${path}`, { cache: 'no-store' });
@@ -107,6 +109,9 @@ export default async function AdminDashboard() {
           sub={digest ? '생성됨' : '미생성'}
         />
       </div>
+
+      {/* 수집 통계 위젯 — 7일 추이 / 소스별 / 가공 현황 */}
+      <CollectionStats />
 
       {/* 빠른 작업 */}
       <section>
