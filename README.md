@@ -44,6 +44,9 @@ Devbrief는 여러 소스를 한 파이프라인으로 모아 **자동 수집 �
 | **GitHub 트렌딩** | `github.com/trending` 페이지 스크래핑 → daily/weekly 급성장 레포 갱신 | 매일 08:30 KST cron |
 | **발표 영상 분석** | YouTube 메타 수집 → 공식 챕터/설명 타임스탬프/자막 기반 AI 챕터·요약 3단 폴백 | 매주 월 04:00 KST cron + 수동 |
 | **데일리 다이제스트** | 그날 들어온 글 중 핵심 5개를 LLM이 선별해 다이제스트 카드 생성 | 매일 09:30 KST cron |
+| **관련글 추천** | 글 상세에서 기준 글 임베딩으로 pgvector 코사인 유사도 Top-K "비슷한 글" 표시. 임베딩 없으면 최신글 폴백 | 글 상세 진입 (`GET /articles/:id/related`) |
+| **검색 / 필터** | 제목·번역·요약·태그 키워드 검색 + 소스/카테고리/읽음숨김 필터, 조건을 URL 쿼리로 동기화 | articles 탭에서 입력 |
+| **북마크 모아보기** | 저장한 글을 `/bookmarks`에서 모아 보기. 글 id 배치 조회로 N+1 회피, 읽음 여부를 로컬에 기록 | `/bookmarks` 진입 (`GET /articles/batch?ids=`) |
 | **RSS 소스 자동 등록** | 블로그 URL만 입력하면 `<link alternate>`로 피드 자동 탐지 후 소스 등록 | 어드민에서 URL 입력 |
 
 ## 기술 스택
@@ -56,8 +59,8 @@ Devbrief는 여러 소스를 한 파이프라인으로 모아 **자동 수집 �
 | **AI** | Gemini 2.5 Flash-Lite (요약·번역·챗봇·NER·영상 챕터) / Gemini `text-embedding-004` (768차원) |
 | **큐 / 캐시** | Redis + BullMQ (수집·요약·임베딩·영상분석 워커) |
 | **수집** | `rss-parser` / `cheerio` (트렌딩 스크래핑) / `youtubei.js` (YouTube 메타·자막) |
-| **인프라** | Docker Compose (Postgres + Redis) / pnpm workspace 모노레포 / Biome |
-| **테스트** | Vitest (web 단위 테스트 101개 / 14 파일) |
+| **인프라** | Docker Compose (Postgres + Redis) / pnpm workspace 모노레포 / Biome / GitHub Actions CI |
+| **테스트** | api Jest (158 tests / 21 suites) / web Vitest (155 tests / 19 files) |
 
 ## 아키텍처
 
@@ -98,10 +101,12 @@ flowchart LR
 
   subgraph App["프론트엔드"]
     WEB["Next.js 웹 (사용자)"]
+    REL["관련글 추천 (글 상세)"]
     CHAT["RAG 챗봇 (어드민 전용)"]
   end
 
   PG --> WEB
+  PG -->|글 임베딩 코사인 Top-K| REL
   CHAT -->|질문 임베딩| EMB
   EMB -->|벡터 유사도 Top-K| PG
   PG -->|컨텍스트| SUM
@@ -113,6 +118,8 @@ flowchart LR
 챗봇은 질문을 같은 임베딩 모델로 벡터화해 pgvector 코사인 유사도로 관련 글을 찾고,
 그 글들을 컨텍스트로 답을 스트리밍합니다. 이 챗봇은 운영 비용 때문에 일반 사용자에게는 열지 않고
 어드민 화면(`/admin/chat`)에서만 데이터 점검용으로 쓰도록 했습니다.
+글 상세의 "비슷한 글" 추천은 같은 임베딩을 재활용합니다. 새 LLM 호출 없이 기준 글의
+벡터로 코사인 유사도 Top-K를 뽑고(`GET /articles/:id/related`), 임베딩이 없으면 최신글로 폴백합니다.
 
 ### 모노레포 구조
 
@@ -150,10 +157,24 @@ flowchart LR
    가로채 토큰을 검증하고, 미인증 시 `/admin/login`으로 redirect합니다. Next.js 16의 새 규약에 맞춰
    기존 `middleware.ts`를 `proxy.ts`로 마이그레이션했습니다.
 
-7. **한글 키워드 카테고리 매칭.** 글 태그를 6개 대분류로 분류할 때, JS의 `\b`가 ASCII(`\w`) 기준이라
+7. **백엔드 어드민 쓰기 가드.** 상태를 바꾸는 POST/PATCH/DELETE 엔드포인트(sources·ingestion·videos·
+   conferences·repos·digest)는 `AdminGuard`로 묶어 `x-admin-token` 헤더를 `ADMIN_API_TOKEN`과
+   비교합니다. 비교는 `crypto.timingSafeEqual` 기반 타이밍 안전 비교를 쓰고, 토큰 미설정 시
+   전부 거부(안전 기본값)합니다 (`apps/api/src/common/admin.guard.ts`).
+
+8. **관련글 추천에 임베딩 재활용.** 별도 추천 모델 없이 글 상세의 "비슷한 글"을 채웁니다. 기준 글의
+   pgvector embedding으로 `embedding <=> $1::vector` 코사인 Top-K를 뽑되, 리터럴을 raw 주입하기 전
+   `[n,n,...]` 형태를 검증해 인젝션을 막고, 임베딩이 없으면 최신글로 폴백합니다
+   (`apps/api/src/articles/articles.service.ts`).
+
+9. **한글 키워드 카테고리 매칭.** 글 태그를 6개 대분류로 분류할 때, JS의 `\b`가 ASCII(`\w`) 기준이라
    "백엔드" 같은 한글 키워드가 전혀 매칭되지 않던 버그를 수정했습니다. `\p{L}\p{N}` 유니코드 속성
    기반 lookbehind/lookahead 경계로 바꿔 한글을 매칭하면서도 "java" in "javascript" 같은 ASCII 오탐은
    막습니다 (`apps/web/src/lib/category.ts`).
+
+10. **의존성 취약점 패치.** 직접 의존성은 그대로 두고, 전이 의존성에서 보고된 취약 버전만
+    루트 `package.json`의 `pnpm.overrides`로 안전 버전에 고정했습니다(postcss / form-data /
+    undici / protobufjs / multer). 메이저 업그레이드 없이 취약점만 닫는 최소 변경입니다.
 
 ## 로컬 실행
 
@@ -179,7 +200,9 @@ cp env.example .env
 | `REDIS_URL` | 로컬 docker 또는 Upstash | BullMQ 큐 |
 | `GEMINI_API_KEY` | https://aistudio.google.com | 요약·임베딩·챗봇·NER·영상 분석 (전부 Gemini 단일) |
 | `YOUTUBE_API_KEY` | Google Cloud Console | (선택) 영상 sync |
-| `ADMIN_PASSWORD` | 직접 지정 | 어드민 대시보드 및 RAG 챗봇 접근용 |
+| `ADMIN_PASSWORD` | 직접 지정 | 어드민 대시보드(/admin) 및 RAG 챗봇 접근용 |
+| `ADMIN_API_TOKEN` | 직접 지정 | 백엔드 어드민 쓰기 API 보호용 공유 시크릿 (`x-admin-token` 검증). 미설정 시 쓰기 엔드포인트 전부 거부 |
+| `NEXT_PUBLIC_ADMIN_API_TOKEN` | `ADMIN_API_TOKEN`과 동일 값 | 어드민 UI가 쓰기 API 호출 시 보내는 토큰. 백엔드 값과 일치해야 동기화/등록/삭제 동작 |
 
 > `GEMINI_API_KEY`가 없어도 동작합니다. 요약은 무료 번역 폴백으로 내려가고, 의미 검색 임베딩만 skip됩니다.
 
@@ -210,8 +233,12 @@ curl -X POST http://localhost:4000/api/v1/conferences/discover
 
 ```bash
 pnpm lint && pnpm typecheck && pnpm build
-pnpm --filter @devbrief/web test    # web 단위 테스트 (Vitest, 101 tests / 14 files)
+pnpm --filter @devbrief/api test    # api 단위 테스트 (Jest, 158 tests / 21 suites)
+pnpm --filter @devbrief/web test    # web 단위 테스트 (Vitest, 155 tests / 19 files)
 ```
+
+이 과정은 GitHub Actions CI(`.github/workflows/ci.yml`)에서도 push/PR마다 동일하게
+typecheck · lint · api test · web test · build 순으로 실행됩니다.
 
 ## 폴더 구조
 
@@ -220,21 +247,24 @@ devbrief/
 ├─ apps/
 │  ├─ web/                 Next.js 16 (사용자 UI + 어드민, 챗봇은 어드민 전용)
 │  │  └─ src/
-│  │     ├─ app/           App Router 페이지 (홈/articles/conferences/videos/admin, /chat→/admin/chat)
-│  │     ├─ components/    카드/챗봇/대시보드 UI
-│  │     ├─ lib/           category 분류 / admin 인증 등 (Vitest 단위 테스트 포함)
+│  │     ├─ app/           App Router 페이지 (홈/articles/bookmarks/conferences/videos/admin, /chat→/admin/chat)
+│  │     ├─ components/    카드/챗봇/북마크 모아보기/대시보드 UI
+│  │     ├─ lib/           category 분류 / 검색·필터 / 북마크·읽음 / 관련글 / admin 인증 (Vitest 단위 테스트 포함)
 │  │     └─ proxy.ts       /admin/* 인증 가드 (Next.js 16 proxy 규약)
 │  └─ api/                 NestJS 11 (수집 + RAG + cron + 큐)
 │     └─ src/
 │        ├─ ingestion/     RSS 수집 + cron + BullMQ producer
 │        ├─ summarization/ Gemini 요약 + 무료 폴백 워커
 │        ├─ embedding/     768차원 벡터 임베딩 워커
+│        ├─ articles/      글 조회 + 배치(batch) + 관련글 추천(related)
 │        ├─ chat/          RAG 검색 + SSE 스트리밍 답변
 │        ├─ conferences/   LLM NER 자동 발견 + 승인 흐름
 │        ├─ repos/         GitHub 트렌딩 스크래핑
 │        ├─ videos/        YouTube 메타 + 3단 챕터 분석
 │        ├─ digest/        데일리 다이제스트 생성
 │        ├─ sources/       RSS 피드 자동 탐지
+│        ├─ translation/   무료 번역 폴백 (google translate_a / MyMemory)
+│        ├─ common/        AdminGuard(x-admin-token) 등 공용
 │        └─ ai/            Gemini 호출 통합 (gemini.service)
 └─ packages/
    ├─ db/                  Prisma 스키마 + 마이그레이션 (pgvector)
