@@ -14,6 +14,7 @@ import { IngestionModule } from './ingestion/ingestion.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReposModule } from './repos/repos.module';
 import { SourcesModule } from './sources/sources.module';
+import { StatsModule } from './stats/stats.module';
 import { SummarizationModule } from './summarization/summarization.module';
 import { VideosModule } from './videos/videos.module';
 
@@ -58,6 +59,7 @@ import { VideosModule } from './videos/videos.module';
     VideosModule,
     ReposModule,
     SourcesModule,
+    StatsModule,
     ChatModule,
     DigestModule,
   ],
