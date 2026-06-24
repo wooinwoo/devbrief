@@ -48,7 +48,7 @@ interface Props {
   variant?: 'default' | 'featured' | 'compact';
 }
 
-export function ArticleCard({
+function ArticleCard({
   article,
   read = false,
   onOpen,

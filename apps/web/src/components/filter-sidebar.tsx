@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-export interface FilterOption {
+interface FilterOption {
   value: string;
   label: string;
   count?: number;

@@ -9,7 +9,7 @@ export interface Chapter {
   label: string;
 }
 
-export type ChapterSource = 'official' | 'description' | 'ai';
+type ChapterSource = 'official' | 'description' | 'ai';
 
 export interface AnalysisResult {
   chapters: Chapter[];
@@ -379,7 +379,7 @@ function summarizeDescription(desc: string | null): string | null {
 }
 
 // ── description 안 timestamp 추출 (apps/web 의 parse-chapters 와 동일 로직) ──
-export function parseChaptersFromDescription(
+function parseChaptersFromDescription(
   description: string | null,
   durationSec: number,
 ): Chapter[] {
@@ -409,7 +409,7 @@ export function parseChaptersFromDescription(
     .sort((a, b) => a.time - b.time);
 }
 
-export function parseTimestamp(ts: string): number | null {
+function parseTimestamp(ts: string): number | null {
   const parts = ts.split(':').map(Number);
   if (parts.some((n) => !Number.isFinite(n) || n < 0)) return null;
   if (parts.length === 2) return parts[0] * 60 + parts[1];

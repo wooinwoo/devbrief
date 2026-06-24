@@ -3,7 +3,7 @@
 import { motion } from 'motion/react';
 import Link from 'next/link';
 
-export interface DigestItem {
+interface DigestItem {
   articleId: string;
   headline: string;
   takeaway: string;
