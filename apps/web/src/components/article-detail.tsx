@@ -220,10 +220,10 @@ export function ArticleDetail({ article, related }: Props) {
         </a>
       </section>
 
-      {/* 관련 글 */}
+      {/* 비슷한 글 — 백엔드 임베딩 코사인 유사도 추천 */}
       {related.length > 0 && (
         <section>
-          <SectionHeader label="관련 글" count={related.length} hint="related" />
+          <SectionHeader label="비슷한 글" count={related.length} hint="유사도 추천" />
           <ul>
             {related.map((r) => {
               const rCat = categoryOf(r.tags);

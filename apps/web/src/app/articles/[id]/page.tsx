@@ -2,6 +2,7 @@ import type { ArticleDto } from '@/components/article-card';
 import { ArticleDetail } from '@/components/article-detail';
 import { SiteNav } from '@/components/site-nav';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
+import { pickRelated } from '@/lib/related-articles';
 import { notFound } from 'next/navigation';
 
 import { API_BASE } from '@/lib/api';
@@ -52,18 +53,25 @@ async function getOne(id: string): Promise<ArticleDto | null> {
   }
 }
 
-async function getAll(): Promise<ArticleDto[]> {
+/**
+ * 비슷한 글: 백엔드 pgvector 코사인 유사도 추천을 호출한다.
+ * API 가 비었거나 실패하면(mock 환경 등) MOCK_ARTICLES 에서 같은 출처/태그로 폴백한다.
+ */
+async function getRelated(article: ArticleDto, limit = 5): Promise<ArticleDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/articles?limit=60`, {
+    const res = await fetch(`${API_BASE}/articles/${article.id}/related?limit=${limit}`, {
       cache: 'no-store',
     });
-    if (!res.ok) return MOCK_ARTICLES;
-    const data = (await res.json()) as DbArticle[] | { items: DbArticle[] };
-    const items = Array.isArray(data) ? data : (data.items ?? []);
-    return items.length > 0 ? items.map(mapDbToDto) : MOCK_ARTICLES;
+    if (res.ok) {
+      const data = (await res.json()) as DbArticle[];
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map(mapDbToDto);
+      }
+    }
   } catch {
-    return MOCK_ARTICLES;
+    // 네트워크 실패 → 아래 mock 폴백.
   }
+  return pickRelated(article, MOCK_ARTICLES, limit);
 }
 
 export async function generateMetadata({ params }: Props) {
@@ -79,18 +87,11 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ArticleDetailPage({ params }: Props) {
   const { id } = await params;
-  const [fromApi, all] = await Promise.all([getOne(id), getAll()]);
+  const fromApi = await getOne(id);
   const article = fromApi ?? MOCK_ARTICLES.find((a) => a.id === id) ?? null;
   if (!article) notFound();
 
-  const related = all
-    .filter(
-      (a) =>
-        a.id !== article.id &&
-        (a.source.provider === article.source.provider ||
-          a.tags.some((t) => article.tags.includes(t))),
-    )
-    .slice(0, 4);
+  const related = await getRelated(article);
 
   return (
     <main className="min-h-screen w-full px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32">
