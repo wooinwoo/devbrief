@@ -179,28 +179,50 @@ export function ArticlesView({
             Dev<span style={{ color: 'var(--bar-accent)' }}>brief</span>
           </Link>
 
-          {/* 탭 nav */}
+          {/* 탭 nav — WAI-ARIA tabs 패턴. 좌우 화살표로 탭 간 이동(roving tabindex). */}
           <nav className="no-scrollbar flex items-center gap-0.5 sm:gap-1 flex-1 min-w-0 overflow-x-auto">
-            {TABS.map((t) => {
-              const isActive = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTab(t.id)}
-                  aria-current={isActive ? 'page' : undefined}
-                  className="shrink-0 px-3 sm:px-3.5 py-2 rounded-lg text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors relative"
-                  style={{
-                    color: isActive ? 'var(--bar-fg)' : 'var(--bar-fg-muted)',
-                    background: isActive ? 'oklch(100% 0 0 / 0.1)' : 'transparent',
-                    fontWeight: isActive ? 700 : 500,
-                    boxShadow: isActive ? 'inset 0 -2px 0 0 var(--bar-accent)' : undefined,
-                  }}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
+            <div
+              role="tablist"
+              aria-label="콘텐츠 탭"
+              className="flex items-center gap-0.5 sm:gap-1"
+            >
+              {TABS.map((t, i) => {
+                const isActive = tab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="tab"
+                    id={`tab-${t.id}`}
+                    aria-selected={isActive}
+                    aria-current={isActive ? 'page' : undefined}
+                    // roving tabindex — 활성 탭만 Tab 으로 진입, 나머지는 화살표로 이동.
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => setTab(t.id)}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                      e.preventDefault();
+                      const dir = e.key === 'ArrowRight' ? 1 : -1;
+                      const next = TABS[(i + dir + TABS.length) % TABS.length];
+                      setTab(next.id);
+                      // 이동한 탭으로 포커스도 옮겨 키보드 흐름 유지.
+                      requestAnimationFrame(() =>
+                        document.getElementById(`tab-${next.id}`)?.focus(),
+                      );
+                    }}
+                    className="shrink-0 px-3 sm:px-3.5 py-2 rounded-lg text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors relative"
+                    style={{
+                      color: isActive ? 'var(--bar-fg)' : 'var(--bar-fg-muted)',
+                      background: isActive ? 'oklch(100% 0 0 / 0.1)' : 'transparent',
+                      fontWeight: isActive ? 700 : 500,
+                      boxShadow: isActive ? 'inset 0 -2px 0 0 var(--bar-accent)' : undefined,
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
             {/* 저장: 메인 목록에 의존하지 않는 전용 페이지(/bookmarks)로 분리 */}
             <Link
               href="/bookmarks"
@@ -239,7 +261,12 @@ export function ArticlesView({
       </header>
 
       {/* === 콘텐츠 (전체 흰 배경 위 직접, 박스 없이 선·여백으로 구분) === */}
-      <div className="mt-8 flex-1">
+      <div
+        className="mt-8 flex-1"
+        role="tabpanel"
+        id={`panel-${tab}`}
+        aria-labelledby={`tab-${tab}`}
+      >
         {/* (이전 흰 패널 박스 제거 — 배경이 이미 흰색이라 불필요) */}
         {/* === 페이지 제목 줄 ============================== */}
         <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
