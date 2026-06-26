@@ -12,11 +12,14 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
     credentials: true,
   });
-  app.setGlobalPrefix('api/v1');
+  // /api/v1 prefix — 단, 헬스체크(/health)는 prefix 없이 노출 (Railway healthcheckPath)
+  app.setGlobalPrefix('api/v1', { exclude: ['health'] });
 
-  const port = Number(process.env.API_PORT ?? 4000);
-  await app.listen(port);
-  console.log(`Devbrief API listening on http://localhost:${port}/api/v1`);
+  // Railway 등 PaaS 는 PORT 를 주입한다. 로컬은 API_PORT 유지, 둘 다 없으면 4000.
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
+  // 0.0.0.0 바인딩 — 컨테이너 외부에서 접근 가능해야 한다 (기본 localhost 면 PaaS 헬스체크 실패).
+  await app.listen(port, '0.0.0.0');
+  console.log(`Devbrief API listening on port ${port} (prefix /api/v1, health /health)`);
 }
 
 bootstrap();
