@@ -11,6 +11,7 @@
     "typecheck": "pnpm -r run typecheck",
     "db:generate": "pnpm --filter @devbrief/db run generate",
     "db:migrate": "pnpm --filter @devbrief/db run migrate",
+    "db:migrate:deploy": "pnpm --filter @devbrief/db run migrate:deploy",
     "db:studio": "pnpm --filter @devbrief/db run studio"
   },
   "devDependencies": {
