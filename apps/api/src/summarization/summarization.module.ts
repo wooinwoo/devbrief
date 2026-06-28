@@ -7,11 +7,7 @@ import { SummarizationProcessor } from './summarization.processor';
 import { SummarizationService } from './summarization.service';
 
 @Module({
-  imports: [
-    ...registerQueues('summarization'),
-    GeminiModule,
-    TranslationModule,
-  ],
+  imports: [...registerQueues('summarization'), GeminiModule, TranslationModule],
   providers: [
     SummarizationService,
     ArticleFetchService,

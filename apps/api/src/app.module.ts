@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ArticlesModule } from './articles/articles.module';
 import { ChatModule } from './chat/chat.module';
+import { bullRootImports } from './common/bullmq.config';
 import { ConferencesModule } from './conferences/conferences.module';
 import { DigestModule } from './digest/digest.module';
 import { EmbeddingModule } from './embedding/embedding.module';
@@ -16,7 +17,6 @@ import { SourcesModule } from './sources/sources.module';
 import { StatsModule } from './stats/stats.module';
 import { SummarizationModule } from './summarization/summarization.module';
 import { VideosModule } from './videos/videos.module';
-import { bullRootImports } from './common/bullmq.config';
 
 @Module({
   imports: [

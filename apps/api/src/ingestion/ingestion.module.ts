@@ -1,9 +1,5 @@
 import { Module } from '@nestjs/common';
-import {
-  disabledQueueProviders,
-  registerQueues,
-  whenRedis,
-} from '../common/bullmq.config';
+import { disabledQueueProviders, registerQueues, whenRedis } from '../common/bullmq.config';
 import { CommonModule } from '../common/common.module';
 import { IngestionController } from './ingestion.controller';
 import { IngestionCron } from './ingestion.cron';
@@ -13,10 +9,7 @@ import { RssParserService } from './rss-parser.service';
 import { SourceSeederService } from './source-seeder.service';
 
 @Module({
-  imports: [
-    CommonModule,
-    ...registerQueues('ingestion', 'summarization', 'embedding'),
-  ],
+  imports: [CommonModule, ...registerQueues('ingestion', 'summarization', 'embedding')],
   controllers: [IngestionController],
   providers: [
     IngestionService,

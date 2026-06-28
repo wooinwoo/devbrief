@@ -1,10 +1,6 @@
 import { Module } from '@nestjs/common';
 import { GeminiModule } from '../ai/gemini.module';
-import {
-  disabledQueueProviders,
-  registerQueues,
-  whenRedis,
-} from '../common/bullmq.config';
+import { disabledQueueProviders, registerQueues, whenRedis } from '../common/bullmq.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { VideoAnalysisProcessor } from './video-analysis.processor';
 import { VideoAnalyzerService } from './video-analyzer.service';

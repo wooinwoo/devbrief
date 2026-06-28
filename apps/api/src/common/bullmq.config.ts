@@ -1,9 +1,5 @@
 import { BullModule, getQueueToken } from '@nestjs/bullmq';
-import {
-  type DynamicModule,
-  type Provider,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { type DynamicModule, type Provider, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
