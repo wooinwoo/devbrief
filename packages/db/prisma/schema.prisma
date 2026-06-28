@@ -46,6 +46,7 @@ model Article {
   summaryOneLine   String? // 한국어 1줄 요약 (영문이면 요약+번역 같이)
   summaryThreeLine String? // 한국어 3줄 요약
   contentSnippet   String? @db.Text // 요약 재생성용 본문 평문 발췌 (수집 시 저장)
+  contentHtml      String? @db.Text // 정제(sanitize)된 본문 HTML — 상세페이지 직접 읽기용 (CLI extract 가 채움)
   tags             String[] @default([])
   language         String   @default("en") // ko / en / mixed — Gemini 가 추론
   fetchedAt        DateTime @default(now())
