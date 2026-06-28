@@ -1,0 +1,63 @@
+name: Ingest
+
+# 수집·요약·임베딩·영상분석을 GitHub Actions 에서 Redis/HTTP 서버 없이 직접 실행한다.
+# CLI(node apps/api/dist/cli.js)가 Neon DB 에 직접 쓰기 — 서빙(web/api)은 별도에서 읽기만.
+on:
+  schedule:
+    # 매일 00:00 UTC = 09:00 KST
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      command:
+        description: '실행할 CLI command'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - ingest
+          - reanalyze
+          - repos
+          - videos
+          - digest
+          - conferences
+
+# 직전 실행이 안 끝났으면 취소하지 말고 줄세움 (DB 쓰기 충돌 방지)
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    name: collect · summarize · embed
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @devbrief/db run generate
+
+      - name: Build API
+        run: pnpm --filter @devbrief/api run build
+
+      - name: Run CLI
+        # 수동 실행(workflow_dispatch)이면 선택한 command, 스케줄이면 all
+        run: node apps/api/dist/cli.js "${{ github.event.inputs.command || 'all' }}"
