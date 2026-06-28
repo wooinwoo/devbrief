@@ -46,7 +46,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # @devbrief/db의 main이 src/index.ts(TS 원본)라 런타임 require 시
+          # Node의 strip-types가 필요. 24는 이를 안정 지원(Dockerfile과 동일 버전).
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
