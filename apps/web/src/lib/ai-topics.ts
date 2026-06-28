@@ -61,30 +61,37 @@ export const AI_HARNESSES: AiFacet[] = [
 ];
 
 // 3) 주제
+// 배열 순서 = 우선순위. themesOf(a)[0] 가 글의 대표 주제가 되므로
+// "정밀한 신호(연구·논문)"를 위로, "광범위한 신호(릴리스)"를 아래로 둔다.
+// 우선순위: 연구·논문 > 벤치마크 > 에이전트·하네스 > 모델 릴리스
 export const AI_THEMES: AiFacet[] = [
   {
-    key: 'release',
-    label: '모델 릴리스',
-    color: 'oklch(56% 0.18 350)',
-    re: /\b(release|launch|announc|unveil|introduc|now available)\b|출시|공개|발표/i,
-  },
-  {
-    key: 'agent',
-    label: '에이전트·하네스',
-    color: 'oklch(50% 0.19 265)',
-    re: /\b(agent|agentic|harness|tool.?use|mcp|orchestrat|autonomous)\b|에이전트|하네스|오케스트레이/i,
+    key: 'research',
+    label: '연구·논문',
+    color: 'oklch(50% 0.1 285)',
+    // reasoning 은 릴리스/마케팅 카피에 너무 흔해 최상위 우선순위에선 과포착 → 제외.
+    // [pdf]·speculative decoding·ablation·huggingface.co/papers 등 논문성 신호 보강.
+    re: /\b(paper|research|arxiv|rlhf|distill|fine.?tun|pretrain|ablation)\b|speculative decoding|\bpdf\b|huggingface\.co\/papers|논문|연구/i,
   },
   {
     key: 'bench',
     label: '벤치마크',
     color: 'oklch(54% 0.13 200)',
-    re: /\b(benchmark|\beval\b|evaluation|sota|leaderboard|arena|mmlu|swe.?bench|gpqa|humaneval)\b|평가|벤치/i,
+    // index 는 너무 광범위해 'artificial analysis'/'intelligence index'/'analysis index' 로 한정.
+    re: /\b(benchmark|eval|evaluation|sota|leaderboard|arena|mmlu|swe.?bench|gpqa|humaneval|elo|lmsys)\b|pass@|artificial analysis|intelligence index|analysis index|chatbot arena|평가|벤치/i,
   },
   {
-    key: 'research',
-    label: '연구·논문',
-    color: 'oklch(50% 0.1 285)',
-    re: /\b(paper|research|arxiv|reasoning|rlhf|distill|fine.?tun|pretrain)\b|논문|연구/i,
+    key: 'agent',
+    label: '에이전트·하네스',
+    color: 'oklch(50% 0.19 265)',
+    // 채용/구인 글(예: "AIRAG 채용 게시판")은 rag/llm/agent 단어가 있어도 에이전트 주제가 아님 → 부정 룩어헤드로 제외.
+    re: /^(?![\s\S]*(?:\bjobs?\b|\bhiring\b|recruit|채용|구인))[\s\S]*(?:\b(agent|agentic|harness|tool.?use|mcp|orchestrat|autonomous)\b|에이전트|하네스|오케스트레이)/i,
+  },
+  {
+    key: 'release',
+    label: '모델 릴리스',
+    color: 'oklch(56% 0.18 350)',
+    re: /\b(release|launch|announc|unveil|introduc|now available)\b|출시|공개|발표/i,
   },
 ];
 
@@ -102,8 +109,22 @@ const AI_SOURCES = [
   'anthropic',
 ];
 
+// 일반 haystack — 제목 + 한국어 제목 + 한줄요약 + 태그.
 function haystack(a: ArticleDto): string {
   return `${a.title} ${a.titleKo ?? ''} ${a.summaryOneLine ?? ''} ${a.tags.join(' ')}`;
+}
+
+// 주제 haystack — 일반 haystack 에 url 까지 더한다.
+// huggingface.co/papers, arxiv.org 같은 출처 신호로 논문/연구 판별 정밀도를 높이려는 목적.
+function themeHaystack(a: ArticleDto): string {
+  return `${haystack(a)} ${a.url ?? ''}`;
+}
+
+// 모델 태그 haystack — 제목 + 한국어 제목만.
+// 본문(요약)에만 벤더명이 스치듯 언급된 글(경쟁사 비교, 배경 설명 등)이
+// 잘못 태깅되는 것을 막기 위해 모델 태그는 제목에서만 매칭한다.
+function modelHaystack(a: ArticleDto): string {
+  return `${a.title} ${a.titleKo ?? ''}`;
 }
 
 export function isAiArticle(a: ArticleDto): boolean {
@@ -112,11 +133,10 @@ export function isAiArticle(a: ArticleDto): boolean {
   return AI_HINT.test(haystack(a));
 }
 
-function matchFacets(a: ArticleDto, facets: AiFacet[]): AiFacet[] {
-  const hay = haystack(a);
+function matchFacets(hay: string, facets: AiFacet[]): AiFacet[] {
   return facets.filter((f) => f.re.test(hay));
 }
 
-export const modelsOf = (a: ArticleDto) => matchFacets(a, AI_MODELS);
-export const harnessesOf = (a: ArticleDto) => matchFacets(a, AI_HARNESSES);
-export const themesOf = (a: ArticleDto) => matchFacets(a, AI_THEMES);
+export const modelsOf = (a: ArticleDto) => matchFacets(modelHaystack(a), AI_MODELS);
+export const harnessesOf = (a: ArticleDto) => matchFacets(haystack(a), AI_HARNESSES);
+export const themesOf = (a: ArticleDto) => matchFacets(themeHaystack(a), AI_THEMES);
