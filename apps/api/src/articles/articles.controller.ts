@@ -19,6 +19,8 @@ export class ArticlesController {
       where: source ? { source: { provider: source } } : undefined,
       orderBy: { publishedAt: 'desc' },
       take: limit,
+      // contentHtml(원문 전문)은 피드 페이로드 비대화 방지로 목록에서 제외 — 상세에서만 내려준다.
+      omit: { contentHtml: true },
       include: { source: { select: { name: true, provider: true } } },
     });
   }
@@ -42,6 +44,7 @@ export class ArticlesController {
 
     return this.prisma.article.findMany({
       where: { id: { in: ids } },
+      omit: { contentHtml: true },
       include: { source: true },
     });
   }

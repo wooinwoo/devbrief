@@ -6,6 +6,7 @@ import { CommonModule } from './common/common.module';
 import { ConferenceDiscoveryService } from './conferences/conference-discovery.service';
 import { DailyDigestService } from './digest/daily-digest.service';
 import { EmbeddingService } from './embedding/embedding.service';
+import { ArticleExtractService } from './ingestion/article-extract.service';
 import { IngestionService } from './ingestion/ingestion.service';
 import { RssParserService } from './ingestion/rss-parser.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -46,6 +47,8 @@ const noopQueue = {
     // 수집
     IngestionService,
     RssParserService,
+    // 원문 본문 추출(extract 커맨드) — Redis 불필요
+    ArticleExtractService,
     // 요약 / 임베딩 (reanalyze 가 직접 호출)
     SummarizationService,
     ArticleFetchService,

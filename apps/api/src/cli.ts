@@ -6,6 +6,7 @@ import { CliModule } from './cli.module';
 import { ConferenceDiscoveryService } from './conferences/conference-discovery.service';
 import { DailyDigestService } from './digest/daily-digest.service';
 import { EmbeddingService } from './embedding/embedding.service';
+import { ArticleExtractService } from './ingestion/article-extract.service';
 import { IngestionService } from './ingestion/ingestion.service';
 import { PrismaService } from './prisma/prisma.service';
 import { ReposService } from './repos/repos.service';
@@ -80,6 +81,62 @@ async function reanalyze(
   return { scanned: rows.length, summarized, embedded };
 }
 
+interface ExtractRow {
+  id: string;
+  url: string;
+}
+
+/**
+ * 원문 본문 추출 백필 — 각 글 url 의 원문을 가져와 정제된 HTML 을 contentHtml 에 저장.
+ * onlyMissing=true(기본) 면 contentHtml 이 비어있는 글만. 적당한 동시성으로 처리하고
+ * 실패는 건너뛰며 로그. CLI(GitHub Actions)에서만 도는 흐름(서버 차단/부하 회피).
+ */
+async function extractArticles(
+  prisma: PrismaService,
+  extractor: ArticleExtractService,
+  opts: { onlyMissing: boolean; limit: number; concurrency?: number },
+): Promise<{ scanned: number; extracted: number; failed: number }> {
+  const where = opts.onlyMissing ? `WHERE "contentHtml" IS NULL` : '';
+  const rows = await prisma.$queryRawUnsafe<ExtractRow[]>(
+    `SELECT id, url
+       FROM "Article"
+       ${where}
+       ORDER BY "publishedAt" DESC
+       LIMIT $1`,
+    opts.limit,
+  );
+
+  const concurrency = Math.max(1, Math.min(opts.concurrency ?? 4, 8));
+  let extracted = 0;
+  let failed = 0;
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < rows.length) {
+      const row = rows[cursor++];
+      try {
+        const html = await extractor.extract(row.url);
+        if (!html) {
+          failed++;
+          logger.debug(`[${row.id}] 추출 실패(본문 없음/짧음): ${row.url}`);
+          continue;
+        }
+        await prisma.article.update({
+          where: { id: row.id },
+          data: { contentHtml: html },
+        });
+        extracted++;
+      } catch (e) {
+        failed++;
+        logger.error(`[${row.id}] 추출 실패: ${(e as Error).message}`);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return { scanned: rows.length, extracted, failed };
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const command = argv[0] ?? 'all';
@@ -98,6 +155,10 @@ async function main() {
   const repos = app.get(ReposService);
   const digest = app.get(DailyDigestService);
   const conferences = app.get(ConferenceDiscoveryService);
+  const extractor = app.get(ArticleExtractService);
+
+  // extract 커맨드의 --limit 기본값은 100 (다른 커맨드는 200).
+  const extractLimit = argv.includes('--limit') ? flags.limit : 100;
 
   const startedAt = Date.now();
   logger.log(`▶ command=${command} onlyMissing=${flags.onlyMissing} limit=${flags.limit}`);
@@ -114,6 +175,14 @@ async function main() {
         logger.log(
           `✔ reanalyze: scanned=${r.scanned} summarized=${r.summarized} embedded=${r.embedded}`,
         );
+        break;
+      }
+      case 'extract': {
+        const r = await extractArticles(prisma, extractor, {
+          onlyMissing: !argv.includes('--all'),
+          limit: extractLimit,
+        });
+        logger.log(`✔ extract: scanned=${r.scanned} extracted=${r.extracted} failed=${r.failed}`);
         break;
       }
       case 'repos': {
@@ -154,6 +223,16 @@ async function main() {
         logger.log(`  · reanalyze(missing): summarized=${re.summarized} embedded=${re.embedded}`);
 
         try {
+          const ex = await extractArticles(prisma, extractor, {
+            onlyMissing: true,
+            limit: extractLimit,
+          });
+          logger.log(`  · extract(missing): extracted=${ex.extracted} failed=${ex.failed}`);
+        } catch (e) {
+          logger.error(`  · extract 실패: ${(e as Error).message}`);
+        }
+
+        try {
           const rp = await repos.refreshAll();
           logger.log(`  · repos: daily=${rp.daily} weekly=${rp.weekly}`);
         } catch (e) {
@@ -189,7 +268,7 @@ async function main() {
       }
       default:
         logger.error(
-          `알 수 없는 command: ${command}\n사용법: node dist/cli.js <ingest|reanalyze|repos|videos|digest|conferences|all> [--only-missing] [--limit N]`,
+          `알 수 없는 command: ${command}\n사용법: node dist/cli.js <ingest|reanalyze|extract|repos|videos|digest|conferences|all> [--only-missing] [--all] [--limit N]`,
         );
         await app.close();
         process.exit(1);
