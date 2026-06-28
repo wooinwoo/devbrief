@@ -61,7 +61,7 @@ const TAG_MAP: Array<[RegExp, string]> = [
   ],
   [
     bounded(
-      'backend|server|api|rest|grpc|microservice|마이크로서비스|nest|spring|node|golang|rust|java|kotlin|db|database|postgres|sql|아키텍처|서버|백엔드',
+      'backend|server|api|rest|grpc|microservice|마이크로서비스|nest|spring|node|golang|rust|java|kotlin|php|wordpress|db|database|postgres|sql|아키텍처|서버|백엔드',
     ),
     'backend',
   ],
@@ -73,7 +73,7 @@ const TAG_MAP: Array<[RegExp, string]> = [
   ],
   [
     bounded(
-      'infra|devops|kubernetes|k8s|docker|cloud|aws|gcp|terraform|ci|cd|cluster|클러스터|rdma|gpu|vllm|self.?host|observability|nginx|인프라|클라우드|운영',
+      'infra|devops|kubernetes|k8s|docker|cloud|aws|gcp|terraform|ci|cd|cluster|클러스터|rdma|gpu|vllm|self.?host|observability|nginx|ssh|dns|인프라|클라우드|운영',
     ),
     'infra',
   ],
