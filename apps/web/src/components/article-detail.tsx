@@ -160,6 +160,24 @@ export function ArticleDetail({ article, related }: Props) {
         </section>
       )}
 
+      {/* 원문 본문 — 서버(CLI extract)에서 sanitize 된 HTML 만 렌더한다.
+          contentHtml 은 ArticleExtractService 가 script/style/on* 핸들러/위험 링크를
+          제거하고 허용 태그만 남긴 결과라 dangerouslySetInnerHTML 로 안전하게 표시 가능. */}
+      {article.contentHtml && (
+        <section className="mb-10">
+          <SectionHeader label="원문 본문" hint={`출처 · ${article.source.name}`} />
+          <div
+            className="article-prose"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: contentHtml 은 서버(ArticleExtractService)에서 script/style/on*/위험 링크를 제거하고 허용 태그만 남긴 sanitize 결과다.
+            dangerouslySetInnerHTML={{ __html: article.contentHtml }}
+          />
+          <p className="mt-5 text-[12.5px]" style={{ color: 'var(--color-fg-subtle)' }}>
+            이 글은 {article.source.name} 의 원문을 정제해 보여드립니다. 저작권은 원저작자에게
+            있습니다.
+          </p>
+        </section>
+      )}
+
       {/* 태그 */}
       {article.tags.length > 0 && (
         <section className="mb-9 flex flex-wrap gap-2">

@@ -16,6 +16,8 @@ export interface ArticleDto {
   imageUrl: string | null;
   language?: 'ko' | 'en' | 'mixed' | string;
   source: { name: string; provider: string };
+  // 정제된 원문 본문 HTML — 상세 조회에서만 채워진다(목록/배치에는 없음).
+  contentHtml?: string | null;
 }
 
 // 소스마다 다른 색을 쓰던 V1 → 잭 톤 정돈: 모든 카드 회색 톤으로 통일,

@@ -22,6 +22,7 @@ interface DbArticle {
   tags: string[];
   imageUrl: string | null;
   language?: string;
+  contentHtml?: string | null;
   source: { name: string; provider: string };
 }
 
@@ -37,6 +38,7 @@ function mapDbToDto(d: DbArticle): ArticleDto {
     tags: d.tags ?? [],
     imageUrl: d.imageUrl,
     language: d.language,
+    contentHtml: d.contentHtml ?? null,
     source: { name: d.source.name, provider: d.source.provider },
   };
 }
