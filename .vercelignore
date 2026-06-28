@@ -1,0 +1,7 @@
+**/.next
+**/.next-stale-*
+**/node_modules
+**/dist
+**/.vercel
+**/*.tsbuildinfo
+**/.env*.local

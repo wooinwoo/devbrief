@@ -8,10 +8,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
-    credentials: true,
-  });
+  // FRONTEND_URL: 콤마로 여러 origin 허용(정식 도메인 + Vercel 프리뷰 등). '*' 이면 전체 허용.
+  const frontendEnv = process.env.FRONTEND_URL ?? 'http://localhost:3000';
+  const origin =
+    frontendEnv === '*'
+      ? true
+      : frontendEnv
+          .split(',')
+          .map((o) => o.trim())
+          .filter(Boolean);
+  app.enableCors({ origin, credentials: true });
   // /api/v1 prefix — 단, 헬스체크(/health)는 prefix 없이 노출 (Railway healthcheckPath)
   app.setGlobalPrefix('api/v1', { exclude: ['health'] });
 
