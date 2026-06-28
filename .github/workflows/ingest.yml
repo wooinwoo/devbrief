@@ -17,6 +17,7 @@ on:
           - all
           - ingest
           - reanalyze
+          - extract
           - repos
           - videos
           - digest
