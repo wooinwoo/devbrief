@@ -37,7 +37,7 @@ export function ArticleRow({
   badges,
 }: Props) {
   const { lang } = useLang();
-  const cat = categoryOf(article.tags);
+  const cat = categoryOf(article);
   const dot = sourceColor(article.source.provider);
   const { primary, secondary } = pickTitle(article, lang);
 

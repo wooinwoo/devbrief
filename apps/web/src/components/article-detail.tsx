@@ -30,7 +30,7 @@ interface Props {
 
 export function ArticleDetail({ article, related }: Props) {
   const { lang } = useLang();
-  const cat = categoryOf(article.tags);
+  const cat = categoryOf(article);
   const dot = sourceColor(article.source.provider);
   const minutes = readingMinutes(article);
   const { primary: heading, secondary: original } = pickTitle(article, lang);
@@ -244,7 +244,7 @@ export function ArticleDetail({ article, related }: Props) {
           <SectionHeader label="비슷한 글" count={related.length} hint="유사도 추천" />
           <ul>
             {related.map((r) => {
-              const rCat = categoryOf(r.tags);
+              const rCat = categoryOf(r);
               const rDot = sourceColor(r.source.provider);
               return (
                 <li key={r.id}>

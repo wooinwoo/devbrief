@@ -18,7 +18,7 @@ interface Props {
 export function FeaturedArticle({ article, read = false, onOpen }: Props) {
   const { lang } = useLang();
   const dot = sourceColor(article.source.provider);
-  const cat = categoryOf(article.tags);
+  const cat = categoryOf(article);
   const { primary, secondary } = pickTitle(article, lang);
 
   return (
