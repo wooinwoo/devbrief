@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { GeminiModule } from '../ai/gemini.module';
+import { whenRedis } from '../common/bullmq.config';
 import { CommonModule } from '../common/common.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConferenceDiscoveryCron } from './conference-discovery.cron';
@@ -15,7 +16,8 @@ import { ConferencesController } from './conferences.controller';
     ConferenceSeederService,
     ConferenceImageSyncService,
     ConferenceDiscoveryService,
-    ConferenceDiscoveryCron,
+    // 서빙(Redis 없음) 인스턴스에서는 수집성 Cron 미로드
+    ...whenRedis(ConferenceDiscoveryCron),
   ],
 })
 export class ConferencesModule {}

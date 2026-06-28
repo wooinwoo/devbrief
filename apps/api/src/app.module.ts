@@ -1,6 +1,5 @@
-import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { GeminiModule } from './ai/gemini.module';
 import { AppController } from './app.controller';
@@ -17,38 +16,14 @@ import { SourcesModule } from './sources/sources.module';
 import { StatsModule } from './stats/stats.module';
 import { SummarizationModule } from './summarization/summarization.module';
 import { VideosModule } from './videos/videos.module';
+import { bullRootImports } from './common/bullmq.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
-    BullModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const url = config.get<string>('REDIS_URL');
-        if (url) {
-          const parsed = new URL(url);
-          return {
-            connection: {
-              host: parsed.hostname,
-              port: Number(parsed.port) || 6379,
-              username: parsed.username || undefined,
-              password: parsed.password || undefined,
-              tls: parsed.protocol === 'rediss:' ? {} : undefined,
-              maxRetriesPerRequest: null,
-            },
-          };
-        }
-        return {
-          connection: {
-            host: 'localhost',
-            port: 6379,
-            maxRetriesPerRequest: null,
-            lazyConnect: true,
-          },
-        };
-      },
-    }),
+    // REDIS_URL 있을 때만 BullMQ 연결. 없으면 빈 배열 → 워커 미로드(Redis 무한 재시도 방지).
+    ...bullRootImports(),
     PrismaModule,
     GeminiModule,
     IngestionModule,
