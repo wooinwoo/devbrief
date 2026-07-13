@@ -202,7 +202,7 @@ cp env.example .env
 | `YOUTUBE_API_KEY` | Google Cloud Console | (선택) 영상 sync |
 | `ADMIN_PASSWORD` | 직접 지정 | 어드민 대시보드(/admin) 및 RAG 챗봇 접근용 |
 | `ADMIN_API_TOKEN` | 직접 지정 | 백엔드 어드민 쓰기 API 보호용 공유 시크릿 (`x-admin-token` 검증). 미설정 시 쓰기 엔드포인트 전부 거부 |
-| `NEXT_PUBLIC_ADMIN_API_TOKEN` | `ADMIN_API_TOKEN`과 동일 값 | 어드민 UI가 쓰기 API 호출 시 보내는 토큰. 백엔드 값과 일치해야 동기화/등록/삭제 동작 |
+| `ADMIN_API_TOKEN` (web) | api와 동일 값 | web 서버 프록시(/api/admin/*)가 x-admin-token으로 주입. 클라이언트 노출 안 됨 |
 
 > `GEMINI_API_KEY`가 없어도 동작합니다. 요약은 무료 번역 폴백으로 내려가고, 의미 검색 임베딩만 skip됩니다.
 

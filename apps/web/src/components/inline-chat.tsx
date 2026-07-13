@@ -1,6 +1,5 @@
 'use client';
 
-import { API_BASE } from '@/lib/api';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -107,7 +106,8 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
     setStreaming(true);
 
     try {
-      const res = await fetch(`${API_BASE}/chat/stream`, {
+      // 어드민 세션 프록시 경유 — 백엔드 chat 은 AdminGuard 로 보호된다.
+      const res = await fetch('/api/admin/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: text }),

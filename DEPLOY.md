@@ -84,7 +84,7 @@ Railway 의 상시 컨테이너에 올립니다. 정적/SSR 프론트는 Vercel 
    - Framework Preset: **Next.js** (자동 감지)
 4. **Environment Variables** 설정:
    - `NEXT_PUBLIC_API_BASE` = `https://<api-domain>/api/v1` (3-5 의 URL + `/api/v1`)
-   - `NEXT_PUBLIC_ADMIN_API_TOKEN` = api 의 `ADMIN_API_TOKEN` 과 **동일한 값**
+   - `ADMIN_API_TOKEN` (web 서버 전용, NEXT_PUBLIC 금지) = api 의 값과 동일. 서버 프록시가 붙여 보냄
    - (선택) `ADMIN_PASSWORD` — 어드민 로그인용 (web proxy 가 검증)
 5. **Deploy**. 배포 후 Vercel 도메인을 확인합니다 (예: `https://devbrief.vercel.app`).
 
@@ -118,7 +118,7 @@ Railway 의 상시 컨테이너에 올립니다. 정적/SSR 프론트는 Vercel 
 | `PORT` | Railway api | **Railway 자동 주입 — 설정 금지** | 자동 |
 | `API_PORT` | Railway api | 로컬 전용 기본 4000. 배포 시 불필요 | 선택 |
 | `NEXT_PUBLIC_API_BASE` | Vercel web | `https://<api-domain>/api/v1` | 필수 |
-| `NEXT_PUBLIC_ADMIN_API_TOKEN` | Vercel web | api 의 `ADMIN_API_TOKEN` 과 동일 값 | 어드민 쓰기 시 필수 |
+| `ADMIN_API_TOKEN` | Vercel web | 서버 전용(NEXT_PUBLIC 금지). 프록시가 x-admin-token 주입 | 필수 |
 | `ADMIN_PASSWORD` | Vercel web | 어드민 로그인 비밀번호 (web proxy 검증) | 어드민 사용 시 |
 
 > 시크릿(토큰/키)은 각 플랫폼 대시보드의 Variables 에만 넣습니다.

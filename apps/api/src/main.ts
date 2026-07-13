@@ -8,16 +8,17 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  // FRONTEND_URL: 콤마로 여러 origin 허용(정식 도메인 + Vercel 프리뷰 등). '*' 이면 전체 허용.
+  // FRONTEND_URL: 콤마로 여러 origin 허용(정식 도메인 + Vercel 프리뷰 등).
+  // 어드민 인증은 x-admin-token 헤더 기반이라 쿠키 credentials 가 필요 없다.
+  // '*' + credentials 조합(임의 origin 쿠키 허용)의 위험을 피하려 credentials:false 고정.
   const frontendEnv = process.env.FRONTEND_URL ?? 'http://localhost:3000';
-  const origin =
-    frontendEnv === '*'
-      ? true
-      : frontendEnv
-          .split(',')
-          .map((o) => o.trim())
-          .filter(Boolean);
-  app.enableCors({ origin, credentials: true });
+  const allowList = frontendEnv
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  // '*' 은 명시적 와일드카드(자격증명 없이 공개)로만 처리.
+  const origin = allowList.includes('*') ? '*' : allowList;
+  app.enableCors({ origin, credentials: false });
   // /api/v1 prefix — 단, 헬스체크(/health)는 prefix 없이 노출 (Railway healthcheckPath)
   app.setGlobalPrefix('api/v1', { exclude: ['health'] });
 
