@@ -83,3 +83,23 @@ describe('OgImageService', () => {
     });
   });
 });
+
+describe('real event metadata', () => {
+  const service = new OgImageService();
+  it('resolves directory-relative paths and decodes HTML query entities', () => {
+    expect(
+      service.parse(
+        '<meta content="images/og.jpg?a=1&amp;b=2" property="og:image">',
+        'https://conf.test/2026/',
+      ),
+    ).toBe('https://conf.test/2026/images/og.jpg?a=1&b=2');
+  });
+  it('supports twitter property metadata and skips unsafe candidates', () => {
+    expect(
+      service.parse(
+        '<meta property="og:image" content="http://127.0.0.1/x"><meta property="twitter:image" content="https://cdn.test/card.png">',
+      ),
+    ).toBe('https://cdn.test/card.png');
+    expect(service.parse('<meta property="og:image" content="javascript:alert(1)">')).toBeNull();
+  });
+});

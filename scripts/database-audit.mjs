@@ -35,6 +35,7 @@ try {
     UNION ALL SELECT 'article bodies', count(*)::int FROM "Article" WHERE "contentHtml" IS NOT NULL
     UNION ALL SELECT 'article summaries', count(*)::int FROM "Article" WHERE "summaryOneLine" IS NOT NULL
     UNION ALL SELECT 'translation errors', count(*)::int FROM "Article" WHERE concat("titleKo", "summaryOneLine", "summaryThreeLine") ILIKE '%QUERY LENGTH LIMIT EXCEEDED%'
+    UNION ALL SELECT 'event images', count(*)::int FROM "Conference" WHERE "imageUrl" IS NOT NULL
     UNION ALL SELECT 'videos', count(*)::int FROM "Video"
     UNION ALL SELECT 'sources', count(*)::int FROM "Source"
     UNION ALL SELECT 'repos', count(*)::int FROM "Repo"

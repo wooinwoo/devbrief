@@ -4,6 +4,7 @@ import { type LogLevel, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { CliModule } from './cli.module';
 import { ConferenceDiscoveryService } from './conferences/conference-discovery.service';
+import { ConferenceImageSyncService } from './conferences/conference-image-sync.service';
 import { DailyDigestService } from './digest/daily-digest.service';
 import { EmbeddingService } from './embedding/embedding.service';
 import { ArticleExtractService } from './ingestion/article-extract.service';
@@ -50,6 +51,7 @@ const REQUIRED_ENVS: Record<string, readonly string[]> = {
   videos: ['DATABASE_URL'], // YOUTUBE_API_KEY 부재는 기존대로 warn + skip
   digest: ['DATABASE_URL'], // Gemini 없으면 휴리스틱 폴백 → 키 비필수
   reanalyze: ['DATABASE_URL', 'GEMINI_API_KEY'], // 임베딩은 무료 대안 없음
+  'conference-images': ['DATABASE_URL'],
   conferences: ['DATABASE_URL'], // 공개 행사 피드는 Gemini 없이도 수집
   all: ['DATABASE_URL', 'GEMINI_API_KEY'],
   collect: ['DATABASE_URL'],
@@ -259,6 +261,7 @@ export interface CliServices {
   repos: ReposService;
   digest: DailyDigestService;
   conferences: ConferenceDiscoveryService;
+  conferenceImages: ConferenceImageSyncService;
   extractor: ArticleExtractService;
 }
 
@@ -347,6 +350,12 @@ export async function runAll(
       throw new Error(`행사 수집 일부 실패: sources=${r.failedSources} writes=${r.failed}`);
   });
 
+  await runStep('conference-images', async () => {
+    const r = await s.conferenceImages.syncAll({ limit: 1000, concurrency: 6, imagesOnly: true });
+    logger.log(`  · conference-images: ${JSON.stringify(r)}`);
+    if (r.writeFailed > 0) throw new Error(`Event image write failures: ${r.writeFailed}`);
+  });
+
   await runStep('digest', async () => {
     const r = await s.digest.generateForToday();
     // null 은 데이터 부족 skip — 실패로 세지 않는다
@@ -418,6 +427,7 @@ async function main() {
     repos: app.get(ReposService),
     digest: app.get(DailyDigestService),
     conferences: app.get(ConferenceDiscoveryService),
+    conferenceImages: app.get(ConferenceImageSyncService),
     extractor: app.get(ArticleExtractService),
   };
 
@@ -488,6 +498,16 @@ async function main() {
         if (r.failedSources > 0 || r.failed > 0) exitCode = 1;
         break;
       }
+      case 'conference-images': {
+        const r = await services.conferenceImages.syncAll({
+          limit: flags.limit,
+          concurrency: 6,
+          imagesOnly: true,
+        });
+        logger.log(`✔ conference-images: ${JSON.stringify(r)}`);
+        if (r.writeFailed > 0 || (r.total > 0 && r.updated === 0)) exitCode = 1;
+        break;
+      }
       case 'repair-summaries': {
         const r = await repairSummaries(services.prisma, services.summarization, flags.limit);
         logger.log(
@@ -509,7 +529,7 @@ async function main() {
       }
       default:
         logger.error(
-          `알 수 없는 command: ${command}\n사용법: node dist/cli.js <collect|ingest|repair-summaries|reanalyze|extract|repos|videos|digest|conferences|all> [--only-missing] [--all] [--limit N]`,
+          `알 수 없는 command: ${command}\n사용법: node dist/cli.js <collect|ingest|repair-summaries|reanalyze|extract|repos|videos|digest|conferences|conference-images|all> [--only-missing] [--all] [--limit N]`,
         );
         await app.close();
         process.exit(1);
