@@ -52,14 +52,8 @@
   "tagNormalization": {
     "changed": 1,
     "name": "237HackFest",
-    "beforeTopics": [
-      "cybersecurity",
-      "hackathon"
-    ],
-    "afterTopics": [
-      "cybersecurity",
-      "Hackathon"
-    ],
+    "beforeTopics": ["cybersecurity", "hackathon"],
+    "afterTopics": ["cybersecurity", "Hackathon"],
     "addedHackathonsAfterNormalization": 72
   }
 }
