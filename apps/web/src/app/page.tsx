@@ -98,7 +98,7 @@ async function getDigest(): Promise<DigestDto | null> {
 
 async function getVideos(): Promise<VideoDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/videos?limit=48`, {
+    const res = await fetch(`${API_BASE}/videos?limit=100`, {
       cache: 'no-store',
     });
     if (!res.ok) return mockFallback(MOCK_VIDEOS);

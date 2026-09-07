@@ -1,4 +1,4 @@
-﻿# Cloudflare Pages 배포
+# Cloudflare Pages 배포
 
 `apps/web`의 Next.js 화면을 vinext와 Pages Advanced Mode로 실행한다. API, DB, Redis와 수집 작업은 기존 서버를 사용한다.
 
@@ -50,7 +50,7 @@ corepack pnpm --filter @devbrief/web deploy:pages
 
 ## 확인된 기존 API 문제
 
-배포 준비 당시 목록과 batch API는 정상이나 기사 단건 API는 500을 반환했고, 기존 Vercel에서도 기사 상세가 404로 표시됐다. 웹은 단건 API의 5xx/연결 실패 시 batch에서 **같은 ID의 실제 기사 요약과 원문 링크**를 가져온다. 원문 본문을 새로 만들지 않으며 정상적인 404는 그대로 유지한다. API/DB 원인 수정은 별도 작업이다.
+배포 준비 당시 목록과 batch API는 정상이나 기사 단건 API는 500을 반환했고, 기존 Vercel에서도 기사 상세가 404로 표시됐다. 웹은 단건 API의 5xx/연결 실패 시 batch에서 **같은 ID의 실제 기사 요약과 원문 링크**를 가져온다. 원문 본문을 새로 만들지 않으며 정상적인 404는 그대로 유지한다. 2026-09-07 운영 DB의 누락 마이그레이션을 적용해 이 오류를 해결했다. 복구 결과와 수집 범위는 [데이터 복구 기록](deployment-audit-2026-09-07.md)을 참고한다.
 
 ## 재배포와 복구
 
