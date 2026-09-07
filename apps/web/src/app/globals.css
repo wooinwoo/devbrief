@@ -302,12 +302,11 @@ button {
 }
 .wordmark::before {
   content: "";
-  width: 22px;
-  height: 27px;
-  margin-right: 10px;
-  background: var(--fg-strong);
-  border-right: 5px solid var(--accent);
-  border-radius: 2px;
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  background: url("/brand-mark.svg") center / contain no-repeat;
 }
 .wordmark span {
   color: var(--accent);
@@ -1680,9 +1679,9 @@ button {
     font-size: 21px;
   }
   .brief-header .wordmark::before {
-    width: 18px;
-    height: 23px;
-    margin-right: 8px;
+    width: 24px;
+    height: 24px;
+    margin-right: 7px;
   }
   .brief-header .global-search-trigger {
     padding: 0 9px;
