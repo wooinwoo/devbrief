@@ -124,3 +124,24 @@ describe('Translation provider failures are not article summaries', () => {
     expect(await new TranslationService().toKorean('Example')).toBeNull();
   });
 });
+
+describe('Translation rate limit backoff', () => {
+  it('stops repeatedly calling a rate-limited provider during Retry-After', async () => {
+    mockGet.mockReset();
+    mockGet
+      .mockRejectedValueOnce({
+        message: 'rate limit',
+        response: { status: 429, headers: { 'retry-after': '600' } },
+      })
+      .mockResolvedValue({
+        data: { responseStatus: 200, responseData: { translatedText: '\uBC88\uC5ED' } },
+      });
+    const svc = new TranslationService();
+    await svc.toKorean('First title');
+    await svc.toKorean('Second title');
+    expect(
+      mockGet.mock.calls.filter(([url]) => url.includes('translate.googleapis.com')),
+    ).toHaveLength(1);
+    expect(mockGet.mock.calls.filter(([url]) => url.includes('mymemory'))).toHaveLength(2);
+  });
+});
