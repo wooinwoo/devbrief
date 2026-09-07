@@ -1,5 +1,9 @@
 import type { CSSProperties } from 'react';
 const paths = {
+  external: 'M14 3h7v7M21 3 10 14M10 3H3v18h18v-7',
+  trending: 'm3 17 6-6 4 4 8-10M15 5h6v6',
+  star: 'm12 3 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.5 6.3-.9L12 3Z',
+  undo: 'M9 4 3 10l6 6M3 10h11a7 7 0 0 1 7 7v3',
   arrow: 'M5 12h14M13 6l6 6-6 6',
   search: 'm21 21-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',
   bookmark: 'M6 3h12v18l-6-4-6 4V3Z',

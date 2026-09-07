@@ -1,5 +1,5 @@
 import Link from 'next/link';
-export function PageFooter({ total }: { total: number }) {
+export function PageFooter({ total }: { total?: number }) {
   return (
     <footer className="brief-footer">
       <div>
@@ -16,7 +16,7 @@ export function PageFooter({ total }: { total: number }) {
       </nav>
       <div className="footer-note">
         <span>© 2026 Devbrief</span>
-        <span>최근 {total}개 글 · 매일 오전 9시 갱신</span>
+        <span>{total ? `최근 ${total}개 글 · ` : ''}매일 오전 9시 갱신</span>
       </div>
     </footer>
   );

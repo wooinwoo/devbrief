@@ -7,7 +7,7 @@ export interface Category {
 }
 
 export const CATEGORIES: Record<string, Category> = {
-  ai: { key: 'ai', label: 'AI', color: '#075bb5', soft: '#eaf2fb' },
+  ai: { key: 'ai', label: 'AI', color: '#3d5121', soft: '#eaf2d3' },
   frontend: {
     key: 'frontend',
     label: 'Frontend',

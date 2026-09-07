@@ -40,7 +40,11 @@ export function SiteNav() {
               href={t.href}
               aria-current={pathname === t.href ? 'page' : undefined}
               className="shrink-0 inline-flex items-center min-h-11 px-3 sm:px-3.5 py-2 rounded-sm text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors hover:bg-[oklch(100%_0_0/0.1)]"
-              style={{ color: 'var(--bar-fg-muted)', fontWeight: 500 }}
+              style={{
+                color: pathname === t.href ? 'var(--accent)' : 'var(--bar-fg-muted)',
+                background: pathname === t.href ? 'var(--accent-soft)' : undefined,
+                fontWeight: pathname === t.href ? 700 : 500,
+              }}
             >
               {t.label}
             </Link>

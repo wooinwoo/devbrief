@@ -8,9 +8,10 @@ import type { ArticleListItem, ArticleSourceRef } from '@devbrief/shared';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import type { ArticleDto } from './article-card';
-import { ArticleRow } from './article-row';
+import { BriefIcon } from './brief-icon';
 import { SearchField } from './filter-sidebar';
 import { Pagination } from './pagination';
+import { SavedArticleRow } from './saved-article-row';
 
 /**
  * GET /articles/batch 의 와이어 계약(@devbrief/shared ArticleListItem)이 단일 소스 —
@@ -64,7 +65,7 @@ export function BookmarksView() {
   const [failedCount, setFailedCount] = useState(0);
   const [query, setQuery] = useState('');
   const [unreadOnly, setUnreadOnly] = useState(false);
-  const [sort, setSort] = useState<Sort>('newest');
+  const [sort, setSort] = useState<Sort>('saved');
   const [page, setPage] = useState(1);
 
   const fetchBookmarked = useCallback(async () => {
@@ -142,7 +143,8 @@ export function BookmarksView() {
     setReadSet(readTracking.toggle(id));
   }, []);
 
-  const total = articles.length + missingIds.length;
+  const total = articles.length + missingIds.length + failedCount;
+  const unreadCount = articles.filter((article) => !readSet.has(article.id)).length;
   const filtered = filterArticles(articles, { query, hideRead: unreadOnly }, readSet);
   if (sort !== 'saved') {
     filtered.sort((a, b) =>
@@ -161,28 +163,34 @@ export function BookmarksView() {
   };
 
   return (
-    <section aria-busy={status === 'loading'}>
-      <div className="flex items-end justify-between gap-4 flex-wrap mb-7 border-b border-(--color-line-strong) pb-6">
-        <h1
-          className="text-[1.75rem] sm:text-[2.25rem] leading-tight tracking-[-0.025em] break-keep"
-          style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-        >
-          저장한 글
-        </h1>
-        {total > 0 && (
-          <p
-            className="text-[12.5px] tabular-nums pb-0.5"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
-            저장 <span style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}>{total}</span>
-          </p>
+    <section className="saved-library" aria-busy={status === 'loading'}>
+      <div className="library-heading">
+        <div>
+          <span className="library-eyebrow">
+            <BriefIcon name="bookmark" size={18} /> 나의 읽기 목록
+          </span>
+          <h1>저장한 글</h1>
+          <p>눈여겨본 이야기를 모아 두고, 내 속도로 읽어 보세요.</p>
+        </div>
+        {status === 'idle' && total > 0 && (
+          <div className="library-counts">
+            <span>
+              저장한 글<strong>{total}</strong>
+            </span>
+            <span>
+              안 읽은 글<strong>{unreadCount}</strong>
+            </span>
+          </div>
         )}
       </div>
+      <p className="library-device-note">
+        저장한 글과 읽음 기록은 지금 사용하는 브라우저에 보관돼요.
+      </p>
 
       {status === 'idle' && articles.length > 0 && (
-        <div className="mb-6">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] items-center">
-            <div className="col-span-2 sm:col-span-1">
+        <div className="saved-toolbar">
+          <div className="saved-filters">
+            <div className="saved-search">
               <SearchField value={query} onChange={search} placeholder="저장한 글 검색" />
             </div>
             <button
@@ -192,14 +200,14 @@ export function BookmarksView() {
                 setUnreadOnly((value) => !value);
                 setPage(1);
               }}
-              className="min-h-11 px-2 sm:px-3 rounded-md border border-(--color-line-strong) text-[13px] hover:bg-(--color-bg-sunken)"
+              className="library-button unread-filter"
               style={{
                 color: unreadOnly ? 'var(--color-accent-strong)' : 'var(--color-fg-default)',
                 background: unreadOnly ? 'var(--color-bg-sunken)' : undefined,
                 borderColor: unreadOnly ? 'var(--color-accent)' : undefined,
               }}
             >
-              안 읽은 글만
+              <BriefIcon name="check" size={17} /> 안 읽은 글만
             </button>
             <select
               aria-label="저장한 글 정렬"
@@ -208,23 +216,30 @@ export function BookmarksView() {
                 setSort(e.target.value as Sort);
                 setPage(1);
               }}
-              className="min-w-0 min-h-11 px-2 sm:px-3 rounded-md border border-(--color-line-strong) bg-(--color-bg-base) text-base"
+              className="library-sort"
             >
               <option value="newest">최신 발행순</option>
               <option value="oldest">오래된 발행순</option>
               <option value="saved">최근 저장순</option>
             </select>
           </div>
-          <p role="status" className="mt-4 text-[12px] tabular-nums text-(--color-fg-muted)">
-            불러온 {articles.length}개 중 {filtered.length}개
+          <p role="status" className="saved-result-count">
+            {query || unreadOnly
+              ? `조건에 맞는 글 ${filtered.length}개`
+              : `전체 ${articles.length}개`}
           </p>
         </div>
       )}
 
       {status === 'loading' && (
-        <p className="py-16 text-[14px]" style={{ color: 'var(--color-fg-muted)' }}>
-          저장한 글을 불러오는 중이에요.
-        </p>
+        <div className="library-loading" role="status">
+          <p>저장한 글을 불러오는 중이에요.</p>
+          <div aria-hidden="true">
+            <div className="skeleton-line" />
+            <div className="skeleton-line" />
+            <div className="skeleton-line" />
+          </div>
+        </div>
       )}
 
       {status === 'error' && (
@@ -272,7 +287,10 @@ export function BookmarksView() {
       )}
 
       {status === 'idle' && total === 0 && failedCount === 0 && (
-        <div className="py-20 text-center">
+        <div className="library-empty">
+          <span className="library-empty-icon">
+            <BriefIcon name="bookmark" size={30} />
+          </span>
           <p
             className="text-[16px] mb-2"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
@@ -280,11 +298,11 @@ export function BookmarksView() {
             아직 저장한 글이 없어요.
           </p>
           <p className="text-[14px] mb-6" style={{ color: 'var(--color-fg-muted)' }}>
-            글 목록에서 북마크 아이콘을 눌러 읽을 글을 모아 보세요.
+            마음에 드는 글에서 저장 버튼을 누르면 여기에 모여요.
           </p>
           <Link
             href="/?tab=articles"
-            className="inline-flex items-center min-h-[44px] px-4 rounded-lg text-[14px] transition-colors hover:bg-(--color-bg-elevated)"
+            className="library-button library-primary"
             style={{
               border: '1px solid var(--color-line-strong)',
               color: 'var(--color-fg-strong)',
@@ -313,13 +331,12 @@ export function BookmarksView() {
               </button>
             </div>
           )}
-          <ul className="flex flex-col" aria-label="저장한 글 목록">
+          <ul className="saved-list" aria-label="저장한 글 목록">
             {visible.map((a) => (
-              <ArticleRow
+              <SavedArticleRow
                 key={a.id}
                 article={a}
                 read={readSet.has(a.id)}
-                bookmarked
                 onBookmark={handleUnbookmark}
                 onToggleRead={handleToggleRead}
                 onTagClick={search}
