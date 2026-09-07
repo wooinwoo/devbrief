@@ -150,7 +150,7 @@ export default async function Home() {
   return (
     <main
       id="main-content"
-      className="min-h-screen w-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12"
+      className="min-h-screen w-full max-w-[1280px] mx-auto px-5 sm:px-8 lg:px-12"
     >
       <Suspense fallback={null}>
         <ArticlesView

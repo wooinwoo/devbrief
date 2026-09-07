@@ -7,6 +7,7 @@ import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { RepoDto } from '@/lib/mock-repos';
 import type { VideoDto } from '@/lib/mock-videos';
 import { readTracking } from '@/lib/read-tracking';
+import { useVisibleNavigation } from '@/lib/use-visible-navigation';
 import type { ArticleListItem } from '@devbrief/shared';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -63,6 +64,7 @@ export function ArticlesView({
   // 탭은 URL 쿼리에서 파생 — 새로고침/뒤로가기/링크 공유 시 그대로 복원됨.
   const tabParam = (searchParams.get('tab') as Tab) ?? 'all';
   const tab: Tab = TABS.some((t) => t.id === tabParam) ? tabParam : 'all';
+  useVisibleNavigation(tab);
   // 탭 전환 시에도 tab 키만 갱신하고 나머지 쿼리(q/source/cat/unread 등)는 보존한다 —
   // 각 탭의 setParam 이 tab 키를 보존하는 것과 같은 계약. 화살표 키 탐색·재클릭에
   // 필터가 통째로 날아가던 문제 방지.
@@ -349,15 +351,16 @@ export function ArticlesView({
         </div>
       </header>
 
-      {/* === 콘텐츠 (전체 흰 배경 위 직접, 박스 없이 선·여백으로 구분) === */}
+      {/* Content layouts are tailored to each reading or discovery task. */}
       <div
         className="mt-8 sm:mt-12 flex-1"
         role="tabpanel"
         id="content-panel"
         aria-labelledby={`tab-${tab}`}
       >
-        {/* (이전 흰 패널 박스 제거 — 배경이 이미 흰색이라 불필요) */}
-        <div className="brief-heading">
+        <div
+          className={`brief-heading${tab === 'all' ? ' edition-heading' : ''}${tab === 'repos' ? ' directory-heading' : ''}`}
+        >
           <div>
             <h1>{activeTab?.title}</h1>
             <p>

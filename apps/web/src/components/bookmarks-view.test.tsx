@@ -104,6 +104,8 @@ describe('BookmarksView (배치 조회)', () => {
       within(view.getByRole('list', { name: '저장한 글 목록' }))
         .getAllByRole('link')
         .map((e) => e.textContent);
+    expect(titles()).toEqual(['Title b', 'Title a', 'Title c']);
+    fireEvent.change(view.getByRole('combobox'), { target: { value: 'newest' } });
     expect(titles()).toEqual(['Title b', 'Title c', 'Title a']);
     fireEvent.change(view.getByRole('combobox'), { target: { value: 'oldest' } });
     expect(titles()).toEqual(['Title a', 'Title c', 'Title b']);
@@ -115,7 +117,7 @@ describe('BookmarksView (배치 조회)', () => {
     const data = Array.from({ length: 21 }, (_, i) =>
       dbArticle(`a${i}`, `2026-01-${String(21 - i).padStart(2, '0')}`),
     );
-    localStorage.setItem(BOOKMARK_KEY, JSON.stringify(data.map((a) => a.id)));
+    localStorage.setItem(BOOKMARK_KEY, JSON.stringify(data.map((a) => a.id).reverse()));
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => data }));
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     const view = render(<BookmarksView />);

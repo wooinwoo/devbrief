@@ -1,4 +1,5 @@
 import { BookmarksView } from '@/components/bookmarks-view';
+import { PageFooter } from '@/components/page-footer';
 import { SiteNav } from '@/components/site-nav';
 import type { Metadata } from 'next';
 
@@ -9,12 +10,10 @@ export const metadata: Metadata = {
 
 export default function BookmarksPage() {
   return (
-    <main
-      id="main-content"
-      className="min-h-screen w-full px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32 pb-24"
-    >
+    <main id="main-content" className="library-page">
       <SiteNav />
       <BookmarksView />
+      <PageFooter />
     </main>
   );
 }

@@ -3,6 +3,11 @@ import './globals.css';
 import { LangProvider } from '@/lib/lang-context';
 
 export const metadata: Metadata = {
+  icons: {
+    icon: { url: '/brand-mark.svg?v=brief-mark-5', type: 'image/svg+xml', sizes: 'any' },
+    shortcut: '/favicon.ico?v=brief-mark-5',
+    apple: '/apple-touch-icon.png?v=brief-mark-5',
+  },
   title: 'Devbrief — 매일의 개발 브리핑',
   description:
     '한국 개발자를 위한 기술 큐레이션. 매일 09시 RSS 수집, AI 요약·번역, 컨퍼런스·발표 영상까지 한눈에.',

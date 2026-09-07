@@ -69,7 +69,7 @@ export function VideoDetail({ video, related }: Props) {
   };
 
   return (
-    <article>
+    <article className="video-detail-surface">
       <Link
         href="/?tab=videos"
         className="inline-flex items-center gap-1.5 min-h-11 text-[13px] mb-6 transition-colors hover:text-(--color-fg-default)"
