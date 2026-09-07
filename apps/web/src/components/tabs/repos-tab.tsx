@@ -74,7 +74,7 @@ export function ReposTab({ repos }: { repos: RepoDto[] }) {
             </button>
           ))}
         </div>
-        <p>GitHub Trending · 기간별 스타 증가량을 기준으로 수집해요.</p>
+        <p>GitHub Trending · 스타 증가량 기준</p>
       </div>
       <div className="directory-toolbar">
         <SearchField value={query} onChange={setQuery} placeholder="프로젝트 이름이나 설명 검색" />

@@ -34,7 +34,12 @@ export function OverviewTab({
   onMore,
 }: Props) {
   const { lang } = useLang();
-  const feature = articles.find((a) => a.language === 'ko' && a.imageUrl) ?? articles[0];
+  // Generated social cards repeat the headline; prefer a real editorial cover.
+  const illustrated = articles.filter(
+    (article) => article.imageUrl && !article.imageUrl.includes('social.news.hada.io/'),
+  );
+  const feature =
+    illustrated.find((article) => article.language === 'ko') ?? illustrated[0] ?? articles[0];
   const remaining = articles.filter((a) => a.id !== feature?.id);
   const sources = new Set<string>();
   const varied = remaining.filter((a) => {

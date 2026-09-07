@@ -1,5 +1,6 @@
 'use client';
 
+import { useVisibleNavigation } from '@/lib/use-visible-navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { GlobalSearch } from './global-search';
@@ -18,6 +19,7 @@ const TABS = [
 /** 글/영상 상세 상단 네비 — 메인 헤더와 동일한 비주얼 언어. */
 export function SiteNav() {
   const pathname = usePathname();
+  useVisibleNavigation(pathname);
   return (
     <nav
       aria-label="콘텐츠 탐색"

@@ -166,11 +166,8 @@ export function BookmarksView() {
     <section className="saved-library" aria-busy={status === 'loading'}>
       <div className="library-heading">
         <div>
-          <span className="library-eyebrow">
-            <BriefIcon name="bookmark" size={18} /> 나의 읽기 목록
-          </span>
           <h1>저장한 글</h1>
-          <p>눈여겨본 이야기를 모아 두고, 내 속도로 읽어 보세요.</p>
+          <p>다음에 읽을 이야기, 여기 모아 두었어요.</p>
         </div>
         {status === 'idle' && total > 0 && (
           <div className="library-counts">
