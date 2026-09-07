@@ -43,6 +43,9 @@ jobs:
     name: collect · summarize · embed
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -96,6 +99,14 @@ jobs:
 
       - name: Build API
         run: pnpm --filter @devbrief/api run build
+
+      - name: Verify CLI failure propagation
+        run: |
+          set +e
+          node -e 'process.exit(7)' | tee /tmp/exit-code-check.log
+          result=$?
+          set -e
+          test "$result" -eq 7
 
       - name: Run CLI
         id: cli

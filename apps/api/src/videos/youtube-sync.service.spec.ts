@@ -129,7 +129,7 @@ describe('YouTubeSyncService', () => {
 describe('Public video feed recovery', () => {
   const channelId = 'UCWEzfYIpFBIG5jh6laXC6hA';
   const xml = `<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/">
-    <yt:channelId>${channelId}</yt:channelId><author><name>FEConf Korea</name></author>
+    <yt:channelId>${channelId.slice(2)}</yt:channelId><author><name>FEConf Korea</name></author>
     <entry><yt:videoId>abcdefghijk</yt:videoId><title>A real talk &amp; demo</title><published>2026-09-01T00:00:00Z</published>
     <media:group><media:description>Talk description</media:description><media:community><media:statistics views="123" /></media:community></media:group></entry>
     <entry><yt:videoId>bad</yt:videoId><title>Invalid</title><published>bad</published></entry></feed>`;

@@ -230,7 +230,9 @@ const VERIFIED_CHANNELS = [
 
 export function parseVideoFeed(xml: string, channelId: string) {
   const $ = cheerio.load(xml, { xml: true });
-  if ($('feed > yt\\:channelId').text() !== channelId)
+  const feedChannelId = $('feed > yt\\:channelId').text().trim();
+  // YouTube's feed-level ID omits UC; entry-level IDs retain it.
+  if (feedChannelId !== channelId && `UC${feedChannelId}` !== channelId)
     throw new Error('Video feed channel mismatch');
   const channel = $('feed > author > name').first().text().trim();
   if (!channel) throw new Error('Video feed has no publisher');
