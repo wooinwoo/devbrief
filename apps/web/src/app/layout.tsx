@@ -4,9 +4,9 @@ import { LangProvider } from '@/lib/lang-context';
 
 export const metadata: Metadata = {
   icons: {
-    icon: { url: '/brand-mark.svg?v=brief-mark-4', type: 'image/svg+xml', sizes: 'any' },
-    shortcut: '/favicon.ico?v=brief-mark-4',
-    apple: '/apple-touch-icon.png?v=brief-mark-4',
+    icon: { url: '/brand-mark.svg?v=brief-mark-5', type: 'image/svg+xml', sizes: 'any' },
+    shortcut: '/favicon.ico?v=brief-mark-5',
+    apple: '/apple-touch-icon.png?v=brief-mark-5',
   },
   title: 'Devbrief — 매일의 개발 브리핑',
   description:
