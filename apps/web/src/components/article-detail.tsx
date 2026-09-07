@@ -46,7 +46,7 @@ export function ArticleDetail({ article, related }: Props) {
   }, [article.id]);
 
   return (
-    <article className="pb-12 sm:pb-16">
+    <article className="detail-reading pb-12 sm:pb-16">
       <Link
         href="/"
         className="inline-flex min-h-11 items-center gap-2 text-[13px] mb-5 transition-colors hover:text-(--color-fg-default)"

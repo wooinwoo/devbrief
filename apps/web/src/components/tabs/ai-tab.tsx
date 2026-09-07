@@ -193,7 +193,7 @@ export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Pr
         ) : isFiltering ? (
           <>
             <SectionHeader label="필터된 소식" count={filtered.length} />
-            <ul className="grid xl:grid-cols-2 gap-x-10">
+            <ul className="brief-list-grid grid">
               {pageSlice.map((a) => (
                 <ArticleRow
                   key={a.id}
@@ -214,7 +214,7 @@ export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Pr
             {themeGroups.map((g) => (
               <section key={g.theme.key}>
                 <SectionHeader label={g.theme.label} count={g.articles.length} />
-                <ul className="grid xl:grid-cols-2 gap-x-10">
+                <ul className="brief-list-grid grid">
                   {g.articles.map((a) => (
                     <ArticleRow
                       key={a.id}
@@ -232,7 +232,7 @@ export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Pr
             {etcArticles.length > 0 && (
               <section>
                 <SectionHeader label="그 외 AI 소식" count={etcArticles.length} />
-                <ul className="grid xl:grid-cols-2 gap-x-10">
+                <ul className="brief-list-grid grid">
                   {etcArticles.map((a) => (
                     <ArticleRow
                       key={a.id}

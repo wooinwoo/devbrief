@@ -211,3 +211,44 @@ describe("articles 탭 '전체' 통계 + 더 불러오기 (c62)", () => {
     await waitFor(() => expect(queryByText('이전 글 더 불러오기')).toBeNull());
   });
 });
+
+describe('event catalog loading', () => {
+  const events = [
+    {
+      id: 'catalog-event',
+      name: 'Future Community',
+      url: 'https://example.com',
+      startDate: '2099-01-01',
+      location: 'Seoul',
+      topics: [],
+    },
+  ];
+  it('only downloads the full catalog when the event tab is opened', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => events });
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(<ArticlesView articles={[]} loadConferenceCatalog />);
+    expect(fetchMock).not.toHaveBeenCalled();
+    currentSearch = 'tab=conferences';
+    view.rerender(<ArticlesView articles={[]} loadConferenceCatalog />);
+    expect(await view.findByRole('link', { name: 'Future Community' })).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    currentSearch = 'tab=all';
+    view.rerender(<ArticlesView articles={[]} loadConferenceCatalog />);
+    currentSearch = 'tab=conferences';
+    view.rerender(<ArticlesView articles={[]} loadConferenceCatalog />);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it('exposes failures and lets the visitor retry', async () => {
+    currentSearch = 'tab=conferences';
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ ok: true, json: async () => events });
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(<ArticlesView articles={[]} loadConferenceCatalog />);
+    expect(await view.findByRole('alert')).toBeTruthy();
+    fireEvent.click(view.getByRole('button', { name: '다시 시도' }));
+    expect(await view.findByRole('link', { name: 'Future Community' })).toBeTruthy();
+    expect(view.queryByRole('alert')).toBeNull();
+  });
+});

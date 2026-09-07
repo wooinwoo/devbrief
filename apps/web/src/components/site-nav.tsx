@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { GlobalSearch } from './global-search';
 import { LangToggle } from './lang-toggle';
 
 const TABS = [
@@ -20,17 +21,17 @@ export function SiteNav() {
   return (
     <nav
       aria-label="콘텐츠 탐색"
-      className="sticky top-0 z-30 mb-9 mx-[calc(50%-50vw)] border-b [&_:focus-visible]:outline-(--bar-accent)"
+      className="brief-header sticky top-0 z-30 mb-9 mx-[calc(50%-50vw)] border-b [&_:focus-visible]:outline-(--bar-accent)"
       style={{ borderColor: 'var(--bar-line)', background: 'var(--bar-bg)' }}
     >
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 grid grid-cols-[1fr_auto] lg:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-6 lg:gap-x-8">
         <Link
           href="/"
           aria-label="Devbrief 홈"
-          className="flex items-center min-h-[60px] lg:min-h-[72px] shrink-0 text-[21px] tracking-[-0.02em]"
+          className="wordmark min-h-[60px] lg:min-h-[72px] shrink-0"
           style={{ color: 'var(--bar-fg)', fontWeight: 800 }}
         >
-          Dev<span style={{ color: 'var(--bar-accent)' }}>brief</span>
+          devbrief<span>.</span>
         </Link>
         <div className="no-scrollbar order-3 col-span-2 lg:order-none lg:col-span-1 flex min-w-0 items-center gap-1 overflow-x-auto pb-2 lg:py-0">
           {TABS.map((t) => (
@@ -45,7 +46,8 @@ export function SiteNav() {
             </Link>
           ))}
         </div>
-        <div className="justify-self-end">
+        <div className="justify-self-end flex items-center gap-3">
+          <GlobalSearch />
           <LangToggle />
         </div>
       </div>

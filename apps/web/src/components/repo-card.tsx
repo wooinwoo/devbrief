@@ -26,7 +26,7 @@ export function RepoCard({ repo: r }: { repo: RepoDto }) {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`${r.fullName}${r.language ? `, ${r.language}` : ''} — ${periodLabel} 스타 ${r.periodStars.toLocaleString()} 증가, 총 ${r.stars.toLocaleString()} 스타. GitHub에서 새 탭으로 열기`}
-        className="group block h-full py-5 border-b transition-colors"
+        className="repo-tile group block h-full py-5 border-b transition-colors"
         style={{ borderColor: 'var(--color-line)' }}
       >
         {/* 제목: owner/repo */}

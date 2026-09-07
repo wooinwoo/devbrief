@@ -40,7 +40,7 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
 
   return (
     <aside className="lg:w-[200px] lg:shrink-0">
-      <div className="lg:sticky lg:top-24">
+      <div className="filter-panel lg:sticky lg:top-24">
         {search && (
           <div className="mb-3 lg:mb-6">
             <SearchField {...search} />

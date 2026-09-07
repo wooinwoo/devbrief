@@ -46,6 +46,20 @@ describe('ArticlesController', () => {
   });
 
   describe('list', () => {
+    it('searches every article with the same query for rows and total count', async () => {
+      const res = resStub();
+      count.mockResolvedValue(12);
+      await controller.list(res, undefined, '8', '0', '  React  ');
+      const where = findMany.mock.calls[0][0].where;
+      expect(where.OR).toEqual([
+        { title: { contains: 'React', mode: 'insensitive' } },
+        { titleKo: { contains: 'React', mode: 'insensitive' } },
+        { summaryOneLine: { contains: 'React', mode: 'insensitive' } },
+      ]);
+      expect(count).toHaveBeenCalledWith({ where });
+      expect(res.setHeader).toHaveBeenCalledWith(TOTAL_COUNT_HEADER, '12');
+    });
+
     it('목록 응답도 동일한 화이트리스트만 select 한다 (본문 필드 누수 방지)', async () => {
       await controller.list(resStub(), undefined, '30');
       const args = findMany.mock.calls[0][0] as FindManyArgs;

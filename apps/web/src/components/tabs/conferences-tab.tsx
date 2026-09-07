@@ -33,6 +33,7 @@ export function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }
   const [kind, setKind] = useState<Kind>('all');
   const [period, setPeriod] = useState('');
   const [topic, setTopic] = useState('');
+  const [region, setRegion] = useState('');
   const [sort, setSort] = useState('soonest');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -56,32 +57,33 @@ export function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }
           (!needle ||
             [c.name, c.location, ...c.topics].join(' ').toLocaleLowerCase().includes(needle)) &&
           (!period || periodOf(c.startDate) === period) &&
-          (!topic || c.topics.includes(topic)),
+          (!topic || c.topics.includes(topic)) &&
+          (!region ||
+            (region === 'online'
+              ? /online|virtual|온라인/i.test(c.location)
+              : /korea|대한민국|한국|서울|성남|부산|제주|대전|판교|seoul/i.test(c.location))),
       )
       .sort((a, b) =>
         sort === 'soonest'
           ? a.startDate.localeCompare(b.startDate)
           : b.startDate.localeCompare(a.startDate),
       );
-  }, [typed, period, topic, sort, query]);
+  }, [typed, period, topic, sort, query, region]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / 24));
   const currentPage = Math.min(page, totalPages);
-  const activeFilters = kind !== 'all' || !!(period || topic || query);
+  const activeFilters = kind !== 'all' || !!(period || topic || query || region);
   const reset = () => {
     setKind('all');
     setPeriod('');
     setTopic('');
+    setRegion('');
     setQuery('');
     setPage(1);
   };
 
   return (
     <div>
-      <div
-        role="group"
-        aria-label="행사 유형"
-        className="grid grid-cols-3 sm:flex border-b border-(--color-line-strong) mb-6"
-      >
+      <div role="group" aria-label="행사 유형" className="event-kind-tabs">
         {KINDS.map(({ value, label }) => {
           const count =
             value === 'all'
@@ -98,19 +100,15 @@ export function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }
                 setTopic('');
                 setPage(1);
               }}
-              className={`relative flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-14 px-2 sm:px-6 pb-3 pt-2 text-sm sm:text-base border-b-2 -mb-px transition-colors ${active ? 'border-(--color-fg-strong) text-(--color-fg-strong) font-semibold' : 'border-transparent text-(--color-fg-muted) hover:text-(--color-fg-strong)'}`}
             >
-              {label}{' '}
-              <span className="text-xs font-normal tabular-nums text-(--color-fg-muted)">
-                {count}
-              </span>
+              {label} <span className="text-xs font-normal tabular-nums">{count}</span>
             </button>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-[minmax(0,1fr)_160px_180px] gap-3">
-        <div className="col-span-2 lg:col-span-1">
+      <div className="event-toolbar event-filters">
+        <div className="">
           <SearchField
             value={query}
             onChange={(value) => {
@@ -120,6 +118,21 @@ export function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }
             placeholder="행사명, 지역, 주제로 검색"
           />
         </div>
+        <label>
+          <span className="sr-only">행사 지역</span>
+          <select
+            value={region}
+            onChange={(e) => {
+              setRegion(e.target.value);
+              setPage(1);
+            }}
+            className={SELECT_CLASS}
+          >
+            <option value="">모든 지역</option>
+            <option value="korea">국내 행사</option>
+            <option value="online">온라인</option>
+          </select>
+        </label>
         <label>
           <span className="sr-only">개최 시기</span>
           <select
@@ -190,7 +203,7 @@ export function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }
       </div>
 
       {filtered.length ? (
-        <ul aria-label="행사 일정">
+        <ul aria-label="행사 일정" className="event-grid mt-5">
           {filtered.slice((currentPage - 1) * 24, currentPage * 24).map((c) => (
             <ConferenceCard key={c.id} conference={c} />
           ))}

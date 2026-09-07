@@ -7,7 +7,7 @@ export interface Category {
 }
 
 export const CATEGORIES: Record<string, Category> = {
-  ai: { key: 'ai', label: 'AI', color: 'oklch(50% 0.19 265)', soft: 'oklch(95% 0.035 265)' },
+  ai: { key: 'ai', label: 'AI', color: '#b64825', soft: '#f9e8df' },
   frontend: {
     key: 'frontend',
     label: 'Frontend',
@@ -25,10 +25,10 @@ export const CATEGORIES: Record<string, Category> = {
   mobile: {
     key: 'mobile',
     label: 'Mobile',
-    color: 'oklch(56% 0.18 350)',
-    soft: 'oklch(95% 0.04 350)',
+    color: '#796129',
+    soft: '#f4efdf',
   },
-  etc: { key: 'etc', label: '기타', color: 'oklch(55% 0.02 285)', soft: 'oklch(94% 0.008 285)' },
+  etc: { key: 'etc', label: '기타', color: '#65655d', soft: '#eeece5' },
 };
 
 // ASCII(latin/digit) 기준 단어 경계.

@@ -83,7 +83,7 @@ export function VideosTab({ videos }: { videos: VideoDto[] }) {
             조건에 맞는 영상이 없어요.
           </p>
         ) : (
-          <ul className="grid gap-x-6 gap-y-9 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid gap-x-6 gap-y-9 sm:grid-cols-2">
             {filtered.map((v) => (
               <VideoCard key={v.id} video={v} />
             ))}
