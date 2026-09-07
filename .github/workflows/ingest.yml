@@ -22,6 +22,10 @@ on:
           - videos
           - digest
           - conferences
+      prepare_schema:
+        description: Apply pending migrations after a verified Neon backup
+        type: boolean
+        default: false
 
 # 직전 실행이 안 끝났으면 취소하지 말고 줄세움 (DB 쓰기 충돌 방지)
 concurrency:
@@ -74,6 +78,15 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter @devbrief/db run generate
 
+      - name: Prepare legacy schema (manual recovery only)
+        if: inputs.prepare_schema == true
+        run: |
+          node scripts/database-audit.mjs prepare
+          pnpm db:migrate:deploy
+
+      - name: Database counts before collection
+        run: node scripts/database-audit.mjs
+
       - name: Build API
         run: pnpm --filter @devbrief/api run build
 
@@ -84,6 +97,10 @@ jobs:
         run: node apps/api/dist/cli.js "$COMMAND" 2>&1 | tee /tmp/cli.log
 
       # run 목록에서 클릭 한 번으로 스텝별 결과/실패를 확인 (성공/실패 무관하게 기록)
+      - name: Database counts after collection
+        if: always()
+        run: node scripts/database-audit.mjs
+
       - name: Step summary
         if: always()
         env:
