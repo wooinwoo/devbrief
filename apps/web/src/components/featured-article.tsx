@@ -16,10 +16,13 @@ interface Props {
 export function FeaturedArticle({ article, read = false, onOpen }: Props) {
   const { lang } = useLang();
   const cat = categoryOf(article);
-  const { primary, secondary } = pickTitle(article, lang);
+  const { primary } = pickTitle(article, lang);
 
   return (
-    <article className="mb-9 border-b pb-8" style={{ borderColor: 'var(--color-line-strong)' }}>
+    <article
+      className="featured-reading mb-7 border-b pb-8"
+      style={{ borderColor: 'var(--color-line-strong)' }}
+    >
       <Link
         href={`/articles/${article.id}`}
         onClick={onOpen}
@@ -40,14 +43,6 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
                 {primary}
               </span>
             </h2>
-            {secondary && (
-              <p
-                className="text-[13px] leading-relaxed mb-3"
-                style={{ color: 'var(--color-fg-subtle)' }}
-              >
-                {secondary}
-              </p>
-            )}
 
             {article.summaryOneLine && (
               <p

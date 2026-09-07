@@ -24,8 +24,9 @@ on:
           - videos
           - digest
           - conferences
+          - conference-images
       limit:
-        description: Maximum summary repairs / missing article bodies
+        description: Maximum summary repairs / article bodies / event images
         type: string
         default: '200'
       prepare_schema:

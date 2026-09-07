@@ -58,7 +58,7 @@ async function getArticles(): Promise<ArticlesPayload> {
 
 async function getConferences(): Promise<ConferenceDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/conferences?upcoming=1&limit=1000`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/conferences?upcoming=1&limit=12`, { cache: 'no-store' });
     if (!res.ok) return mockFallback(MOCK_CONFERENCES);
     const data = (await res.json()) as ConferenceWire[];
     if (data.length === 0) return mockFallback(MOCK_CONFERENCES);
@@ -154,6 +154,7 @@ export default async function Home() {
     >
       <Suspense fallback={null}>
         <ArticlesView
+          loadConferenceCatalog
           articles={articles}
           total={total}
           videos={videos}

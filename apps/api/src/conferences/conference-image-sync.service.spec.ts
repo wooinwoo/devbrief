@@ -75,6 +75,7 @@ describe('ConferenceImageSyncService', () => {
       updated: 1,
       failed: 0,
       brandExtracted: 0,
+      writeFailed: 0,
     });
   });
 
@@ -140,6 +141,7 @@ describe('ConferenceImageSyncService', () => {
       updated: 1,
       failed: 0,
       brandExtracted: 1,
+      writeFailed: 0,
     });
   });
 
@@ -171,6 +173,7 @@ describe('ConferenceImageSyncService', () => {
       updated: 0,
       failed: 1,
       brandExtracted: 0,
+      writeFailed: 0,
     });
   });
 
@@ -191,6 +194,34 @@ describe('ConferenceImageSyncService', () => {
       updated: 1,
       failed: 1,
       brandExtracted: 0,
+      writeFailed: 0,
+    });
+  });
+
+  it('image-only backfill requests a bounded batch and avoids expensive color downloads', async () => {
+    prisma.conference.findMany.mockResolvedValue([
+      { id: 'c1', name: 'Event', url: 'https://event.test', imageUrl: null, brandColor: null },
+    ]);
+    og.fetch.mockResolvedValue('https://event.test/poster.png');
+    const result = await service.syncAll({ imagesOnly: true, limit: 1000, concurrency: 6 });
+    expect(prisma.conference.findMany).toHaveBeenCalledWith({
+      where: { status: 'ACTIVE', imageUrl: null },
+      take: 1000,
+      orderBy: { startDate: 'asc' },
+    });
+    expect(brand.extractFromUrl).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ updated: 1, writeFailed: 0 });
+  });
+  it('distinguishes DB failures from unavailable image metadata', async () => {
+    prisma.conference.findMany.mockResolvedValue([
+      { id: 'c1', name: 'Event', url: 'https://event.test' },
+    ]);
+    og.fetch.mockResolvedValue('https://event.test/poster.png');
+    prisma.conference.update.mockRejectedValue(new Error('database down'));
+    expect(await service.syncAll({ imagesOnly: true })).toMatchObject({
+      updated: 0,
+      failed: 1,
+      writeFailed: 1,
     });
   });
 });

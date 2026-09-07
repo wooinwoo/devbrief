@@ -30,18 +30,18 @@ export const AI_MODELS: AiFacet[] = [
     re: /\b(gemini|gemma|deepmind)\b/i,
   },
   { key: 'llama', label: 'Llama', color: 'oklch(56% 0.16 30)', re: /\b(llama|meta ai)\b/i },
-  { key: 'qwen', label: 'Qwen', color: 'oklch(58% 0.18 320)', re: /\b(qwen|alibaba)\b/i },
-  { key: 'deepseek', label: 'DeepSeek', color: 'oklch(52% 0.16 265)', re: /\bdeepseek\b/i },
+  { key: 'qwen', label: 'Qwen', color: 'oklch(58% 0.09 65)', re: /\b(qwen|alibaba)\b/i },
+  { key: 'deepseek', label: 'DeepSeek', color: 'oklch(52% 0.09 65)', re: /\bdeepseek\b/i },
   { key: 'mistral', label: 'Mistral', color: 'oklch(58% 0.17 45)', re: /\b(mistral|mixtral)\b/i },
   { key: 'glm', label: 'GLM', color: 'oklch(54% 0.15 145)', re: /\b(glm|zhipu|z\.ai)\b/i },
-  { key: 'grok', label: 'Grok', color: 'oklch(48% 0.04 280)', re: /\b(grok|xai)\b/i },
+  { key: 'grok', label: 'Grok', color: 'oklch(48% 0.09 65)', re: /\b(grok|xai)\b/i },
 ];
 
 // 2) 하네스 / 코딩 도구 — 각광받는 에이전트 하네스
 export const AI_HARNESSES: AiFacet[] = [
   { key: 'claudecode', label: 'Claude Code', color: 'oklch(58% 0.16 60)', re: /\bclaude.?code\b/i },
   { key: 'codex', label: 'Codex', color: 'oklch(52% 0.13 165)', re: /\bcodex\b/i },
-  { key: 'cursor', label: 'Cursor', color: 'oklch(50% 0.02 280)', re: /\bcursor\b/i },
+  { key: 'cursor', label: 'Cursor', color: 'oklch(50% 0.09 65)', re: /\bcursor\b/i },
   {
     key: 'copilot',
     label: 'Copilot',
@@ -56,7 +56,7 @@ export const AI_HARNESSES: AiFacet[] = [
     color: 'oklch(56% 0.15 200)',
     re: /\b(windsurf|codeium)\b/i,
   },
-  { key: 'devin', label: 'Devin', color: 'oklch(52% 0.16 300)', re: /\bdevin\b/i },
+  { key: 'devin', label: 'Devin', color: 'oklch(52% 0.09 65)', re: /\bdevin\b/i },
   { key: 'gemini-cli', label: 'Gemini CLI', color: 'oklch(54% 0.17 250)', re: /\bgemini.?cli\b/i },
 ];
 
@@ -68,7 +68,7 @@ export const AI_THEMES: AiFacet[] = [
   {
     key: 'research',
     label: '연구·논문',
-    color: 'oklch(50% 0.1 285)',
+    color: 'oklch(50% 0.09 65)',
     // reasoning 은 릴리스/마케팅 카피에 너무 흔해 최상위 우선순위에선 과포착 → 제외.
     // [pdf]·speculative decoding·ablation·huggingface.co/papers 등 논문성 신호 보강.
     re: /\b(paper|research|arxiv|rlhf|distill|fine.?tun|pretrain|ablation)\b|speculative decoding|\bpdf\b|huggingface\.co\/papers|논문|연구/i,
@@ -83,7 +83,7 @@ export const AI_THEMES: AiFacet[] = [
   {
     key: 'agent',
     label: '에이전트·하네스',
-    color: 'oklch(50% 0.19 265)',
+    color: 'oklch(50% 0.09 65)',
     // 채용/구인 글(예: "AIRAG 채용 게시판")은 rag/llm/agent 단어가 있어도 에이전트 주제가 아님 → 부정 룩어헤드로 제외.
     re: /^(?![\s\S]*(?:\bjobs?\b|\bhiring\b|recruit|채용|구인))[\s\S]*(?:\b(agent|agentic|harness|tool.?use|mcp|orchestrat|autonomous)\b|에이전트|하네스|오케스트레이)/i,
   },

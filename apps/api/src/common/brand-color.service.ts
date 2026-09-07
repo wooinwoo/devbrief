@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
 import { Vibrant } from 'node-vibrant/node';
+import { fetchPublicResource } from './public-resource';
 
 /**
  * 이미지 URL에서 dominant brand 색 추출 후 oklch 변환.
@@ -16,7 +16,7 @@ export class BrandColorService {
    */
   async extractFromUrl(imageUrl: string, timeoutMs = 8000): Promise<string | null> {
     try {
-      const res = await axios.get<ArrayBuffer>(imageUrl, {
+      const res = await fetchPublicResource<ArrayBuffer>(imageUrl, {
         responseType: 'arraybuffer',
         timeout: timeoutMs,
         maxContentLength: 5_000_000,

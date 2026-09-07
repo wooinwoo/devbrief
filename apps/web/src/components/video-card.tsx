@@ -25,7 +25,7 @@ export function VideoCard({ video: v }: Props) {
   const hasThumb = !!v.thumbnailUrl && !imgError;
 
   return (
-    <li className="min-w-0">
+    <li className="video-card min-w-0">
       <Link href={`/videos/${v.id}`} className="group block">
         <div
           className="relative aspect-video overflow-hidden mb-4 rounded-md"

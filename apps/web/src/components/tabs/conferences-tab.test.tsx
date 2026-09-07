@@ -61,3 +61,24 @@ describe('ConferencesTab', () => {
     expect(getByRole('button', { name: '전체 3' }).getAttribute('aria-pressed')).toBe('true');
   });
 });
+
+it('filters domestic and online events and restores all regions on reset', () => {
+  const events = [
+    { id: 'kr', name: 'Seoul JS', location: 'Seoul (South Korea)' },
+    { id: 'online', name: 'Remote Summit', location: 'Online' },
+    { id: 'overseas', name: 'Paris Days', location: 'Paris (France)' },
+  ].map((c) => ({ ...c, url: `https://example.com/${c.id}`, startDate: '2099-01-01', topics: [] }));
+  const view = render(<ConferencesTab conferences={events} />);
+  fireEvent.change(view.getByRole('combobox', { name: '행사 지역' }), {
+    target: { value: 'korea' },
+  });
+  expect(view.getAllByRole('listitem')).toHaveLength(1);
+  expect(view.getByRole('link', { name: 'Seoul JS' })).toBeTruthy();
+  fireEvent.change(view.getByRole('combobox', { name: '행사 지역' }), {
+    target: { value: 'online' },
+  });
+  expect(view.getAllByRole('listitem')).toHaveLength(1);
+  expect(view.getByRole('link', { name: 'Remote Summit' })).toBeTruthy();
+  fireEvent.click(view.getByRole('button', { name: '초기화' }));
+  expect(view.getAllByRole('listitem')).toHaveLength(3);
+});

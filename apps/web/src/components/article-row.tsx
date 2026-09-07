@@ -4,6 +4,7 @@ import { categoryOf } from '@/lib/category';
 import { pickTitle, useLang } from '@/lib/lang-context';
 import Link from 'next/link';
 import type { ArticleDto } from './article-card';
+import { CoverImage } from './cover-image';
 import { RelativeTimeText } from './relative-time-text';
 
 interface Props {
@@ -39,10 +40,15 @@ export function ArticleRow({
 
   return (
     <li
-      className="group relative flex flex-col gap-2 border-b py-5 sm:flex-row sm:gap-4 sm:py-6"
+      className="brief-article-row group relative flex flex-col gap-2 border-b py-5 sm:flex-row sm:gap-4 sm:py-6"
       style={{ borderColor: 'var(--color-line)' }}
     >
       <div className="min-w-0 flex-1">
+        {article.imageUrl && (
+          <div className="article-row-cover">
+            <CoverImage src={article.imageUrl} label={article.source.name} />
+          </div>
+        )}
         {/* 제목과 요약을 먼저 읽고 출처와 분류를 확인한다. */}
         <div>
           <Link href={`/articles/${article.id}`} onClick={onOpen} className="min-w-0">
@@ -57,7 +63,7 @@ export function ArticleRow({
           <Link
             href={`/articles/${article.id}`}
             onClick={onOpen}
-            className="block mt-2 text-[14px] leading-[1.75] line-clamp-2"
+            className="article-row-summary block mt-2 text-[16px] leading-[1.75] line-clamp-2"
             style={{ color: 'var(--color-fg-muted)' }}
           >
             {article.summaryOneLine ?? secondary}
@@ -65,7 +71,7 @@ export function ArticleRow({
         )}
 
         {/* 소스, 발행일, 읽음 상태와 태그 */}
-        <div className="flex items-center gap-x-2 gap-y-1 mt-3 text-[12px] flex-wrap">
+        <div className="article-row-meta flex items-center gap-x-2 gap-y-1 mt-3 text-[13px] flex-wrap">
           <span style={{ color: 'var(--color-fg-muted)' }}>
             {badges?.length ? badges.map((badge) => badge.label).join(' · ') : cat.label}
           </span>

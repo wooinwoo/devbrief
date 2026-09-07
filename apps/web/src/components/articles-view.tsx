@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ArticleDto } from './article-card';
 import type { DigestDto } from './daily-digest';
+import { GlobalSearch } from './global-search';
 import { LangToggle } from './lang-toggle';
 import { PageFooter } from './page-footer';
 import { ScrollTop } from './scroll-top';
@@ -24,6 +25,7 @@ import { ReposTab } from './tabs/repos-tab';
 import { VideosTab } from './tabs/videos-tab';
 
 interface Props {
+  loadConferenceCatalog?: boolean;
   articles: ArticleDto[];
   /** GET /articles 의 X-Total-Count — 서버 전체 글 수. null/미지정이면 전체 미상 (감사 c62). */
   total?: number | null;
@@ -36,11 +38,11 @@ interface Props {
 type Tab = 'all' | 'ai' | 'articles' | 'conferences' | 'videos' | 'repos';
 
 const TABS: Array<{ id: Tab; label: string; title: string }> = [
-  { id: 'all', label: '오늘', title: '오늘, 무엇을 읽을까요?' },
+  { id: 'all', label: '오늘', title: '오늘의 개발 브리핑' },
   { id: 'ai', label: 'AI', title: 'AI 트렌드 레이더' },
   { id: 'articles', label: '개발 뉴스', title: '개발 뉴스' },
-  { id: 'conferences', label: '행사', title: '행사' },
-  { id: 'videos', label: '발표 영상', title: '발표 영상' },
+  { id: 'conferences', label: '행사', title: '개발 행사·해커톤' },
+  { id: 'videos', label: '발표 영상', title: '개발자 발표 영상' },
   { id: 'repos', label: '오픈소스', title: '급성장 오픈소스' },
 ];
 
@@ -49,6 +51,7 @@ const LOAD_MORE_LIMIT = 100;
 
 export function ArticlesView({
   articles,
+  loadConferenceCatalog = false,
   total = null,
   videos = [],
   conferences = [],
@@ -73,6 +76,36 @@ export function ArticlesView({
     },
     [searchParams, router],
   );
+  const [conferenceCatalog, setConferenceCatalog] = useState(conferences);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(loadConferenceCatalog);
+  const [catalogError, setCatalogError] = useState(false);
+  const [catalogRetry, setCatalogRetry] = useState(0);
+  useEffect(() => {
+    if (!loadConferenceCatalog || tab !== 'conferences' || catalogLoaded) return;
+    const controller = new AbortController();
+    setCatalogLoading(true);
+    setCatalogError(false);
+    fetch(`${API_BASE}/conferences?upcoming=1&limit=1000`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Event collection unavailable');
+        return response.json();
+      })
+      .then((rows) => {
+        if (!Array.isArray(rows)) throw new Error('Invalid event collection');
+        if (!controller.signal.aborted) {
+          setConferenceCatalog(rows.map((d) => ({ ...d, brand: d.brandColor ?? undefined })));
+          setCatalogLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setCatalogError(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCatalogLoading(false);
+      });
+    return () => controller.abort();
+  }, [tab, loadConferenceCatalog, catalogLoaded, catalogRetry]);
   const [readSet, setReadSet] = useState<Set<string>>(new Set());
   const [bookmarkSet, setBookmarkSet] = useState<Set<string>>(new Set());
   const [today, setToday] = useState('');
@@ -211,7 +244,7 @@ export function ArticlesView({
     <div className="w-full flex flex-col min-h-screen">
       {/* === 상단 가로 헤더 바 (sticky) ===================== */}
       <header
-        className="sticky top-0 z-30 mx-[calc(50%-50vw)] border-b [&_:focus-visible]:outline-(--bar-accent)"
+        className="brief-header sticky top-0 z-30 mx-[calc(50%-50vw)] border-b [&_:focus-visible]:outline-(--bar-accent)"
         style={{
           borderColor: 'var(--bar-line)',
           background: 'var(--bar-bg)',
@@ -222,10 +255,10 @@ export function ArticlesView({
           <Link
             href="/"
             aria-label="Devbrief 홈"
-            className="flex items-center min-h-[60px] lg:min-h-[72px] shrink-0 text-[21px] tracking-[-0.02em]"
+            className="wordmark min-h-[60px] lg:min-h-[72px] shrink-0"
             style={{ color: 'var(--bar-fg)', fontWeight: 800 }}
           >
-            Dev<span style={{ color: 'var(--bar-accent)' }}>brief</span>
+            devbrief<span>.</span>
           </Link>
 
           {/* 탭 nav — WAI-ARIA tabs 패턴. 좌우 화살표로 탭 간 이동(roving tabindex). */}
@@ -304,12 +337,13 @@ export function ArticlesView({
           <div className="shrink-0 flex items-center justify-end gap-3">
             {today && (
               <span
-                className="hidden xl:block text-[12px] tabular-nums"
+                className="hidden text-[12px] tabular-nums"
                 style={{ color: 'var(--bar-fg-muted)' }}
               >
                 {today}
               </span>
             )}
+            <GlobalSearch />
             <LangToggle />
           </div>
         </div>
@@ -323,44 +357,33 @@ export function ArticlesView({
         aria-labelledby={`tab-${tab}`}
       >
         {/* (이전 흰 패널 박스 제거 — 배경이 이미 흰색이라 불필요) */}
-        {/* === 페이지 제목 줄 ============================== */}
-        <div className="flex items-end justify-between gap-4 flex-wrap mb-8 pb-6 border-b border-(--color-line)">
+        <div className="brief-heading">
           <div>
-            <h1
-              className="text-[1.75rem] sm:text-[2.25rem] leading-[1.2] tracking-[-0.03em] break-keep"
-              style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-            >
-              {activeTab?.title ?? '오늘, 무엇을 읽을까요?'}
-            </h1>
-            {tab === 'all' && (
-              <p className="mt-3 max-w-[60ch] text-base leading-relaxed text-(--color-fg-muted)">
-                관심 분야의 새 글을 고르고, 요약부터 살펴보세요.
-              </p>
-            )}
-            {tab === 'conferences' && (
-              <p className="mt-3 max-w-[60ch] text-base leading-relaxed text-(--color-fg-muted)">
-                국내외 컨퍼런스·해커톤 일정
-              </p>
+            <h1>{activeTab?.title}</h1>
+            <p>
+              {
+                {
+                  all: '개발 뉴스와 발표 영상, 다가오는 행사를 한곳에서.',
+                  ai: '모델과 도구, 그리고 개발의 다음 가능성.',
+                  articles: '개발자의 시야를 넓히는 새로운 이야기.',
+                  conferences: '일정과 지역, 관심 기술로 컨퍼런스와 해커톤을 찾아보세요.',
+                  videos: '현업 개발자의 고민과 해결 과정을 만나보세요.',
+                  repos: '전 세계 개발자들이 주목하는 오픈소스 프로젝트.',
+                }[tab]
+              }
+            </p>
+          </div>
+          <div className="heading-stats">
+            {tab === 'all' ? (
+              <span>{today || 'DAILY EDITION'}</span>
+            ) : (
+              statSegments.map((s) => (
+                <span key={s.label}>
+                  {s.label} <strong>{s.value}</strong>
+                </span>
+              ))
             )}
           </div>
-          <p
-            className="text-[12.5px] tabular-nums pb-0.5"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
-            {statSegments.map((s, i) => (
-              <span key={s.label}>
-                {i > 0 && <span style={{ color: 'var(--color-fg-subtle)' }}> · </span>}
-                {s.label}{' '}
-                <span
-                  style={
-                    s.accent ? { color: 'var(--color-accent-strong)', fontWeight: 700 } : undefined
-                  }
-                >
-                  {s.value}
-                </span>
-              </span>
-            ))}
-          </p>
         </div>
 
         {/* === 탭별 레이아웃 (각자 다름) ====================== */}
@@ -403,7 +426,28 @@ export function ArticlesView({
             }
           />
         )}
-        {tab === 'conferences' && <ConferencesTab conferences={conferences} />}
+        {tab === 'conferences' && (
+          <>
+            {catalogError && (
+              <div className="catalog-error" role="alert">
+                전체 일정을 불러오지 못했어요.
+                <button type="button" onClick={() => setCatalogRetry((n) => n + 1)}>
+                  다시 시도
+                </button>
+              </div>
+            )}
+            {catalogLoading ? (
+              <div className="catalog-loading" role="status">
+                <p>새로운 만남을 찾고 있어요…</p>
+                <div className="skeleton-line" />
+                <div className="skeleton-line" />
+                <div className="skeleton-line" />
+              </div>
+            ) : (
+              <ConferencesTab conferences={conferenceCatalog} />
+            )}
+          </>
+        )}
         {tab === 'videos' && <VideosTab videos={videos} />}
         {tab === 'repos' && <ReposTab repos={repos} />}
       </div>

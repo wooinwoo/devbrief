@@ -242,6 +242,7 @@ describe('runAll (c7: 서브스텝 실패 수집 + 계속 진행)', () => {
     repos: { refreshAll: jest.Mock };
     digest: { generateForToday: jest.Mock };
     conferences: { discover: jest.Mock };
+    conferenceImages: { syncAll: jest.Mock };
     extractor: { extract: jest.Mock };
   };
 
@@ -285,6 +286,9 @@ describe('runAll (c7: 서브스텝 실패 수집 + 계속 진행)', () => {
           proposed: 0,
           skipped: 0,
         }),
+      },
+      conferenceImages: {
+        syncAll: jest.fn().mockResolvedValue({ total: 1, updated: 1, failed: 0, writeFailed: 0 }),
       },
       extractor: { extract: jest.fn() },
     };
@@ -395,5 +399,16 @@ describe('runAll (c7: 서브스텝 실패 수집 + 계속 진행)', () => {
       repaired: 0,
       failed: 1,
     });
+  });
+
+  it('reports image write failures while continuing the digest', async () => {
+    services.conferenceImages.syncAll.mockResolvedValue({
+      total: 2,
+      updated: 1,
+      failed: 1,
+      writeFailed: 1,
+    });
+    expect(await runAll(asServices(), flags, 100, 'collect')).toEqual(['conference-images']);
+    expect(services.digest.generateForToday).toHaveBeenCalled();
   });
 });

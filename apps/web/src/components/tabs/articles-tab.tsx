@@ -208,7 +208,7 @@ export function ArticlesTab({
         ) : isFiltering ? (
           <>
             <SectionHeader label="검색 결과" count={filtered.length} />
-            <ul className="grid xl:grid-cols-2 gap-x-10">
+            <ul className="brief-list-grid grid">
               {pageSlice.map((a) => (
                 <ArticleRow
                   key={a.id}
@@ -235,7 +235,7 @@ export function ArticlesTab({
             {grouped.map((group) => (
               <section key={group.label} className="mb-8">
                 <SectionHeader label={group.label} count={group.articles.length} />
-                <ul className="grid xl:grid-cols-2 gap-x-10">
+                <ul className="brief-list-grid grid">
                   {group.articles.map((a) => (
                     <ArticleRow
                       key={a.id}

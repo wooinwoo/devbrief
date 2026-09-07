@@ -59,12 +59,28 @@ export class ArticlesController {
     @Query('source') source?: string,
     @Query('limit') limitStr?: string,
     @Query('offset') offsetStr?: string,
+    @Query('q') query?: string,
   ) {
     const limit = Math.min(Number(limitStr) || 30, 100);
     // offset — NaN/음수/Infinity 는 전부 기본 0 으로 방어
     const parsedOffset = Math.trunc(Number(offsetStr));
     const offset = Number.isFinite(parsedOffset) && parsedOffset > 0 ? parsedOffset : 0;
-    const where = source ? { source: { provider: source } } : undefined;
+    const term = query?.trim().slice(0, 120);
+    const where: Prisma.ArticleWhereInput | undefined =
+      source || term
+        ? {
+            ...(source ? { source: { provider: source } } : {}),
+            ...(term
+              ? {
+                  OR: [
+                    { title: { contains: term, mode: 'insensitive' } },
+                    { titleKo: { contains: term, mode: 'insensitive' } },
+                    { summaryOneLine: { contains: term, mode: 'insensitive' } },
+                  ],
+                }
+              : {}),
+          }
+        : undefined;
 
     const [rows, total] = await Promise.all([
       this.prisma.article.findMany({
