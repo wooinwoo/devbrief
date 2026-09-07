@@ -41,8 +41,20 @@ async function getOne(id: string): Promise<ArticleDto | null> {
     const res = await fetch(`${API_BASE}/articles/${id}`, {
       cache: 'no-store',
     });
+    if (res.ok) return mapDbToDto((await res.json()) as DbArticle);
+    if (res.status < 500) return null;
+  } catch {
+    // A failed detail endpoint must not turn an existing article into a false 404.
+  }
+  try {
+    const res = await fetch(`${API_BASE}/articles/batch?ids=${encodeURIComponent(id)}`, {
+      cache: 'no-store',
+    });
     if (!res.ok) return null;
-    return mapDbToDto((await res.json()) as DbArticle);
+    const articles = (await res.json()) as DbArticle[];
+    const article = articles.find((candidate) => candidate.id === id);
+    // The list payload retains the real summary and original link; no article body is fabricated.
+    return article ? mapDbToDto(article) : null;
   } catch {
     return null;
   }
