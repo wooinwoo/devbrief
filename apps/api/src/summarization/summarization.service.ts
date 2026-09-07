@@ -91,7 +91,7 @@ export class SummarizationService {
     // 1) 본문 확보
     const article = await this.prisma.article.findUnique({
       where: { id: articleId },
-      select: { url: true, contentSnippet: true },
+      select: { url: true, contentSnippet: true, titleKo: true },
     });
     let body = cleanBody(snippet) || cleanBody(article?.contentSnippet ?? '');
     if (body.length < 60 && article?.url) {
@@ -126,7 +126,8 @@ export class SummarizationService {
       where: { id: articleId },
       data: {
         language: isKo ? 'ko' : 'en',
-        titleKo,
+        titleKo:
+          titleKo ?? (this.translation.hasKorean(article?.titleKo ?? '') ? article?.titleKo : null),
         summaryOneLine: oneLine,
         summaryThreeLine: threeLine,
         summarySource: 'free',

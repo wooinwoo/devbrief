@@ -109,3 +109,38 @@ describe('ArticleDetailPage 비슷한 글 mock 격리 (c12)', () => {
     expect(getByTestId('detail').textContent).toBe('a1:1');
   });
 });
+
+describe('ArticleDetailPage upstream resilience', () => {
+  it('uses the real summary when detail fails but batch is available', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/batch?ids=a1')) return { ok: true, json: async () => [DB_ARTICLE] };
+        if (url.includes('/related')) return { ok: true, json: async () => [] };
+        return { ok: false, status: 500 };
+      }),
+    );
+    const { getByTestId } = render(await ArticleDetailPage(params('a1')));
+    expect(getByTestId('detail').textContent).toBe('a1:0');
+    expect((await generateMetadata(params('a1'))).title).toBe('실제 글 · Devbrief');
+  });
+
+  it('does not mask a genuine 404 with a batch fallback', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    vi.stubGlobal('fetch', fetcher);
+    await expect(ArticleDetailPage(params('missing'))).rejects.toThrow('NEXT_NOT_FOUND');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('never substitutes a different article returned by batch', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/batch'))
+          return { ok: true, json: async () => [{ ...DB_ARTICLE, id: 'other' }] };
+        return { ok: false, status: 500 };
+      }),
+    );
+    await expect(ArticleDetailPage(params('missing'))).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+});

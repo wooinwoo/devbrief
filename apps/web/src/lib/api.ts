@@ -1,5 +1,8 @@
 // API 베이스 URL — 배포 시 NEXT_PUBLIC_API_BASE 로 교체. 로컬 기본값 fallback.
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:4000/api/v1';
+export const API_BASE =
+  typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_PROXY_PATH
+    ? process.env.NEXT_PUBLIC_API_PROXY_PATH
+    : (process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:4000/api/v1');
 
 /**
  * 어드민 쓰기 엔드포인트 호출용 fetch 래퍼.

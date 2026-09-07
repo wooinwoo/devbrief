@@ -1,0 +1,10 @@
+﻿{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "devbrief",
+  "compatibility_date": "2026-09-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": "./dist/pages",
+  "vars": {
+    "NEXT_PUBLIC_API_BASE": "https://devbrief-api-8lyo.onrender.com/api/v1"
+  }
+}

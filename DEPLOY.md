@@ -1,4 +1,6 @@
-# 배포 가이드 (Vercel + Railway)
+# 배포 가이드
+
+현재 웹의 Cloudflare Pages 배포 절차는 [Cloudflare Pages 가이드](docs/cloudflare-pages.md)를 참고한다. 아래는 Vercel + Railway 신규 설치 절차다.
 
 Devbrief 를 **Vercel(web) + Railway(api + Postgres + Redis)** 로 배포하는 절차입니다.
 api 는 cron(`@nestjs/schedule`) 과 BullMQ 워커가 상주해야 하므로 서버리스가 아닌

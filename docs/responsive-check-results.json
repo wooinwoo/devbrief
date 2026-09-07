@@ -18,18 +18,7 @@
     "/admin/videos",
     "/admin/chat"
   ],
-  "widths": [
-    320,
-    390,
-    640,
-    768,
-    844,
-    1024,
-    1280,
-    1440,
-    1920,
-    2560
-  ],
+  "widths": [320, 390, 640, 768, 844, 1024, 1280, 1440, 1920, 2560],
   "scenarios": 150,
   "documentOverflow": 0,
   "contentClipping": 0,

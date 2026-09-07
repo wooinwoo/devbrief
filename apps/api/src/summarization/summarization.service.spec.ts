@@ -83,4 +83,15 @@ describe('SummarizationService.summarize', () => {
     const data = prisma.article.update.mock.calls.at(-1)[0].data;
     expect(data.summarySource).toBe('free');
   });
+  it('preserves an existing translated title when the translation provider is unavailable', async () => {
+    translation.toKorean.mockResolvedValue(null);
+    const titleKo = '\uAE30\uC874 \uBC88\uC5ED';
+    prisma.article.findUnique.mockResolvedValue({
+      url: 'https://example.com',
+      contentSnippet: KO_SNIPPET,
+      titleKo,
+    });
+    await svc.summarizeFree('a1', 'Original title', KO_SNIPPET);
+    expect(prisma.article.update.mock.calls.at(-1)[0].data.titleKo).toBe(titleKo);
+  });
 });

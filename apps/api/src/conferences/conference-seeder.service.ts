@@ -37,7 +37,7 @@ const SEEDS: ConfSeed[] = [
     topics: ['Backend', 'AI', 'Infra'],
     brandColor: 'oklch(60% 0.18 90)',
     description: '카카오 기술 컨퍼런스',
-    youtubeChannelId: 'UCwLzlvJa4_LfHbcLbo0e7DA',
+    youtubeChannelId: 'UCdQF7F6hwjSpulj_fwB9iDQ',
   },
   {
     name: 'SLASH 26',
@@ -47,7 +47,7 @@ const SEEDS: ConfSeed[] = [
     topics: ['Fintech', 'Backend', 'Mobile'],
     brandColor: 'oklch(50% 0.16 240)',
     description: '토스 기술 컨퍼런스',
-    youtubeChannelId: 'UChtY6O8Ahw2cz05PS2GhUbg',
+    youtubeChannelId: 'UCeg5g-vWgtgzQ0cYNV2Cyow',
   },
   {
     name: 'DEVIEW 2026',
@@ -58,7 +58,7 @@ const SEEDS: ConfSeed[] = [
     topics: ['AI', 'Search', 'Cloud'],
     brandColor: 'oklch(52% 0.18 145)',
     description: 'NAVER 개발자 컨퍼런스',
-    youtubeChannelId: 'UCvCikG-AvVl1nDjsdJ4w0pA',
+    youtubeChannelId: 'UCNrehnUq7Il-J7HQxrzp7CA',
   },
   {
     name: 'PyCon Korea 2026',

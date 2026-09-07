@@ -428,7 +428,7 @@ describe('IngestionService', () => {
       jest.spyOn(service, 'ingestSource').mockResolvedValueOnce(3).mockResolvedValueOnce(5);
 
       const result = await service.ingestAll();
-      expect(result).toEqual({ sourceCount: 2, newArticles: 8 });
+      expect(result).toEqual({ sourceCount: 2, newArticles: 8, failedSources: 0 });
     });
 
     it('source 하나 실패해도 다음 진행', async () => {
@@ -442,7 +442,7 @@ describe('IngestionService', () => {
         .mockResolvedValueOnce(2);
 
       const result = await service.ingestAll();
-      expect(result).toEqual({ sourceCount: 2, newArticles: 2 });
+      expect(result).toEqual({ sourceCount: 2, newArticles: 2, failedSources: 1 });
     });
   });
 });

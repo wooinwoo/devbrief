@@ -7,7 +7,7 @@ jest.mock('axios', () => ({
 import type { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import type { PrismaService } from '../prisma/prisma.service';
-import { YouTubeSyncService, parseIsoDuration } from './youtube-sync.service';
+import { YouTubeSyncService, parseIsoDuration, parseVideoFeed } from './youtube-sync.service';
 
 describe('parseIsoDuration', () => {
   it('PT0S → 0', () => {
@@ -123,5 +123,38 @@ describe('YouTubeSyncService', () => {
       await service.syncChannel('conf-1', 'chan-1', 10);
       expect(prisma.video.upsert.mock.calls[0][0].update).not.toHaveProperty('conferenceId');
     });
+  });
+});
+
+describe('Public video feed recovery', () => {
+  const channelId = 'UCWEzfYIpFBIG5jh6laXC6hA';
+  const xml = `<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/">
+    <yt:channelId>${channelId.slice(2)}</yt:channelId><author><name>FEConf Korea</name></author>
+    <entry><yt:videoId>abcdefghijk</yt:videoId><title>A real talk &amp; demo</title><published>2026-09-01T00:00:00Z</published>
+    <media:group><media:description>Talk description</media:description><media:community><media:statistics views="123" /></media:community></media:group></entry>
+    <entry><yt:videoId>bad</yt:videoId><title>Invalid</title><published>bad</published></entry></feed>`;
+  it('validates identity, dates and video IDs', () => {
+    const rows = parseVideoFeed(xml, channelId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      title: 'A real talk & demo',
+      videoId: 'abcdefghijk',
+      channel: 'FEConf Korea',
+      views: 123,
+    });
+    expect(() => parseVideoFeed(xml, 'UCNrehnUq7Il-J7HQxrzp7CA')).toThrow('channel mismatch');
+  });
+  it('preserves existing analysis, duration and manual conference assignment', async () => {
+    const get = jest.fn().mockResolvedValue({ data: xml });
+    (axios.create as jest.Mock).mockReturnValue({ get });
+    const upsert = jest.fn().mockResolvedValue({});
+    const service = new YouTubeSyncService(
+      { get: () => '' } as unknown as ConfigService,
+      { video: { upsert } } as unknown as PrismaService,
+    );
+    expect(await service.syncPublicFeed(channelId, 15)).toBe(1);
+    expect(upsert.mock.calls[0][0].update).not.toHaveProperty('durationSec');
+    expect(upsert.mock.calls[0][0].update).not.toHaveProperty('summary');
+    expect(upsert.mock.calls[0][0].create).not.toHaveProperty('conferenceId');
   });
 });

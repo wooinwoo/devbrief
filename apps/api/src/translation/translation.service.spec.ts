@@ -48,7 +48,7 @@ describe('TranslationService', () => {
 
     it('Google 실패 시 MyMemory로 폴백한다', async () => {
       mockGet.mockRejectedValueOnce(new Error('google down')).mockResolvedValueOnce({
-        data: { responseData: { translatedText: '폴백 번역' } },
+        data: { responseStatus: 200, responseData: { translatedText: '폴백 번역' } },
       });
       expect(await svc.toKorean('Hello')).toBe('폴백 번역');
     });
@@ -94,5 +94,54 @@ describe('TranslationService', () => {
       expect(mockGet).toHaveBeenCalledTimes(2);
       await p;
     });
+  });
+});
+
+describe('Translation provider failures are not article summaries', () => {
+  beforeEach(() => mockGet.mockReset());
+  it('rejects an HTTP-200 response carrying a MyMemory application error', async () => {
+    mockGet.mockRejectedValueOnce(new Error('google down')).mockResolvedValueOnce({
+      data: {
+        responseStatus: 403,
+        responseData: { translatedText: 'QUERY LENGTH LIMIT EXCEEDED' },
+      },
+    });
+    expect(await new TranslationService().toKorean('Example')).toBeNull();
+  });
+  it('does not send over 500 UTF-8 bytes to MyMemory', async () => {
+    mockGet.mockRejectedValueOnce(new Error('google down'));
+    expect(await new TranslationService().toKorean('é'.repeat(251))).toBeNull();
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+  it('rejects a quota warning even if its application status claims success', async () => {
+    mockGet.mockRejectedValueOnce(new Error('google down')).mockResolvedValueOnce({
+      data: {
+        responseStatus: 200,
+        quotaFinished: true,
+        responseData: { translatedText: 'MYMEMORY WARNING' },
+      },
+    });
+    expect(await new TranslationService().toKorean('Example')).toBeNull();
+  });
+});
+
+describe('Translation rate limit backoff', () => {
+  it('stops repeatedly calling a rate-limited provider during Retry-After', async () => {
+    mockGet.mockReset();
+    mockGet
+      .mockRejectedValueOnce({
+        message: 'rate limit',
+        response: { status: 429, headers: { 'retry-after': '600' } },
+      })
+      .mockResolvedValue({
+        data: { responseStatus: 200, responseData: { translatedText: '\uBC88\uC5ED' } },
+      });
+    const svc = new TranslationService();
+    await svc.toKorean('First title');
+    await svc.toKorean('Second title');
+    expect(
+      mockGet.mock.calls.filter(([url]) => url.includes('translate.googleapis.com')),
+    ).toHaveLength(1);
+    expect(mockGet.mock.calls.filter(([url]) => url.includes('mymemory'))).toHaveLength(2);
   });
 });

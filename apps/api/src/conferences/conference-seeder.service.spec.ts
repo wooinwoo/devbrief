@@ -108,7 +108,7 @@ describe('ConferenceSeederService', () => {
       where: { id: 'ex-slash' },
       data: {
         description: '토스 기술 컨퍼런스',
-        youtubeChannelId: 'UChtY6O8Ahw2cz05PS2GhUbg',
+        youtubeChannelId: 'UCeg5g-vWgtgzQ0cYNV2Cyow',
       },
     });
   });

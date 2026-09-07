@@ -52,6 +52,8 @@ const REQUIRED_ENVS: Record<string, readonly string[]> = {
   reanalyze: ['DATABASE_URL', 'GEMINI_API_KEY'], // 임베딩은 무료 대안 없음
   conferences: ['DATABASE_URL'], // 공개 행사 피드는 Gemini 없이도 수집
   all: ['DATABASE_URL', 'GEMINI_API_KEY'],
+  collect: ['DATABASE_URL'],
+  'repair-summaries': ['DATABASE_URL'],
 };
 
 /** 커맨드 실행에 필요한 env 중 비어 있는 키 목록. */
@@ -269,6 +271,7 @@ export async function runAll(
   s: CliServices,
   flags: Flags,
   extractLimit: number,
+  mode: 'all' | 'collect' = 'all',
 ): Promise<string[]> {
   const failures: string[] = [];
   const runStep = async (name: string, fn: () => Promise<void>): Promise<void> => {
@@ -284,19 +287,34 @@ export async function runAll(
   // 합리적 순서: 수집 → (누락분) 요약·임베딩 백필 → 본문 추출 → 레포 → 영상 → 컨퍼런스 → 다이제스트
   await runStep('ingest', async () => {
     const r = await s.ingestion.ingestAll();
-    logger.log(`  · ingest: sources=${r.sourceCount} new=${r.newArticles}`);
+    logger.log(
+      `  · ingest: sources=${r.sourceCount} new=${r.newArticles} failed=${r.failedSources ?? 0}`,
+    );
+    if (r.failedSources > 0) throw new Error(`RSS source failures: ${r.failedSources}`);
   });
 
-  await runStep('reanalyze', async () => {
-    const r = await reanalyze(s.prisma, s.summarization, s.embedding, {
-      onlyMissing: true,
-      limit: flags.limit,
+  if (mode === 'collect') {
+    logger.log(
+      '  · collect: public metadata and extractive summaries; AI embeddings are not generated',
+    );
+    await runStep('repair-summaries', async () => {
+      const r = await repairSummaries(s.prisma, s.summarization, flags.limit);
+      logger.log(
+        `  · repair-summaries: scanned=${r.scanned} repaired=${r.repaired} failed=${r.failed}`,
+      );
+      if (r.failed > 0) throw new Error(`Summary repair failures: ${r.failed}`);
     });
-    logger.log(`  · reanalyze(missing): ${formatReanalyze(r)}`);
-    if (isReanalyzeWipeout(r)) {
-      throw new Error(`전멸 — ${formatReanalyze(r)} (GEMINI_API_KEY 상태 확인)`);
-    }
-  });
+  } else
+    await runStep('reanalyze', async () => {
+      const r = await reanalyze(s.prisma, s.summarization, s.embedding, {
+        onlyMissing: true,
+        limit: flags.limit,
+      });
+      logger.log(`  · reanalyze(missing): ${formatReanalyze(r)}`);
+      if (isReanalyzeWipeout(r)) {
+        throw new Error(`전멸 — ${formatReanalyze(r)} (GEMINI_API_KEY 상태 확인)`);
+      }
+    });
 
   await runStep('extract', async () => {
     const r = await extractArticles(s.prisma, s.extractor, {
@@ -309,16 +327,15 @@ export async function runAll(
   await runStep('repos', async () => {
     const r = await s.repos.refreshAll();
     logger.log(`  · repos: daily=${r.daily} weekly=${r.weekly}`);
+    if (r.daily === 0 || r.weekly === 0)
+      throw new Error('Trending refresh returned no records; previous data retained');
   });
 
-  if (process.env.YOUTUBE_API_KEY) {
-    await runStep('videos', async () => {
-      const r = await s.youtube.syncAllConferences();
-      logger.log(`  · videos: synced=${r.synced}`);
-    });
-  } else {
-    logger.warn('  · videos skip (YOUTUBE_API_KEY 미설정)');
-  }
+  await runStep('videos', async () => {
+    const r = await s.youtube.syncAllConferences();
+    logger.log(`  · videos: synced=${r.synced} failed=${r.failed ?? 0}`);
+    if (r.failed > 0) throw new Error(`Video feed failures: ${r.failed}`);
+  });
 
   await runStep('conferences', async () => {
     const r = await s.conferences.discover({
@@ -337,6 +354,34 @@ export async function runAll(
   });
 
   return failures;
+}
+
+export async function repairSummaries(
+  prisma: PrismaService,
+  summarization: SummarizationService,
+  limit: number,
+) {
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{ id: string; title: string; contentSnippet: string | null }>
+  >(
+    `SELECT id, title, "contentSnippet" FROM "Article"
+     WHERE "summaryOneLine" IS NULL OR concat("titleKo", "summaryOneLine", "summaryThreeLine")
+       ~* 'QUERY LENGTH LIMIT EXCEEDED|MYMEMORY WARNING|USED ALL AVAILABLE FREE TRANSLATIONS'
+     ORDER BY ("summaryOneLine" IS NOT NULL) DESC, "publishedAt" DESC LIMIT $1`,
+    limit,
+  );
+  let repaired = 0;
+  let failed = 0;
+  for (const row of rows) {
+    try {
+      await summarization.summarizeFree(row.id, row.title, row.contentSnippet ?? '');
+      repaired++;
+    } catch {
+      failed++;
+      logger.error(`Summary repair failed: ${row.id}`);
+    }
+  }
+  return { scanned: rows.length, repaired, failed };
 }
 
 async function main() {
@@ -387,7 +432,10 @@ async function main() {
     switch (command) {
       case 'ingest': {
         const r = await services.ingestion.ingestAll();
-        logger.log(`✔ ingest: sources=${r.sourceCount} new=${r.newArticles}`);
+        logger.log(
+          `✔ ingest: sources=${r.sourceCount} new=${r.newArticles} failed=${r.failedSources}`,
+        );
+        if (r.failedSources > 0) exitCode = 1;
         break;
       }
       case 'reanalyze': {
@@ -419,12 +467,9 @@ async function main() {
         break;
       }
       case 'videos': {
-        if (!process.env.YOUTUBE_API_KEY) {
-          logger.warn('YOUTUBE_API_KEY 미설정 → videos skip');
-          break;
-        }
         const r = await services.youtube.syncAllConferences();
-        logger.log(`✔ videos: synced=${r.synced}`);
+        logger.log(`✔ videos: synced=${r.synced} failed=${r.failed}`);
+        if (r.failed > 0) exitCode = 1;
         break;
       }
       case 'digest': {
@@ -443,19 +488,28 @@ async function main() {
         if (r.failedSources > 0 || r.failed > 0) exitCode = 1;
         break;
       }
+      case 'repair-summaries': {
+        const r = await repairSummaries(services.prisma, services.summarization, flags.limit);
+        logger.log(
+          `✔ repair-summaries: scanned=${r.scanned} repaired=${r.repaired} failed=${r.failed}`,
+        );
+        if (r.failed > 0) exitCode = 1;
+        break;
+      }
+      case 'collect':
       case 'all': {
-        const failures = await runAll(services, flags, extractLimit);
+        const failures = await runAll(services, flags, extractLimit, command);
         if (failures.length > 0) {
-          logger.error(`✖ all 완료 — 실패 서브스텝: ${failures.join(', ')}`);
+          logger.error(`✖ ${command} 완료 — 실패 서브스텝: ${failures.join(', ')}`);
           exitCode = 1;
         } else {
-          logger.log('✔ all 완료');
+          logger.log(`✔ ${command} 완료`);
         }
         break;
       }
       default:
         logger.error(
-          `알 수 없는 command: ${command}\n사용법: node dist/cli.js <ingest|reanalyze|extract|repos|videos|digest|conferences|all> [--only-missing] [--all] [--limit N]`,
+          `알 수 없는 command: ${command}\n사용법: node dist/cli.js <collect|ingest|repair-summaries|reanalyze|extract|repos|videos|digest|conferences|all> [--only-missing] [--all] [--limit N]`,
         );
         await app.close();
         process.exit(1);
