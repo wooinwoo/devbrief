@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration } from './format-duration';
+import { formatDuration, formatVideoDuration } from './format-duration';
 
 describe('formatDuration', () => {
   it('0초 → 0:00', () => {
@@ -43,4 +43,10 @@ describe('formatDuration', () => {
     expect(formatDuration(Number.NaN)).toBe('0:00');
     expect(formatDuration(Number.POSITIVE_INFINITY)).toBe('0:00');
   });
+});
+
+it('distinguishes an unknown video duration from a zero chapter timestamp', () => {
+  expect(formatVideoDuration(0)).toBe('길이 미제공');
+  expect(formatVideoDuration(90)).toBe('1:30');
+  expect(formatDuration(0)).toBe('0:00');
 });

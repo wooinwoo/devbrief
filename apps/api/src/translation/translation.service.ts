@@ -102,14 +102,27 @@ export class TranslationService {
   }
 
   private async viaMyMemory(text: string): Promise<string | null> {
+    // MyMemory accepts at most 500 UTF-8 bytes, not 500 characters.
+    // Keep the original excerpt when a translation cannot be requested safely.
+    if (Buffer.byteLength(text, 'utf8') > 500) return null;
     try {
       const { data } = await axios.get<{
+        responseStatus?: number | string;
+        quotaFinished?: boolean;
         responseData?: { translatedText?: string };
       }>('https://api.mymemory.translated.net/get', {
         params: { q: text, langpair: 'en|ko' },
         timeout: 10_000,
       });
+      if (Number(data?.responseStatus) !== 200 || data.quotaFinished) return null;
       const out = data?.responseData?.translatedText?.trim();
+      if (
+        out &&
+        /QUERY LENGTH LIMIT EXCEEDED|MYMEMORY WARNING|USED ALL AVAILABLE FREE TRANSLATIONS/i.test(
+          out,
+        )
+      )
+        return null;
       return out || null;
     } catch (e) {
       this.logger.debug(`mymemory 번역 실패: ${(e as Error).message}`);

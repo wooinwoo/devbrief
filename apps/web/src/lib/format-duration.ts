@@ -14,3 +14,7 @@ export function formatDuration(sec: number): string {
   }
   return `${m}:${ss}`;
 }
+
+export function formatVideoDuration(sec: number): string {
+  return Number.isFinite(sec) && sec > 0 ? formatDuration(sec) : '길이 미제공';
+}

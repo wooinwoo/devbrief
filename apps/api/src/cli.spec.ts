@@ -6,6 +6,7 @@ import {
   missingRequiredEnvs,
   parseFlags,
   reanalyze,
+  repairSummaries,
   resolveLogLevels,
   runAll,
 } from './cli';
@@ -102,7 +103,7 @@ describe('missingRequiredEnvs (c42: 커맨드별 필수 env 사전 검증)', () 
 
 describe('reanalyze (c51/p2: 성공/실패/스킵 분리 집계)', () => {
   let prisma: { $queryRawUnsafe: jest.Mock };
-  let summarization: { summarize: jest.Mock };
+  let summarization: { summarize: jest.Mock; summarizeFree: jest.Mock };
   let embedding: { storeArticleEmbedding: jest.Mock };
 
   const run = (flags: { onlyMissing: boolean; limit: number }) =>
@@ -124,7 +125,10 @@ describe('reanalyze (c51/p2: 성공/실패/스킵 분리 집계)', () => {
 
   beforeEach(() => {
     prisma = { $queryRawUnsafe: jest.fn() };
-    summarization = { summarize: jest.fn().mockResolvedValue(undefined) };
+    summarization = {
+      summarize: jest.fn().mockResolvedValue(undefined),
+      summarizeFree: jest.fn().mockResolvedValue(undefined),
+    };
     embedding = {
       storeArticleEmbedding: jest.fn().mockResolvedValue(undefined),
     };
@@ -232,7 +236,7 @@ describe('runAll (c7: 서브스텝 실패 수집 + 계속 진행)', () => {
   let services: {
     prisma: { $queryRawUnsafe: jest.Mock; article: { update: jest.Mock } };
     ingestion: { ingestAll: jest.Mock };
-    summarization: { summarize: jest.Mock };
+    summarization: { summarize: jest.Mock; summarizeFree: jest.Mock };
     embedding: { storeArticleEmbedding: jest.Mock };
     youtube: { syncAllConferences: jest.Mock };
     repos: { refreshAll: jest.Mock };
@@ -260,7 +264,10 @@ describe('runAll (c7: 서브스텝 실패 수집 + 계속 진행)', () => {
       ingestion: {
         ingestAll: jest.fn().mockResolvedValue({ sourceCount: 1, newArticles: 2 }),
       },
-      summarization: { summarize: jest.fn().mockResolvedValue(undefined) },
+      summarization: {
+        summarize: jest.fn().mockResolvedValue(undefined),
+        summarizeFree: jest.fn().mockResolvedValue(undefined),
+      },
       embedding: {
         storeArticleEmbedding: jest.fn().mockResolvedValue(undefined),
       },
@@ -338,9 +345,9 @@ describe('runAll (c7: 서브스텝 실패 수집 + 계속 진행)', () => {
     expect(failures).toEqual(['reanalyze']);
   });
 
-  it('YOUTUBE_API_KEY 미설정이면 videos 는 skip (실패 아님)', async () => {
+  it('YOUTUBE_API_KEY 미설정이어도 공개 영상 피드를 수집한다', async () => {
     const failures = await runAll(asServices(), flags, 100);
-    expect(services.youtube.syncAllConferences).not.toHaveBeenCalled();
+    expect(services.youtube.syncAllConferences).toHaveBeenCalled();
     expect(failures).toEqual([]);
   });
 
@@ -361,5 +368,32 @@ describe('runAll (c7: 서브스텝 실패 수집 + 계속 진행)', () => {
     const failures = await runAll(asServices(), flags, 100);
 
     expect(failures).toEqual(['repos', 'digest']);
+  });
+  it('collect fills missing summaries without generating embeddings or overwriting good summaries', async () => {
+    services.prisma.$queryRawUnsafe.mockImplementation(async (sql: string) =>
+      sql.includes('QUERY LENGTH LIMIT EXCEEDED')
+        ? [{ id: 'broken', title: 'Original title', contentSnippet: 'Original article excerpt.' }]
+        : [],
+    );
+    const failures = await runAll(asServices(), flags, 100, 'collect');
+    expect(failures).toEqual([]);
+    expect(services.summarization.summarizeFree).toHaveBeenCalledWith(
+      'broken',
+      'Original title',
+      'Original article excerpt.',
+    );
+    expect(services.embedding.storeArticleEmbedding).not.toHaveBeenCalled();
+    expect(services.summarization.summarize).not.toHaveBeenCalled();
+  });
+  it('summary repair reports write failures', async () => {
+    services.prisma.$queryRawUnsafe.mockResolvedValue([
+      { id: 'broken', title: 'Title', contentSnippet: null },
+    ]);
+    services.summarization.summarizeFree.mockRejectedValue(new Error('DB unavailable'));
+    expect(await repairSummaries(asServices().prisma, asServices().summarization, 10)).toEqual({
+      scanned: 1,
+      repaired: 0,
+      failed: 1,
+    });
   });
 });

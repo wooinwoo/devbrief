@@ -31,21 +31,23 @@ export class IngestionService {
     @InjectQueue('embedding') private embeddingQueue: Queue,
   ) {}
 
-  async ingestAll(): Promise<{ sourceCount: number; newArticles: number }> {
+  async ingestAll(): Promise<{ sourceCount: number; newArticles: number; failedSources: number }> {
     const sources = await this.prisma.source.findMany({
       where: { active: true },
     });
     let total = 0;
+    let failedSources = 0;
     for (const source of sources) {
       try {
         const count = await this.ingestSource(source.id, source.feedUrl);
         total += count;
         this.logger.log(`[${source.name}] +${count} 신규`);
       } catch (e) {
+        failedSources++;
         this.logger.error(`[${source.name}] 수집 실패: ${(e as Error).message}`);
       }
     }
-    return { sourceCount: sources.length, newArticles: total };
+    return { sourceCount: sources.length, newArticles: total, failedSources };
   }
 
   /** 소스당 최신 수집 상한 — 아카이브 전체가 실린 피드(OpenAI 등)의 폭주 방지.

@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDuration } from '@/lib/format-duration';
+import { formatDuration, formatVideoDuration } from '@/lib/format-duration';
 import { formatViews } from '@/lib/format-views';
 import type { VideoDto } from '@/lib/mock-videos';
 import { type Chapter, parseChapters } from '@/lib/parse-chapters';
@@ -128,7 +128,7 @@ export function VideoDetail({ video, related }: Props) {
                       color: 'oklch(99% 0 0)',
                     }}
                   >
-                    {formatDuration(video.durationSec)}
+                    {formatVideoDuration(video.durationSec)}
                   </span>
                   <a
                     href={video.url}
@@ -164,7 +164,7 @@ export function VideoDetail({ video, related }: Props) {
                 <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
                 <span>{relativeShort(video.publishedAt)}</span>
                 <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-                <span className="tabular-nums">{formatDuration(video.durationSec)}</span>
+                <span className="tabular-nums">{formatVideoDuration(video.durationSec)}</span>
               </div>
             </header>
 
@@ -367,7 +367,7 @@ export function VideoDetail({ video, related }: Props) {
             <SectionHeader label="영상 정보" />
             <dl className="flex flex-col gap-0">
               {[
-                ['길이', formatDuration(video.durationSec)],
+                ['길이', formatVideoDuration(video.durationSec)],
                 ['조회수', `${formatViews(video.views)}회`],
                 ['게시', relativeShort(video.publishedAt)],
                 [
@@ -425,7 +425,7 @@ export function VideoDetail({ video, related }: Props) {
                             fontWeight: 600,
                           }}
                         >
-                          {formatDuration(v.durationSec)}
+                          {formatVideoDuration(v.durationSec)}
                         </span>
                       </div>
                       <div className="min-w-0 flex-1">

@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDuration } from '@/lib/format-duration';
+import { formatVideoDuration } from '@/lib/format-duration';
 import { formatViews } from '@/lib/format-views';
 import type { VideoDto } from '@/lib/mock-videos';
 import Link from 'next/link';
@@ -64,7 +64,7 @@ export function VideoCard({ video: v }: Props) {
               fontWeight: 600,
             }}
           >
-            {formatDuration(v.durationSec)}
+            {formatVideoDuration(v.durationSec)}
           </span>
         </div>
 

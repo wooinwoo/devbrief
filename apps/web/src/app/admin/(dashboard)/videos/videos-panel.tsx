@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDuration } from '@/lib/format-duration';
+import { formatVideoDuration } from '@/lib/format-duration';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
@@ -160,7 +160,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
                     fontWeight: 600,
                   }}
                 >
-                  {formatDuration(v.durationSec)}
+                  {formatVideoDuration(v.durationSec)}
                 </span>
               </div>
 
