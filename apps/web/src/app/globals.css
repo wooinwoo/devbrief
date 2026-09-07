@@ -1661,3 +1661,33 @@ button {
     display: none;
   }
 }
+
+.wordmark {
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .brief-header > div {
+    column-gap: 12px;
+  }
+}
+@media (max-width: 400px) {
+  .brief-header > div {
+    padding-left: 16px;
+    padding-right: 16px;
+    column-gap: 8px;
+  }
+  .brief-header .wordmark {
+    font-size: 21px;
+  }
+  .brief-header .wordmark::before {
+    width: 18px;
+    height: 23px;
+    margin-right: 8px;
+  }
+  .brief-header .global-search-trigger {
+    padding: 0 9px;
+  }
+  .brief-header > div > div:last-child {
+    gap: 8px;
+  }
+}
