@@ -97,14 +97,17 @@ export function ReposTab({ repos }: Props) {
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
+    <div className="flex flex-col lg:flex-row gap-8 xl:gap-10">
       <FilterSidebar groups={groups} />
 
       <div className="flex-1 min-w-0">
         {/* 상단: 안내문 + 기간 토글 */}
-        <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+        <div
+          className="flex items-start justify-between gap-4 flex-wrap pb-5 border-b"
+          style={{ borderColor: 'var(--color-line-strong)' }}
+        >
           <p
-            className="text-[13px] leading-relaxed break-keep max-w-[42ch]"
+            className="text-[14px] leading-[1.7] break-keep max-w-[48ch]"
             style={{ color: 'var(--color-fg-muted)' }}
           >
             최근 {period === 'weekly' ? '한 주' : '하루'} 동안 star가 가장 가파르게 오른 레포. 절대
@@ -135,9 +138,9 @@ export function ReposTab({ repos }: Props) {
             )}
           </div>
         ) : (
-          <ul className="grid xl:grid-cols-2 gap-x-10 gap-y-1">
-            {filtered.map((r, i) => (
-              <RepoCard key={r.id} repo={r} index={i} />
+          <ul className="grid xl:grid-cols-2 gap-x-10">
+            {filtered.map((r) => (
+              <RepoCard key={r.id} repo={r} />
             ))}
           </ul>
         )}
@@ -160,8 +163,8 @@ function PeriodToggle({
   ];
   return (
     <div
-      className="flex p-0.5 rounded-lg"
-      style={{ background: 'var(--color-bg-sunken)' }}
+      className="flex border-b"
+      style={{ borderColor: 'var(--color-line)' }}
       role="group"
       aria-label="기간 선택"
     >
@@ -173,12 +176,11 @@ function PeriodToggle({
             type="button"
             onClick={() => onChange(it.value)}
             aria-pressed={active}
-            className="flex-1 py-1.5 rounded-md text-[12.5px] transition-colors"
+            className="flex-1 min-h-11 py-1.5 -mb-px border-b-2 text-[13px] transition-colors"
             style={{
-              background: active ? 'var(--color-bg-elevated)' : 'transparent',
+              borderColor: active ? 'var(--color-fg-strong)' : 'transparent',
               color: active ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
               fontWeight: active ? 700 : 500,
-              boxShadow: active ? '0 1px 2px oklch(0% 0 0 / 0.08)' : undefined,
             }}
           >
             {it.label}

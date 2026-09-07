@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { GeminiModule } from './ai/gemini.module';
 import { CommonModule } from './common/common.module';
 import { ConferenceDiscoveryService } from './conferences/conference-discovery.service';
+import { ConferenceFeedService } from './conferences/conference-feed.service';
 import { DailyDigestService } from './digest/daily-digest.service';
 import { EmbeddingService } from './embedding/embedding.service';
 import { ArticleExtractService } from './ingestion/article-extract.service';
@@ -59,6 +60,7 @@ const noopQueue = {
     GithubTrendingService,
     DailyDigestService,
     ConferenceDiscoveryService,
+    ConferenceFeedService,
     // IngestionService 가 주입받는 큐 → no-op 스텁 (Redis 불필요)
     { provide: getQueueToken('summarization'), useValue: noopQueue },
     { provide: getQueueToken('embedding'), useValue: noopQueue },

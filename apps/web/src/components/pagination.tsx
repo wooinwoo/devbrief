@@ -30,7 +30,7 @@ export function Pagination({ page, totalPages, onChange }: Props) {
       disabled={disabled}
       onClick={() => onChange(to)}
       aria-label={label === '‹' ? '이전 페이지' : '다음 페이지'}
-      className="min-w-9 h-9 px-2 rounded-md text-[13px] transition-colors disabled:opacity-35 disabled:cursor-not-allowed enabled:hover:bg-(--color-bg-sunken)"
+      className="min-w-11 h-11 px-2 rounded-md text-[13px] transition-colors disabled:opacity-35 disabled:cursor-not-allowed enabled:hover:bg-(--color-bg-sunken)"
       style={{
         color: 'var(--color-fg-muted)',
         border: '1px solid var(--color-line)',
@@ -44,41 +44,46 @@ export function Pagination({ page, totalPages, onChange }: Props) {
   return (
     <nav className="flex items-center justify-center gap-1.5 pt-10 pb-2" aria-label="페이지">
       {arrow('‹', page - 1, page <= 1)}
-      {items.map((it, i) =>
-        it === '…' ? (
-          <span
-            key={`gap-${i}`}
-            aria-hidden="true"
-            className="min-w-9 h-9 inline-flex items-center justify-center text-[13px]"
-            style={{ color: 'var(--color-fg-subtle)' }}
-          >
-            …
-          </span>
-        ) : (
-          <button
-            key={it}
-            type="button"
-            onClick={() => onChange(it)}
-            aria-current={it === page ? 'page' : undefined}
-            className="min-w-9 h-9 rounded-md text-[13px] tabular-nums transition-colors"
-            style={
-              it === page
-                ? {
-                    background: 'var(--color-accent)',
-                    color: 'oklch(99% 0 0)',
-                    fontWeight: 700,
-                  }
-                : {
-                    color: 'var(--color-fg-default)',
-                    border: '1px solid var(--color-line)',
-                    fontWeight: 600,
-                  }
-            }
-          >
-            {it}
-          </button>
-        ),
-      )}
+      <span className="sm:hidden px-3 tabular-nums text-sm" aria-live="polite" aria-atomic="true">
+        {page} / {totalPages}
+      </span>
+      <div className="hidden sm:contents">
+        {items.map((it, i) =>
+          it === '…' ? (
+            <span
+              key={`gap-${i}`}
+              aria-hidden="true"
+              className="min-w-11 h-11 inline-flex items-center justify-center text-[13px]"
+              style={{ color: 'var(--color-fg-subtle)' }}
+            >
+              …
+            </span>
+          ) : (
+            <button
+              key={it}
+              type="button"
+              onClick={() => onChange(it)}
+              aria-current={it === page ? 'page' : undefined}
+              className="min-w-11 h-11 rounded-md text-[13px] tabular-nums transition-colors"
+              style={
+                it === page
+                  ? {
+                      background: 'var(--color-accent)',
+                      color: 'oklch(99% 0 0)',
+                      fontWeight: 700,
+                    }
+                  : {
+                      color: 'var(--color-fg-default)',
+                      border: '1px solid var(--color-line)',
+                      fontWeight: 600,
+                    }
+              }
+            >
+              {it}
+            </button>
+          ),
+        )}
+      </div>
       {arrow('›', page + 1, page >= totalPages)}
     </nav>
   );

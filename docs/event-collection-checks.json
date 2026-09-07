@@ -1,0 +1,65 @@
+{
+  "collectedAt": "2026-09-07T08:08:52.943Z",
+  "storedAt": "2026-09-07T08:17:55.267Z",
+  "environment": "local PostgreSQL",
+  "beforeCount": 5,
+  "afterCount": 892,
+  "added": 887,
+  "addedHackathons": 71,
+  "allAddedProposed": true,
+  "first": {
+    "sources": [
+      {
+        "source": "Developer Conferences Agenda",
+        "candidates": 827,
+        "saved": 817,
+        "skipped": 5271,
+        "failed": 0
+      },
+      {
+        "source": "Major League Hacking",
+        "candidates": 70,
+        "saved": 70,
+        "skipped": 0,
+        "failed": 0
+      }
+    ],
+    "proposed": 887,
+    "skipped": 5271,
+    "failedSources": 0
+  },
+  "second": {
+    "sources": [
+      {
+        "source": "Developer Conferences Agenda",
+        "candidates": 827,
+        "saved": 0,
+        "skipped": 6088,
+        "failed": 0
+      },
+      {
+        "source": "Major League Hacking",
+        "candidates": 70,
+        "saved": 0,
+        "skipped": 70,
+        "failed": 0
+      }
+    ],
+    "proposed": 0,
+    "skipped": 6158,
+    "failedSources": 0
+  },
+  "tagNormalization": {
+    "changed": 1,
+    "name": "237HackFest",
+    "beforeTopics": [
+      "cybersecurity",
+      "hackathon"
+    ],
+    "afterTopics": [
+      "cybersecurity",
+      "Hackathon"
+    ],
+    "addedHackathonsAfterNormalization": 72
+  }
+}

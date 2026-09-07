@@ -30,6 +30,8 @@ interface YtVideoDetail {
 export class YouTubeSyncService {
   private readonly logger = new Logger(YouTubeSyncService.name);
   private readonly apiKey: string;
+  // 소켓 행 시 주간 크론/CLI 가 무한 대기하지 않게 공용 타임아웃 인스턴스 (레포 관례 github-trending 15s)
+  private readonly http = axios.create({ timeout: 15_000 });
 
   constructor(
     config: ConfigService,
@@ -68,7 +70,7 @@ export class YouTubeSyncService {
 
   async syncChannel(conferenceId: string, channelId: string, maxResults: number): Promise<number> {
     // 1) search.list — 채널 최근 영상 videoId 추출
-    const searchRes = await axios.get<{ items: YtSearchItem[] }>(
+    const searchRes = await this.http.get<{ items: YtSearchItem[] }>(
       'https://www.googleapis.com/youtube/v3/search',
       {
         params: {
@@ -86,7 +88,7 @@ export class YouTubeSyncService {
 
     // 2) videos.list — duration / views 보강
     const ids = items.map((i) => i.id.videoId).join(',');
-    const detailRes = await axios.get<{ items: YtVideoDetail[] }>(
+    const detailRes = await this.http.get<{ items: YtVideoDetail[] }>(
       'https://www.googleapis.com/youtube/v3/videos',
       {
         params: {
@@ -136,6 +138,15 @@ export class YouTubeSyncService {
       });
       count++;
     }
+    // 수동 추가(/videos/add)로 conferenceId 없이 먼저 저장된 영상을 이 컨퍼런스에 연결.
+    // upsert 의 update 분기는 conferenceId 를 덮지 않으므로(수동 교정 보호) null 인 것만 일괄 채움.
+    await this.prisma.video.updateMany({
+      where: {
+        videoId: { in: items.map((i) => i.id.videoId) },
+        conferenceId: null,
+      },
+      data: { conferenceId },
+    });
     // 컨퍼런스 대표 이미지가 없으면 첫 발표 영상 썸네일로 채움
     // (공식 사이트 og:image가 죽은 경우 — FECONF/SLASH 등)
     if (firstThumb) {

@@ -14,7 +14,7 @@ function makeArticle(p: Partial<ArticleDto>): ArticleDto {
     publishedAt: p.publishedAt ?? '2026-01-01T00:00:00.000Z',
     tags: p.tags ?? [],
     imageUrl: p.imageUrl ?? null,
-    language: p.language,
+    language: p.language ?? 'ko',
     source: p.source ?? { name: 'Test', provider: 'rss_generic' },
     contentHtml: p.contentHtml,
   };

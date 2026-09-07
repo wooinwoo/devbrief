@@ -1,21 +1,42 @@
 import { GoogleGenAI } from '@google/genai';
-import { Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { Queue } from 'bullmq';
 import { Innertube } from 'youtubei.js';
 import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
+import type { VideoAnalyzeJobData } from './video-analysis.processor';
 
 export interface Chapter {
   time: number; // 초
   label: string;
 }
 
-type ChapterSource = 'official' | 'description' | 'ai';
+// 'none': 분석은 했으나 챕터·요약 모두 못 찾은 영구 케이스 (무한 재분석 방지 마커)
+type ChapterSource = 'official' | 'description' | 'ai' | 'none';
 
 export interface AnalysisResult {
   chapters: Chapter[];
   chapterSource: ChapterSource | null;
   summary: string | null;
 }
+
+/** video-analyze 잡 공통 옵션 — 일시 오류(네트워크/Gemini 순단) 시 지수 backoff 재시도 */
+export const VIDEO_ANALYZE_JOB_OPTS = {
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 60_000 },
+} as const;
+
+/** 재시도해도 결과가 같은 영구 실패 (자막 없음 등) — transient 재시도 대상에서 제외 */
+export class PermanentAnalysisError extends Error {}
+
+/** analyze() 내부 결과 — transientError 는 analyzedAt 기록 여부 판단용 (DB 미저장) */
+type AnalyzeOutcome = AnalysisResult & { transientError: boolean };
 
 /**
  * 3-tier hybrid 영상 분석.
@@ -37,6 +58,8 @@ export class VideoAnalyzerService {
   constructor(
     private gemini: GeminiService,
     private prisma: PrismaService,
+    @InjectQueue('video-analyze')
+    private analyzeQueue: Queue<VideoAnalyzeJobData>,
   ) {
     if (this.gemini.isAvailable()) {
       // 환경변수는 GeminiService 가 이미 확인 — apiKey 다시 받기 위해 process.env 직접 (생성자 외부 X)
@@ -53,6 +76,12 @@ export class VideoAnalyzerService {
     if (!this.innertube) {
       this.innertube = await Innertube.create({
         retrieve_player: false, // 빠른 메타데이터만 필요
+        // youtubei.js 내부 HTTP 호출 전체에 타임아웃 — getInfo 행으로 워커 슬롯 점유 방지
+        fetch: (input, init) =>
+          fetch(input, {
+            ...init,
+            signal: AbortSignal.timeout(15_000),
+          } as RequestInit),
       });
     }
     return this.innertube;
@@ -88,10 +117,25 @@ export class VideoAnalyzerService {
    */
   async fetchAndStore(url: string): Promise<{ id: string; videoId: string }> {
     const videoId = VideoAnalyzerService.parseVideoId(url);
-    if (!videoId) throw new Error('유효한 YouTube URL 이 아닙니다');
+    // 입력 오류는 400 으로 — 웹(videos-panel)이 j.message 를 그대로 노출하는 계약
+    if (!videoId) throw new BadRequestException('유효한 YouTube URL 이 아닙니다');
 
     const yt = await this.ensureInnertube();
-    const info = await yt.getInfo(videoId);
+    let info: Awaited<ReturnType<typeof yt.getInfo>>;
+    try {
+      info = await yt.getInfo(videoId);
+    } catch (e) {
+      const err = e as Error;
+      // 원본 에러는 서버 로그에 보존 (innertube 세션 만료 등 서버측 원인 추적용)
+      this.logger.warn(`[${videoId}] getInfo 실패: ${err.name}: ${err.message}`);
+      // 타임아웃/중단은 일시 오류 → 503 으로 재시도 유도
+      if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+        throw new ServiceUnavailableException('YouTube 응답 지연 — 잠시 후 다시 시도해주세요');
+      }
+      throw new BadRequestException(
+        '영상 정보를 가져올 수 없습니다 (삭제/비공개 영상이거나 잘못된 ID 일 수 있습니다)',
+      );
+    }
     const basic = info.basic_info;
 
     const title = basic.title ?? '제목 없음';
@@ -160,17 +204,50 @@ export class VideoAnalyzerService {
 
     const result = await this.analyze(video.videoId, video.description, video.durationSec);
 
+    // 완전 빈 결과(챕터 0 + 요약 없음)인데 일시 오류(네트워크/Gemini 순단)가 있었다면
+    // analyzedAt 을 남기지 않고 던진다 — BullMQ 재시도(VIDEO_ANALYZE_JOB_OPTS) +
+    // 다음 sync/analyze-all 의 analyzedAt:null 스캔 재수거 대상으로 유지.
+    const isEmpty = result.chapters.length === 0 && result.summary === null;
+    if (isEmpty && result.transientError) {
+      throw new ServiceUnavailableException(
+        `[${video.videoId}] 일시 오류로 분석 실패 — analyzedAt 미기록, 재시도 대상`,
+      );
+    }
+
+    // 영구 빈 케이스(챕터·설명·자막 전부 없음)는 무한 재분석 방지를 위해 'none' 마커로 기록
+    const persisted: AnalysisResult = {
+      chapters: result.chapters,
+      chapterSource: isEmpty ? 'none' : result.chapterSource,
+      summary: result.summary,
+    };
+
     await this.prisma.video.update({
       where: { id: videoDbId },
       data: {
-        chapters: result.chapters as never,
-        chapterSource: result.chapterSource,
-        summary: result.summary,
+        chapters: persisted.chapters as never,
+        chapterSource: persisted.chapterSource,
+        summary: persisted.summary,
         analyzedAt: new Date(),
       },
     });
 
-    return result;
+    return persisted;
+  }
+
+  /**
+   * 미분석(analyzedAt IS NULL) 영상을 분석 큐에 일괄 적재.
+   * 어드민 POST /videos/sync 와 주간 크론이 공유 — 정책(take/재시도)이 갈라지지 않게 단일화.
+   */
+  async enqueueUnanalyzed(take = 200): Promise<number> {
+    const fresh = await this.prisma.video.findMany({
+      where: { analyzedAt: null },
+      select: { id: true },
+      take,
+    });
+    for (const v of fresh) {
+      await this.analyzeQueue.add('analyze', { videoDbId: v.id }, VIDEO_ANALYZE_JOB_OPTS);
+    }
+    return fresh.length;
   }
 
   /** 순수 분석 (저장 X) */
@@ -178,7 +255,12 @@ export class VideoAnalyzerService {
     videoId: string,
     description: string | null,
     durationSec: number,
-  ): Promise<AnalysisResult> {
+  ): Promise<AnalyzeOutcome> {
+    // 요약은 챕터 소스와 직교 — 어느 tier 로 끝나든 설명 기반 요약을 공통 제공
+    const summary = summarizeDescription(description);
+    // 일시 오류 발생 여부 — 빈 결과일 때 analyzedAt 기록 여부 판단용
+    let transientError = false;
+
     // Tier 1: 공식 chapters (youtubei.js)
     if (this.isRealVideoId(videoId)) {
       try {
@@ -188,10 +270,12 @@ export class VideoAnalyzerService {
           return {
             chapters: official,
             chapterSource: 'official',
-            summary: null,
+            summary,
+            transientError,
           };
         }
       } catch (e) {
+        transientError = true;
         this.logger.debug(`[${videoId}] official chapter fetch 실패: ${(e as Error).message}`);
       }
     }
@@ -203,7 +287,8 @@ export class VideoAnalyzerService {
       return {
         chapters: fromDesc,
         chapterSource: 'description',
-        summary: null,
+        summary,
+        transientError,
       };
     }
 
@@ -211,16 +296,17 @@ export class VideoAnalyzerService {
     if (this.rawGemini && this.isRealVideoId(videoId)) {
       try {
         const chapters = await this.analyzeWithGemini(videoId, durationSec);
-        const summary = summarizeDescription(description);
         this.logger.log(`[${videoId}] tier=ai chapters=${chapters.length} (요약=설명기반)`);
-        return { chapters, chapterSource: 'ai', summary };
+        return { chapters, chapterSource: 'ai', summary, transientError };
       } catch (e) {
+        // '자막 없음' 같은 영구 실패는 재시도해도 결과가 같으므로 transient 로 치지 않음
+        if (!(e instanceof PermanentAnalysisError)) transientError = true;
         this.logger.warn(`[${videoId}] Gemini 분석 실패: ${(e as Error).message}`);
       }
     }
 
     // 모두 실패 — chapter 없어도 요약은 설명 기반으로 최대한 제공
-    return { chapters: [], chapterSource: null, summary: summarizeDescription(description) };
+    return { chapters: [], chapterSource: null, summary, transientError };
   }
 
   /** 자막 트랙(timedtext)을 직접 fetch·파싱 → "[m:ss] text" 라인들. 없으면 null. */
@@ -248,7 +334,10 @@ export class VideoAnalyzerService {
         tracks[0];
       if (!track?.base_url) return null;
 
-      const res = await fetch(track.base_url);
+      // timedtext 는 bare fetch 였음 — 워커(concurrency 2) 슬롯이 행에 점유되지 않게 타임아웃
+      const res = await fetch(track.base_url, {
+        signal: AbortSignal.timeout(15_000),
+      });
       if (!res.ok) return null;
       const xml = await res.text();
 
@@ -295,7 +384,9 @@ export class VideoAnalyzerService {
       (info as unknown as { chapters?: MaybeChapter[] }).chapters ??
       (
         info as unknown as {
-          player_overlays?: { decorated_player_bar?: { chapters?: MaybeChapter[] } };
+          player_overlays?: {
+            decorated_player_bar?: { chapters?: MaybeChapter[] };
+          };
         }
       ).player_overlays?.decorated_player_bar?.chapters ??
       [];
@@ -316,7 +407,7 @@ export class VideoAnalyzerService {
 
     // 자막(transcript)을 텍스트로 보냄 — fileData(영상) 호출보다 인증/비용에 유리
     const transcript = await this.fetchTranscript(videoId);
-    if (!transcript) throw new Error('자막 없음 — Gemini chapter 생성 불가');
+    if (!transcript) throw new PermanentAnalysisError('자막 없음 — Gemini chapter 생성 불가');
 
     const prompt = `다음은 YouTube 영상의 자막(타임스탬프 포함)입니다. 주제 전환을 기준으로 목차(chapters)를 만들어 JSON 만 출력하세요. JSON 외 텍스트 금지.
 

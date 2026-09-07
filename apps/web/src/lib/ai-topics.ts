@@ -95,8 +95,14 @@ export const AI_THEMES: AiFacet[] = [
   },
 ];
 
+// AI 탭 판정 힌트. categoryOf(category.ts)와의 계약:
+//  - 카테고리는 배타적 1개(예: "벡터 임베딩" → data 칩), AI 탭은 포괄 렌즈 —
+//    data∩ai 신호 글이 뉴스 탭 Data 칩 + AI 탭 양쪽에 노출되는 것은 의도된 동작.
+//  - "모델" 단독은 "비즈니스 모델" 류 일반어 오탐이 커서 합성어("언어 모델" 등)로 한정.
+//    category.ts 약한 ai 행과 같은 어휘로 유지할 것.
+//  - "ChatGPT" 는 내부 "gpt" 의 \b 가 성립하지 않아 chat.?gpt 로 따로 잡는다(STRONG_AI 동일).
 const AI_HINT =
-  /\b(ai|a\.i\.|llm|gpt|codex|claude|anthropic|openai|gemini|deepmind|gemma|llama|qwen|deepseek|mistral|glm|grok|cursor|copilot|aider|cline|windsurf|devin|agent|harness|benchmark|\beval\b|rag|mcp|inference|transformer|diffusion|prompt|fine.?tun|embedding|vllm)\b|에이전트|하네스|모델|추론|임베딩/i;
+  /\b(ai|a\.i\.|llm|gpt|chat.?gpt|codex|claude|anthropic|openai|gemini|deepmind|gemma|llama|qwen|deepseek|mistral|glm|grok|cursor|copilot|aider|cline|windsurf|devin|agent|harness|benchmark|\beval\b|rag|mcp|inference|transformer|diffusion|prompt|fine.?tun|embedding|vllm)\b|에이전트|하네스|언어 모델|파운데이션 모델|오픈소스 모델|추론|임베딩|인공지능/i;
 
 // 이 소스들은 글 전체가 AI 주제
 const AI_SOURCES = [

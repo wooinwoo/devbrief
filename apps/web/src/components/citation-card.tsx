@@ -1,17 +1,6 @@
 'use client';
 
-import { relativeTime } from '@/lib/relative-time';
-
-const SOURCE_BAR: Record<string, string> = {
-  geeknews: 'oklch(48% 0.16 160)',
-  hackernews: 'oklch(55% 0.18 45)',
-  devto: 'oklch(48% 0.18 290)',
-  techcrunch: 'oklch(50% 0.21 15)',
-  anthropic: 'oklch(55% 0.17 60)',
-  openai: 'oklch(50% 0.15 220)',
-  producthunt: 'oklch(54% 0.20 340)',
-  rss_generic: 'oklch(45% 0.012 250)',
-};
+import { RelativeTimeText } from './relative-time-text';
 
 export interface Citation {
   index: number;
@@ -25,63 +14,47 @@ export interface Citation {
 
 interface Props {
   citations: Citation[];
+  idPrefix: string;
   highlightIndex?: number | null;
 }
 
-export function CitationGrid({ citations, highlightIndex }: Props) {
+export function CitationGrid({ citations, highlightIndex, idPrefix }: Props) {
   if (citations.length === 0) return null;
   return (
-    <div className="mt-5">
-      <p
-        className="text-[10px] mb-3 tracking-[0.18em] uppercase"
-        style={{ color: 'var(--color-fg-subtle)' }}
-      >
+    <div className="mt-6">
+      <p className="text-[14px] font-semibold mb-3" style={{ color: 'var(--color-fg-strong)' }}>
         출처
       </p>
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="border-t border-(--color-line) divide-y divide-(--color-line)">
         {citations.map((c) => {
-          const bar = SOURCE_BAR[c.sourceProvider] ?? SOURCE_BAR.rss_generic;
           const isHi = highlightIndex === c.index;
           return (
             <li
               key={c.index}
-              id={`cite-${c.index}`}
-              className="transition-all duration-500 min-w-0"
+              id={`${idPrefix}-cite-${c.index}`}
+              className="transition-colors duration-300 min-w-0"
               style={{
-                background: isHi
-                  ? 'linear-gradient(to right, oklch(78% 0.13 195 / 0.08), transparent)'
-                  : 'transparent',
-                borderRadius: 6,
-                padding: 2,
+                background: isHi ? 'var(--color-accent-soft)' : 'transparent',
               }}
             >
               <a
                 href={c.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block relative pl-3 py-1 group min-w-0"
+                className="block px-2 py-4 group min-w-0 hover:bg-(--color-bg-sunken) transition-colors"
               >
-                <span
-                  aria-hidden
-                  className="absolute left-0 top-1 bottom-1 transition-all"
-                  style={{
-                    width: isHi ? 2 : 1,
-                    background: bar,
-                    boxShadow: isHi ? `0 0 8px ${bar}` : 'none',
-                  }}
-                />
-                <div className="flex items-center gap-2 mb-1 text-[11px]">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2 text-[13px]">
                   <span style={{ color: 'var(--color-fg-subtle)' }} className="tabular-nums">
                     [{c.index}]
                   </span>
-                  <span style={{ color: bar }}>{c.sourceName}</span>
+                  <span style={{ color: 'var(--color-fg-default)' }}>{c.sourceName}</span>
                   <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
                   <span style={{ color: 'var(--color-fg-muted)' }}>
-                    {relativeTime(c.publishedAt)}
+                    <RelativeTimeText iso={c.publishedAt} />
                   </span>
                 </div>
                 <p
-                  className="text-[13px] leading-snug transition-colors group-hover:text-(--color-fg-strong) overflow-hidden"
+                  className="text-[15px] leading-relaxed transition-colors group-hover:underline underline-offset-4 overflow-hidden"
                   style={{
                     color: 'var(--color-fg-default)',
                     overflowWrap: 'anywhere',

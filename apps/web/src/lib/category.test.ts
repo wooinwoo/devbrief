@@ -128,3 +128,56 @@ describe('categoryOf — 제목 기반(태그 없는 실제 글)', () => {
     expect(categoryOf(article).key).toBe('infra');
   });
 });
+
+describe('categoryOf — 복합 브랜드·음차어 보강', () => {
+  // "ChatGPT" 내부의 "gpt" 는 앞이 latin 이라 ASCII 경계에 막힌다 — chat.?gpt 로 잡아야 함.
+  it('ChatGPT 복합어 → ai', () => {
+    expect(categoryOf(byTitle('ChatGPT로 업무 자동화하기')).key).toBe('ai');
+    expect(categoryOf(byTitle('Chat GPT 활용법')).key).toBe('ai');
+  });
+
+  it('인공지능 → ai (STRONG 신호)', () => {
+    expect(categoryOf(byTitle('인공지능 규제 법안 통과')).key).toBe('ai');
+  });
+
+  it('쿠버네티스/도커 음차 → infra', () => {
+    expect(categoryOf(byTitle('쿠버네티스 도입기')).key).toBe('infra');
+    expect(categoryOf(byTitle('도커 컨테이너 최적화')).key).toBe('infra');
+  });
+
+  it('HTML → frontend', () => {
+    expect(categoryOf(byTitle('HTML 폼 접근성 개선하기')).key).toBe('frontend');
+  });
+
+  it('리액트/프론트엔드 음차 → frontend', () => {
+    expect(categoryOf(byTitle('리액트 서버 컴포넌트 정리')).key).toBe('frontend');
+    expect(categoryOf(byTitle('프론트엔드 성능 최적화')).key).toBe('frontend');
+  });
+
+  it('안드로이드/아이폰 음차 → mobile', () => {
+    expect(categoryOf(byTitle('안드로이드 앱 배포 자동화')).key).toBe('mobile');
+    expect(categoryOf(byTitle('아이폰 위젯 개발기')).key).toBe('mobile');
+  });
+
+  it('스프링/코틀린 음차 → backend', () => {
+    expect(categoryOf(byTitle('스프링 부트 마이그레이션')).key).toBe('backend');
+    expect(categoryOf(byTitle('코틀린 코루틴 정리')).key).toBe('backend');
+  });
+
+  it('Go 는 버전 결합("Go 1.24")일 때만 backend — 일반 영단어 go 는 오탐하지 않음', () => {
+    expect(categoryOf(byTitle('Go 1.24 릴리스')).key).toBe('backend');
+    expect(categoryOf(byTitle('Let us go to the conference')).key).toBe('etc');
+  });
+});
+
+describe('categoryOf — 일반어 오탐 방지', () => {
+  // "모델" 단독 토큰은 합성어("언어 모델" 등)로 한정 — 비AI 일반어 글이 ai 로 빨려가지 않게.
+  it('"비즈니스 모델" 류 일반어 → etc', () => {
+    expect(categoryOf(byTitle('스타트업의 새로운 비즈니스 모델')).key).toBe('etc');
+  });
+
+  it('"언어 모델" 합성어 → ai', () => {
+    expect(categoryOf(byTitle('언어 모델의 한계')).key).toBe('ai');
+    expect(categoryOf(byTitle('파운데이션 모델 학습 비용')).key).toBe('ai');
+  });
+});

@@ -31,11 +31,14 @@ describe('ConferenceImageSyncService', () => {
     service = moduleRef.get(ConferenceImageSyncService);
   });
 
-  it('imageUrl null인 컨퍼런스만 sync 대상으로 조회 (force=false)', async () => {
+  it('force=false 는 ACTIVE + 이미지/브랜드색 비어 있는 행만 대상 (REJECTED/PROPOSED 제외)', async () => {
     prisma.conference.findMany.mockResolvedValue([]);
     await service.syncAll();
     expect(prisma.conference.findMany).toHaveBeenCalledWith({
-      where: { imageUrl: null },
+      where: {
+        status: 'ACTIVE',
+        OR: [{ imageUrl: null }, { brandColor: null }],
+      },
     });
   });
 
@@ -67,7 +70,12 @@ describe('ConferenceImageSyncService', () => {
         brandColor: 'oklch(50% 0.2 245)',
       },
     });
-    expect(result).toEqual({ total: 1, updated: 1, failed: 0, brandExtracted: 0 });
+    expect(result).toEqual({
+      total: 1,
+      updated: 1,
+      failed: 0,
+      brandExtracted: 0,
+    });
   });
 
   it('brandColor 없으면 자동 추출 → 같이 저장', async () => {
@@ -103,6 +111,38 @@ describe('ConferenceImageSyncService', () => {
     expect(updateData.brandColor).toBe('oklch(70% 0.3 150)');
   });
 
+  it('imageUrl 이미 있으면 og fetch 없이 그 이미지로 brand 추출, imageUrl 보존', async () => {
+    prisma.conference.findMany.mockResolvedValue([
+      {
+        id: 'c1',
+        name: 'ManualConf',
+        url: 'https://manual',
+        imageUrl: 'https://manual/hand-registered.png',
+        brandColor: null,
+      },
+    ]);
+    brand.extractFromUrl.mockResolvedValue('oklch(55% 0.2 200)');
+
+    const result = await service.syncAll();
+
+    // 운영자 수동 등록 imageUrl 을 덮어쓰지 않고 브랜드색 소스로만 사용
+    expect(og.fetch).not.toHaveBeenCalled();
+    expect(brand.extractFromUrl).toHaveBeenCalledWith('https://manual/hand-registered.png');
+    expect(prisma.conference.update).toHaveBeenCalledWith({
+      where: { id: 'c1' },
+      data: {
+        imageUrl: 'https://manual/hand-registered.png',
+        brandColor: 'oklch(55% 0.2 200)',
+      },
+    });
+    expect(result).toEqual({
+      total: 1,
+      updated: 1,
+      failed: 0,
+      brandExtracted: 1,
+    });
+  });
+
   it('brand 추출 실패 시 기존 brandColor 유지', async () => {
     prisma.conference.findMany.mockResolvedValue([
       { id: 'c1', name: 'X', url: 'https://x', brandColor: null },
@@ -126,7 +166,12 @@ describe('ConferenceImageSyncService', () => {
 
     expect(prisma.conference.update).not.toHaveBeenCalled();
     expect(brand.extractFromUrl).not.toHaveBeenCalled();
-    expect(result).toEqual({ total: 1, updated: 0, failed: 1, brandExtracted: 0 });
+    expect(result).toEqual({
+      total: 1,
+      updated: 0,
+      failed: 1,
+      brandExtracted: 0,
+    });
   });
 
   it('하나 실패해도 다음 진행', async () => {
@@ -141,6 +186,11 @@ describe('ConferenceImageSyncService', () => {
     const result = await service.syncAll();
 
     expect(prisma.conference.update).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({ total: 2, updated: 1, failed: 1, brandExtracted: 0 });
+    expect(result).toEqual({
+      total: 2,
+      updated: 1,
+      failed: 1,
+      brandExtracted: 0,
+    });
   });
 });

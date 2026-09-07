@@ -120,9 +120,67 @@ Railway 의 상시 컨테이너에 올립니다. 정적/SSR 프론트는 Vercel 
 | `NEXT_PUBLIC_API_BASE` | Vercel web | `https://<api-domain>/api/v1` | 필수 |
 | `ADMIN_API_TOKEN` | Vercel web | 서버 전용(NEXT_PUBLIC 금지). 프록시가 x-admin-token 주입 | 필수 |
 | `ADMIN_PASSWORD` | Vercel web | 어드민 로그인 비밀번호 (web proxy 검증) | 어드민 사용 시 |
+| `ADMIN_SESSION_SECRET` | Vercel web | 어드민 세션 서명키. 회전 시 전 세션 로그아웃 | 어드민 사용 시 |
 
 > 시크릿(토큰/키)은 각 플랫폼 대시보드의 Variables 에만 넣습니다.
 > 레포의 `.env*` 에 실제 값을 커밋하지 마세요 (`.env.example` 은 placeholder 만).
+
+> GitHub Actions(`.github/workflows/ingest.yml`)는 별도로 repo secrets 를 사용합니다:
+> `DATABASE_URL`, `GEMINI_API_KEY`, `YOUTUBE_API_KEY`(선택),
+> `SLACK_WEBHOOK_URL`(실패 알림용, 선택 — 없으면 알림 스텝이 조용히 skip).
+
+## 크리덴셜 회전 (유출 대응)
+
+토큰/키가 유출됐거나 유출이 의심될 때의 회전(rotation) 절차입니다.
+원칙: **유출된 값의 무효화가 최우선** — 그 과정의 짧은 어드민 기능 중단은 감수합니다.
+
+### ADMIN_PASSWORD (웹 어드민 로그인 비밀번호)
+
+1. Vercel(web) → Settings → Environment Variables 에서 `ADMIN_PASSWORD` 를 새 값으로
+   교체하고 **재배포**합니다.
+2. 검증이 매 요청 env 기준이라 재배포 즉시 이전 비밀번호는 어디서도 통하지 않습니다.
+   세션 토큰이 비밀번호에서 파생되는 구성에서는 기존 세션도 전부 무효화됩니다.
+   세션 서명키(`ADMIN_SESSION_SECRET`)를 분리한 구성이면 아래 세션 서명키 회전을 함께 하세요.
+3. 확인: `/admin` 에서 새 비밀번호로 로그인되고, 기존 브라우저 세션은 로그아웃되는지 확인합니다.
+
+### ADMIN_SESSION_SECRET (웹 어드민 세션 서명키)
+
+1. 새 랜덤 값을 만듭니다.
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+2. Vercel(web) 의 `ADMIN_SESSION_SECRET` 를 교체하고 재배포합니다.
+3. **회전하면 전 세션이 즉시 로그아웃**됩니다 (기존 세션 토큰의 서명이 무효화됨).
+   세션 쿠키 유출이 의심되면 비밀번호 교체 없이 이 키만 돌려도 충분합니다.
+
+### ADMIN_API_TOKEN (api 쓰기 보호 공유 시크릿)
+
+Railway(api)와 Vercel(web)이 **같은 값**을 써야 합니다. 두 값이 다른 동안 어드민 쓰기
+기능은 401 로 멈춥니다 (읽기/서빙은 영향 없음).
+
+1. **Railway(api)를 먼저** 새 값으로 교체합니다 — 유출된 토큰의 즉시 무력화가
+   잠깐의 어드민 쓰기 중단보다 우선입니다.
+2. 곧바로 Vercel(web) 의 `ADMIN_API_TOKEN` 을 같은 값으로 교체하고 재배포합니다.
+3. 확인 (새 토큰으로 200 이면 완료):
+
+   ```bash
+   curl -X POST https://<api-domain>/api/v1/ingestion/trigger \
+     -H "x-admin-token: <새 ADMIN_API_TOKEN>"
+   ```
+
+### GEMINI_API_KEY
+
+이 키는 **두 곳 이상**에 있습니다: Railway(api) Variables 와
+GitHub repo → Settings → Secrets and variables → Actions (`ingest.yml` 이 사용).
+로컬 `.env` 에 복사해뒀다면 그것도 교체 대상입니다.
+
+1. https://aistudio.google.com 에서 새 키 발급 → **기존 키 삭제(revoke)**.
+2. Railway(api)와 GitHub Actions secrets 의 `GEMINI_API_KEY` 를 모두 새 값으로 교체합니다.
+3. 확인: Actions 의 `Ingest` 워크플로를 `reanalyze` 로 수동 실행 —
+   Preflight 스텝 통과 후 로그에 `embedded>0` 이면 정상입니다.
+   키가 비어 있으면 Preflight/CLI env 검증이 빨간불로 즉시 알려줍니다.
 
 ## pgvector 메모
 

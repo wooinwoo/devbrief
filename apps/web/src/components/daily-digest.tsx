@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'motion/react';
 import Link from 'next/link';
 
 interface DigestItem {
@@ -15,88 +14,38 @@ export interface DigestDto {
   items: DigestItem[];
 }
 
-interface Props {
-  digest: DigestDto | null;
-}
-
-/**
- * 메인 상단 — 매일 09:30 Gemini 가 만든 오늘의 핵심 5개.
- * 없으면 null (섹션 자체 안 그림).
- */
-export function DailyDigest({ digest }: Props) {
-  if (!digest || digest.items.length === 0) return null;
-
+/** 수집된 당일 다이제스트를 제목과 핵심 내용 중심으로 읽는다. */
+export function DailyDigest({ digest }: { digest: DigestDto | null }) {
+  if (!digest?.items.length) return null;
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
-    >
-      {/* 룰러 헤더 */}
-      <div
-        className="flex items-baseline gap-3 mb-4 pb-2 border-b"
-        style={{ borderColor: 'var(--color-fg-strong)' }}
-      >
-        <h2
-          className="text-[15px] tracking-[-0.01em]"
-          style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-        >
+    <section>
+      <div className="flex items-baseline gap-3 mb-5 pb-3 border-b border-(--color-line-strong)">
+        <h2 className="text-xl font-semibold leading-snug tracking-[-0.02em] text-(--color-fg-strong)">
           오늘의 핵심
         </h2>
-        <span className="text-[11.5px] tabular-nums" style={{ color: 'var(--color-fg-subtle)' }}>
-          {digest.items.length}
-        </span>
-        <span className="flex-1" />
-        <span
-          className="text-[10px] tracking-[0.2em] uppercase"
-          style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
-        >
-          오늘의 선별
-        </span>
+        <span className="text-xs tabular-nums text-(--color-fg-muted)">{digest.items.length}</span>
       </div>
-
       {digest.intro && (
-        <p
-          className="text-[14px] leading-[1.7] mb-5 max-w-2xl"
-          style={{ color: 'var(--color-fg-default)' }}
-        >
+        <p className="mb-5 max-w-[68ch] text-base leading-relaxed text-(--color-fg-default)">
           {digest.intro}
         </p>
       )}
-
-      <ol className="grid gap-x-8 gap-y-0 md:grid-cols-2">
-        {digest.items.map((it, i) => (
-          <li key={it.articleId} className="border-b" style={{ borderColor: 'var(--color-line)' }}>
-            <Link
-              href={`/articles/${it.articleId}`}
-              className="group flex gap-3 items-baseline py-3"
-            >
-              <span
-                className="shrink-0 tabular-nums text-[13px] leading-none w-5"
-                style={{ color: 'var(--color-accent)', fontWeight: 700 }}
-              >
-                {i + 1}
-              </span>
-              <div className="min-w-0">
-                <span
-                  className="block text-[14px] leading-snug tracking-[-0.005em] break-keep group-hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
-                  style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
-                >
-                  {it.headline}
-                </span>
-                {it.takeaway && (
-                  <span
-                    className="block text-[12px] mt-1 leading-[1.5]"
-                    style={{ color: 'var(--color-fg-muted)' }}
-                  >
-                    {it.takeaway}
-                  </span>
-                )}
-              </div>
+      <ol className="grid md:grid-cols-2 gap-x-10">
+        {digest.items.map((item) => (
+          <li key={item.articleId} className="border-b border-(--color-line)">
+            <Link href={`/articles/${item.articleId}`} className="group block py-5">
+              <h3 className="text-base font-semibold leading-snug text-(--color-fg-strong) group-hover:underline underline-offset-4">
+                {item.headline}
+              </h3>
+              {item.takeaway && (
+                <p className="mt-2 text-sm leading-relaxed text-(--color-fg-muted)">
+                  {item.takeaway}
+                </p>
+              )}
             </Link>
           </li>
         ))}
       </ol>
-    </motion.section>
+    </section>
   );
 }

@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { OgImageService } from '../common/og-image.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -107,11 +108,13 @@ describe('RssDiscoveryService', () => {
     });
 
     it('한국어 제목이면 language=ko', async () => {
-      jest
-        .spyOn(service, 'discover')
-        .mockResolvedValue([
-          { feedUrl: 'https://k.com/rss', title: '오늘의 한국 블로그', type: 'rss' },
-        ]);
+      jest.spyOn(service, 'discover').mockResolvedValue([
+        {
+          feedUrl: 'https://k.com/rss',
+          title: '오늘의 한국 블로그',
+          type: 'rss',
+        },
+      ]);
       prisma.source.findUnique.mockResolvedValue(null);
       prisma.source.create.mockResolvedValue({ id: 'k' });
 
@@ -124,6 +127,29 @@ describe('RssDiscoveryService', () => {
       jest.spyOn(service, 'discover').mockResolvedValue([]);
       const result = await service.discoverAndRegister('https://x.com');
       expect(result).toEqual({ created: 0, existing: 0, feeds: [] });
+    });
+  });
+
+  describe('SSRF 가드', () => {
+    it('discover: 내부망/메타데이터 IP 입력은 400 으로 즉시 거부', async () => {
+      await expect(service.discover('http://169.254.169.254/latest/meta-data')).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.discover('http://10.0.0.5/rss')).rejects.toThrow(BadRequestException);
+      await expect(service.discover('http://localhost:3000/feed')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('discover: http/https 외 프로토콜 거부', async () => {
+      await expect(service.discover('file:///etc/passwd')).rejects.toThrow(BadRequestException);
+    });
+
+    it('tryParseFeed: HTML 에서 추출된 내부망 후보는 fetch 없이 조용히 탈락한다', async () => {
+      const parseSpy = jest.spyOn((service as any).parser, 'parseURL');
+      const result = await (service as any).tryParseFeed('http://192.168.0.10/rss');
+      expect(result).toBeNull();
+      expect(parseSpy).not.toHaveBeenCalled();
     });
   });
 });

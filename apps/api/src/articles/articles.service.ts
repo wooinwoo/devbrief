@@ -1,3 +1,4 @@
+import type { ArticleListItem, Equals, Expect, Wire } from '@devbrief/shared';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -19,6 +20,9 @@ export interface RelatedArticle {
   language: string;
   source: { name: string; provider: string };
 }
+
+/** 계약 브리지 — related 도 목록과 동일한 와이어 계약(ArticleListItem)을 따른다 (감사 c58). */
+type _RelatedContract = Expect<Equals<Wire<RelatedArticle>, ArticleListItem>>;
 
 @Injectable()
 export class ArticlesService {

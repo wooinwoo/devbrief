@@ -1,0 +1,47 @@
+{
+  "fixture": true,
+  "engine": "Chromium",
+  "records": [
+    {
+      "width": 320,
+      "overflow": false,
+      "clipped": 0
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "clipped": 0
+    },
+    {
+      "width": 768,
+      "overflow": false,
+      "clipped": 0
+    },
+    {
+      "width": 1024,
+      "overflow": false,
+      "clipped": 0
+    },
+    {
+      "width": 1440,
+      "overflow": false,
+      "clipped": 0
+    },
+    {
+      "width": 2560,
+      "overflow": false,
+      "clipped": 0
+    }
+  ],
+  "checks": [
+    "three article limit",
+    "interest persisted",
+    "inline summary does not mark read",
+    "bookmark saved",
+    "read removes article",
+    "reload restores interests and read history",
+    "all read empty state",
+    "browse fallback"
+  ],
+  "pageErrors": []
+}

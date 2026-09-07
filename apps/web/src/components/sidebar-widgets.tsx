@@ -1,6 +1,6 @@
 'use client';
 
-import { daysUntil } from '@/lib/date-utils';
+import { daysUntil, isUpcomingEvent } from '@/lib/date-utils';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { VideoDto } from '@/lib/mock-videos';
 import Link from 'next/link';
@@ -20,7 +20,7 @@ interface Props {
 /** 사이드바 하단 보조 위젯 — 빈 공간 활용 + 다른 콘텐츠 발견성. 데스크탑 전용. */
 export function SidebarWidgets({ conferences, videos, onNavigate }: Props) {
   const upcoming = conferences
-    .filter((c) => daysUntil(c.startDate) >= 0)
+    .filter(isUpcomingEvent)
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
     .slice(0, 3);
   const vids = videos.slice(0, 2);
@@ -34,7 +34,7 @@ export function SidebarWidgets({ conferences, videos, onNavigate }: Props) {
     >
       {upcoming.length > 0 && (
         <section>
-          <WidgetHeader label="다가오는 컨퍼런스" onMore={() => onNavigate('conferences')} />
+          <WidgetHeader label="가까운 행사 일정" onMore={() => onNavigate('conferences')} />
           <ul className="flex flex-col gap-2">
             {upcoming.map((c) => {
               const d = daysUntil(c.startDate);
@@ -51,7 +51,7 @@ export function SidebarWidgets({ conferences, videos, onNavigate }: Props) {
                       className="shrink-0 tabular-nums text-[10.5px] px-1.5 py-0.5 rounded mt-0.5"
                       style={{ background: brand, color: 'oklch(99% 0 0)', fontWeight: 700 }}
                     >
-                      D-{d}
+                      {d < 0 ? '진행 중' : d === 0 ? '오늘' : `D-${d}`}
                     </span>
                     <span
                       className="text-[12.5px] leading-[1.35] line-clamp-2 group-hover:text-(--color-fg-strong) transition-colors"

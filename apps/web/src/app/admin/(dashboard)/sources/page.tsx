@@ -29,12 +29,12 @@ export default async function AdminSourcesPage() {
     <div>
       <header className="mb-10">
         <h1
-          className="text-[2rem] leading-none tracking-[-0.025em] break-keep mb-2"
+          className="text-[1.75rem] sm:text-[2rem] leading-tight tracking-[-0.025em] break-keep mb-3"
           style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
         >
           RSS 소스 관리
         </h1>
-        <p className="text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
+        <p className="text-[14px] leading-relaxed" style={{ color: 'var(--color-fg-muted)' }}>
           블로그 / 매거진 URL 을 입력하면 RSS 피드를 자동으로 발견해 등록합니다.
         </p>
       </header>

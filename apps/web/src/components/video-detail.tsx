@@ -4,7 +4,6 @@ import { formatDuration } from '@/lib/format-duration';
 import { formatViews } from '@/lib/format-views';
 import type { VideoDto } from '@/lib/mock-videos';
 import { type Chapter, parseChapters } from '@/lib/parse-chapters';
-import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { SectionHeader } from './section-header';
@@ -48,12 +47,11 @@ export function VideoDetail({ video, related }: Props) {
   const seekTo = (c: Chapter) => setActiveChapter(c);
 
   const isReal = isYouTubeId(video.videoId);
+  // mock 데이터 여부 — mock 상세는 개발 환경(MOCKS_ENABLED)에서만 렌더되므로 이 라벨은 프로덕션에 도달하지 않는다.
+  const isMock = video.videoId.startsWith('mock-');
   const embedSrc = isReal
     ? `https://www.youtube.com/embed/${video.videoId}?start=${activeChapter?.time ?? 0}&autoplay=0&rel=0`
     : '';
-
-  const accent = video.brand ?? 'var(--color-accent)';
-  const initial = video.channel.trim().charAt(0).toUpperCase() || '▶';
 
   const onShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : video.url;
@@ -74,28 +72,23 @@ export function VideoDetail({ video, related }: Props) {
     <article>
       <Link
         href="/?tab=videos"
-        className="inline-flex items-center gap-1.5 text-[12.5px] mb-6 transition-colors hover:text-(--color-fg-default)"
+        className="inline-flex items-center gap-1.5 min-h-11 text-[13px] mb-6 transition-colors hover:text-(--color-fg-default)"
         style={{ color: 'var(--color-fg-muted)' }}
       >
         <span aria-hidden>←</span> 발표 영상 목록으로
       </Link>
 
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-x-10 gap-y-10 items-start">
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_280px] gap-x-12 gap-y-12 items-start">
         {/* ===== 좌측: 영상 + 본문 ============================= */}
         <div className="min-w-0">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
-          >
+          <div>
             {/* 영상 임베드 */}
             <div
               className="relative aspect-video overflow-hidden mb-5"
               style={{
-                borderRadius: 10,
-                background: isReal
-                  ? 'oklch(92% 0.01 290)'
-                  : `linear-gradient(135deg, ${video.brand ?? 'oklch(45% 0.012 245)'}, ${(video.brand ?? 'oklch(45% 0.012 245)').replace(')', ' / 0.6)')})`,
+                borderRadius: 6,
+                background: 'var(--bar-bg)',
+                minHeight: isReal ? undefined : 208,
               }}
             >
               {isReal ? (
@@ -107,9 +100,22 @@ export function VideoDetail({ video, related }: Props) {
                   className="absolute inset-0 w-full h-full"
                 />
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-3 py-8 sm:p-8">
+                  {isMock && (
+                    <span
+                      className="absolute top-3 left-3 text-[10.5px] tracking-[0.08em] px-2 py-0.5"
+                      style={{
+                        background: 'oklch(20% 0 0 / 0.55)',
+                        color: 'oklch(94% 0.005 250)',
+                        borderRadius: 4,
+                        fontWeight: 600,
+                      }}
+                    >
+                      개발용 샘플 데이터
+                    </span>
+                  )}
                   <span
-                    className="text-[11px] tracking-[0.25em] uppercase mb-3"
+                    className="text-[13px] mb-3"
                     style={{ color: 'oklch(99% 0 0 / 0.7)', fontWeight: 600 }}
                   >
                     {video.channel}
@@ -117,7 +123,7 @@ export function VideoDetail({ video, related }: Props) {
                   <span
                     className="leading-none tabular-nums tracking-[-0.04em] mb-3"
                     style={{
-                      fontSize: '4rem',
+                      fontSize: 'clamp(1.25rem, 5vw, 2rem)',
                       fontWeight: 700,
                       color: 'oklch(99% 0 0)',
                     }}
@@ -128,7 +134,7 @@ export function VideoDetail({ video, related }: Props) {
                     href={video.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[12.5px] px-3 py-1.5 transition-opacity hover:opacity-90"
+                    className="inline-flex items-center min-h-11 text-[12.5px] px-3 py-1.5 transition-opacity hover:opacity-90"
                     style={{
                       background: 'oklch(99% 0 0 / 0.18)',
                       color: 'oklch(99% 0 0)',
@@ -145,7 +151,7 @@ export function VideoDetail({ video, related }: Props) {
             {/* 제목 + 메타 */}
             <header className="mb-5">
               <h1
-                className="text-[1.5rem] sm:text-[1.875rem] leading-[1.22] tracking-[-0.014em] break-keep mb-3"
+                className="text-[1.5rem] sm:text-[2rem] leading-[1.35] tracking-[-0.025em] break-keep mb-3"
                 style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
               >
                 {video.title}
@@ -170,10 +176,9 @@ export function VideoDetail({ video, related }: Props) {
               {video.topics.slice(0, 5).map((t) => (
                 <span
                   key={t}
-                  className="text-[12px] px-2.5 py-1 rounded-full"
+                  className="text-[12px] py-1 mr-2"
                   style={{
                     color: 'var(--color-fg-muted)',
-                    background: 'var(--color-bg-sunken)',
                     fontWeight: 500,
                   }}
                 >
@@ -185,7 +190,7 @@ export function VideoDetail({ video, related }: Props) {
                 type="button"
                 onClick={onShare}
                 aria-label={copied ? '링크가 복사되었습니다' : '링크 공유'}
-                className="text-[12.5px] px-3 py-1.5 rounded-md transition-colors hover:bg-(--color-bg-sunken)"
+                className="inline-flex items-center min-h-11 text-[12.5px] px-3 py-1.5 rounded-md transition-colors hover:bg-(--color-bg-sunken)"
                 style={{
                   color: 'var(--color-fg-default)',
                   border: '1px solid var(--color-line-strong)',
@@ -198,7 +203,7 @@ export function VideoDetail({ video, related }: Props) {
                 href={video.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[12.5px] px-3 py-1.5 rounded-md transition-opacity hover:opacity-90"
+                className="inline-flex items-center min-h-11 text-[12.5px] px-3 py-1.5 rounded-md transition-opacity hover:opacity-90"
                 style={{
                   background: 'var(--color-accent)',
                   color: 'oklch(99% 0 0)',
@@ -208,14 +213,14 @@ export function VideoDetail({ video, related }: Props) {
                 YouTube ↗
               </a>
             </div>
-          </motion.div>
+          </div>
 
           {/* === AI 요약 ===================================== */}
           {video.summary && (
             <section className="mb-10">
               <SectionHeader label="한눈에 요약" hint="자동 요약" />
               <p
-                className="text-[14.5px] leading-[1.75]"
+                className="text-[16px] leading-[1.85] max-w-[70ch]"
                 style={{ color: 'var(--color-fg-default)' }}
               >
                 {video.summary}
@@ -226,7 +231,7 @@ export function VideoDetail({ video, related }: Props) {
           {/* === 타임라인 =================================== */}
           {chapters.length > 0 ? (
             <section className="mb-10">
-              <SectionHeader label="타임라인" count={chapters.length} hint="chapters" />
+              <SectionHeader label="타임라인" count={chapters.length} />
               {chapterSource && (
                 <p className="text-[11.5px] -mt-2 mb-3" style={{ color: 'var(--color-fg-subtle)' }}>
                   {SOURCE_LABEL[chapterSource].ko}
@@ -240,7 +245,7 @@ export function VideoDetail({ video, related }: Props) {
                   return (
                     <li
                       key={c.time}
-                      className="grid grid-cols-[auto_1fr_auto] gap-4 items-baseline py-2.5 px-2 -mx-2 rounded-md border-b transition-colors"
+                      className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-2 sm:gap-4 items-baseline py-2.5 px-2 -mx-2 rounded-md border-b transition-colors"
                       style={{
                         borderColor: 'var(--color-line)',
                         background: isActive ? 'var(--color-accent-soft)' : undefined,
@@ -249,7 +254,7 @@ export function VideoDetail({ video, related }: Props) {
                       <button
                         type="button"
                         onClick={() => seekTo(c)}
-                        className="tabular-nums text-[12.5px] shrink-0 px-2 py-0.5 transition-colors"
+                        className="min-h-11 tabular-nums text-[12.5px] shrink-0 px-2 py-0.5 transition-colors"
                         style={{
                           background: isActive ? 'var(--color-accent)' : 'transparent',
                           color: isActive ? 'oklch(99% 0 0)' : 'var(--color-fg-default)',
@@ -265,7 +270,7 @@ export function VideoDetail({ video, related }: Props) {
                       <button
                         type="button"
                         onClick={() => seekTo(c)}
-                        className="text-[14px] leading-tight tracking-[-0.005em] text-left hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
+                        className="min-w-0 min-h-11 text-[14px] leading-relaxed tracking-[-0.005em] text-left hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
                         style={{
                           color: isActive ? 'var(--color-fg-strong)' : 'var(--color-fg-default)',
                           fontWeight: isActive ? 700 : 500,
@@ -286,26 +291,15 @@ export function VideoDetail({ video, related }: Props) {
             </section>
           ) : (
             <section className="mb-10">
-              <SectionHeader label="타임라인" hint="chapters" />
+              <SectionHeader label="타임라인" />
               <div
-                className="flex flex-col items-center text-center gap-3 py-10 px-6 rounded-lg"
+                className="flex flex-col items-start gap-3 py-6"
                 style={{
-                  border: '1px dashed var(--color-line-strong)',
-                  background: 'var(--color-bg-sunken)',
+                  borderTop: '1px solid var(--color-line)',
                 }}
               >
-                <span
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-full text-[18px]"
-                  style={{
-                    background: 'var(--color-bg-elevated)',
-                    color: 'var(--color-fg-subtle)',
-                  }}
-                  aria-hidden
-                >
-                  ⌁
-                </span>
                 <p
-                  className="text-[13.5px] leading-relaxed max-w-xs"
+                  className="text-[14px] leading-relaxed"
                   style={{ color: 'var(--color-fg-muted)' }}
                 >
                   아직 이 영상의 타임라인을 분석하지 못했어요.
@@ -316,7 +310,7 @@ export function VideoDetail({ video, related }: Props) {
                   href={video.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[12.5px] px-3.5 py-1.5 rounded-md transition-opacity hover:opacity-90"
+                  className="inline-flex items-center min-h-11 text-[12.5px] px-3.5 py-1.5 rounded-md transition-opacity hover:opacity-90"
                   style={{
                     background: 'var(--color-accent)',
                     color: 'oklch(99% 0 0)',
@@ -333,7 +327,7 @@ export function VideoDetail({ video, related }: Props) {
           {video.description && (
             <details className="group">
               <summary
-                className="text-[12.5px] cursor-pointer mb-2 inline-flex items-center gap-1.5 select-none"
+                className="min-h-11 text-[12.5px] cursor-pointer mb-2 inline-flex items-center gap-1.5 select-none"
                 style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
               >
                 <span aria-hidden className="transition-transform group-open:rotate-90">
@@ -342,7 +336,7 @@ export function VideoDetail({ video, related }: Props) {
                 영상 설명 원문 보기
               </summary>
               <pre
-                className="text-[12.5px] leading-[1.7] whitespace-pre-wrap font-sans mt-3 p-4 rounded-lg"
+                className="text-[13px] leading-[1.8] whitespace-pre-wrap break-words font-sans mt-3 p-4 rounded-lg"
                 style={{
                   color: 'var(--color-fg-default)',
                   background: 'var(--color-bg-sunken)',
@@ -355,39 +349,17 @@ export function VideoDetail({ video, related }: Props) {
         </div>
 
         {/* ===== 우측: 사이드바 =============================== */}
-        <aside className="flex flex-col gap-8 lg:sticky lg:top-20">
-          {/* 채널 카드 */}
-          <div
-            className="flex items-center gap-3 p-4 rounded-xl"
-            style={{
-              background: 'var(--color-bg-elevated)',
-              border: '1px solid var(--color-line)',
-              boxShadow: 'var(--shadow-card)',
-            }}
-          >
-            <span
-              className="inline-flex items-center justify-center w-11 h-11 rounded-full text-[18px] shrink-0"
-              style={{
-                background: accent,
-                color: 'oklch(99% 0 0)',
-                fontWeight: 700,
-              }}
-              aria-hidden
+        <aside className="flex min-w-0 flex-col gap-8 xl:sticky xl:top-20">
+          <div className="border-t pt-5" style={{ borderColor: 'var(--color-line-strong)' }}>
+            <p
+              className="text-[18px] leading-snug break-words"
+              style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
             >
-              {initial}
-            </span>
-            <div className="min-w-0">
-              <div
-                className="text-[14px] truncate"
-                style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-                title={video.channel}
-              >
-                {video.channel}
-              </div>
-              <div className="text-[12px]" style={{ color: 'var(--color-fg-muted)' }}>
-                YouTube 채널
-              </div>
-            </div>
+              {video.channel}
+            </p>
+            <p className="mt-1 text-[12px]" style={{ color: 'var(--color-fg-muted)' }}>
+              YouTube 채널
+            </p>
           </div>
 
           {/* 영상 정보 */}
@@ -434,7 +406,7 @@ export function VideoDetail({ video, related }: Props) {
                         className="relative w-[104px] aspect-video shrink-0 overflow-hidden"
                         style={{
                           borderRadius: 6,
-                          background: 'oklch(92% 0.01 290)',
+                          background: 'var(--color-bg-sunken)',
                         }}
                       >
                         {v.thumbnailUrl ? (
@@ -442,7 +414,7 @@ export function VideoDetail({ video, related }: Props) {
                           <img
                             src={v.thumbnailUrl}
                             alt=""
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
                         ) : null}
                         <span

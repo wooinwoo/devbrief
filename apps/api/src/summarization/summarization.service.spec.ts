@@ -1,0 +1,86 @@
+import { SummarizationService } from './summarization.service';
+
+// Gemini 성공/실패/미설정 각 경로에서 summarySource 기록·에러 전파를 검증한다.
+describe('SummarizationService.summarize', () => {
+  let gemini: { isAvailable: jest.Mock; generateJson: jest.Mock };
+  let prisma: { article: { update: jest.Mock; findUnique: jest.Mock } };
+  let translation: { hasKorean: jest.Mock; toKorean: jest.Mock };
+  let fetcher: { fetchBody: jest.Mock };
+  let svc: SummarizationService;
+
+  // 무료 경로가 fetch 없이 문장 추출을 끝낼 만큼 긴 한국어 스니펫
+  const KO_SNIPPET =
+    '첫 번째 문장은 충분히 길게 작성했다. 두 번째 문장도 충분히 길게 작성했다. 세 번째 문장도 충분히 길게 작성했다.';
+
+  beforeEach(() => {
+    gemini = { isAvailable: jest.fn(), generateJson: jest.fn() };
+    prisma = {
+      article: {
+        update: jest.fn().mockResolvedValue({}),
+        findUnique: jest.fn().mockResolvedValue({
+          url: 'https://x.com/a',
+          contentSnippet: KO_SNIPPET,
+        }),
+      },
+    };
+    translation = {
+      hasKorean: jest.fn((s: string) => /[가-힣]/.test(s)),
+      toKorean: jest.fn().mockResolvedValue('번역된 제목'),
+    };
+    fetcher = { fetchBody: jest.fn().mockResolvedValue(null) };
+    svc = new SummarizationService(
+      gemini as any,
+      prisma as any,
+      translation as any,
+      fetcher as any,
+    );
+  });
+
+  it('Gemini 성공 시 summarySource=gemini 로 저장한다', async () => {
+    gemini.isAvailable.mockReturnValue(true);
+    gemini.generateJson.mockResolvedValue({
+      language: 'en',
+      titleKo: '한국어 제목',
+      summaryOneLine: '한 줄 요약.',
+      summaryThreeLine: '줄1\n줄2\n줄3',
+    });
+
+    await svc.summarize('a1', 'Title', 'snippet');
+
+    expect(prisma.article.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'a1' },
+        data: expect.objectContaining({ summarySource: 'gemini' }),
+      }),
+    );
+    // 무료 경로(번역)는 타지 않는다
+    expect(translation.toKorean).not.toHaveBeenCalled();
+  });
+
+  it('Gemini 사용 가능한데 호출 실패하면 폴백하지 않고 throw (재시도는 processor 몫)', async () => {
+    gemini.isAvailable.mockReturnValue(true);
+    gemini.generateJson.mockRejectedValue(new Error('429 rate limit'));
+
+    await expect(svc.summarize('a1', 'Title', 'snippet')).rejects.toThrow('429 rate limit');
+    // 폴백 저장이 일어나지 않아야 한다
+    expect(prisma.article.update).not.toHaveBeenCalled();
+    expect(translation.toKorean).not.toHaveBeenCalled();
+  });
+
+  it('키 미설정(isAvailable=false)이면 즉시 무료 경로 — summarySource=free', async () => {
+    gemini.isAvailable.mockReturnValue(false);
+
+    await svc.summarize('a1', '한국어 제목', KO_SNIPPET);
+
+    expect(gemini.generateJson).not.toHaveBeenCalled();
+    const data = prisma.article.update.mock.calls.at(-1)[0].data;
+    expect(data.summarySource).toBe('free');
+    expect(data.summaryOneLine).toBeTruthy();
+  });
+
+  it('summarizeFree 직접 호출도 summarySource=free 로 기록한다', async () => {
+    await svc.summarizeFree('a1', '한국어 제목', KO_SNIPPET);
+    const data = prisma.article.update.mock.calls.at(-1)[0].data;
+    expect(data.summarySource).toBe('free');
+  });
+});

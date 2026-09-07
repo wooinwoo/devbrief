@@ -24,6 +24,38 @@ describe('categorize', () => {
     expect(categorize('a minimal shell prompt theme')).toBe('ai');
   });
 
+  describe('접두 일치 오분류 회귀 (후행 단어 경계)', () => {
+    it('"aims to" 의 ai 접두가 ai 로 오분류되지 않는다', () => {
+      expect(categorize('rustdesk aims to work out of the box')).toBe('etc');
+    });
+
+    it('"airflow" 의 ai 접두가 ai 로 오분류되지 않는다', () => {
+      expect(categorize('airflow Platform to programmatically author and schedule workflows')).toBe(
+        'etc',
+      );
+    });
+
+    it('"client" 의 cli 접두가 cli 로 오분류되지 않는다', () => {
+      expect(categorize('redis-py The Python client for Redis')).toBe('etc');
+    });
+
+    it('"webhook" 의 web 접두가 web 으로 오분류되지 않는다', () => {
+      expect(categorize('a webhook delivery daemon')).toBe('etc');
+    });
+
+    it('"PostgreSQL" 의 sql 은 postgres 파생으로 여전히 infra 다', () => {
+      expect(categorize('a PostgreSQL admin tool')).toBe('infra');
+      expect(categorize('sqlite made easy')).toBe('infra');
+    });
+
+    it('접미 파생 토큰은 경계 추가 후에도 살아있다 (수정 부작용 가드)', () => {
+      expect(categorize('fine-tuning toolkit for LLMs')).toBe('ai');
+      expect(categorize('build ai agents fast')).toBe('ai');
+      expect(categorize('scraping toolkit for e-commerce')).toBe('data');
+      expect(categorize('a fast crawler for docs')).toBe('data');
+    });
+  });
+
   it('규칙 순서상 ai 가 web 보다 우선한다 (먼저 매칭 채택)', () => {
     // 'ai' 와 'react' 둘 다 포함 → ai 가 위에 있으므로 ai
     expect(categorize('react hooks for ai agents')).toBe('ai');

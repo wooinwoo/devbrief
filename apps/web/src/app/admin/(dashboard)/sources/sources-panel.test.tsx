@@ -93,4 +93,53 @@ describe('SourcesPanel', () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('피드 탐색 실패(401) 시 "피드 0개"가 아니라 에러를 표시한다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: 'unauthorized' }),
+      }),
+    );
+    const { getByLabelText, getByText, findByText, queryByText } = render(
+      <SourcesPanel initialSources={[]} />,
+    );
+
+    fireEvent.change(getByLabelText('소스 URL'), {
+      target: { value: 'https://blog.example.com' },
+    });
+    fireEvent.click(getByText('피드 찾기'));
+
+    const err = await findByText(/세션이 만료/);
+    expect(err).toBeTruthy();
+    // 허위 '발견된 피드 0개' UI 를 렌더하지 않는다.
+    expect(queryByText(/발견된 피드/)).toBeNull();
+  });
+
+  it('바로 등록 실패(500) 시 성공 alert 없이 서버 메시지를 표시한다', async () => {
+    const alertMock = vi.fn();
+    vi.stubGlobal('alert', alertMock);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ statusCode: 500, message: '피드 파싱 실패' }),
+      }),
+    );
+    const { getByLabelText, getByText, findByText } = render(<SourcesPanel initialSources={[]} />);
+
+    fireEvent.change(getByLabelText('소스 URL'), {
+      target: { value: 'https://blog.example.com' },
+    });
+    fireEvent.click(getByText('바로 등록'));
+
+    const err = await findByText(/피드 파싱 실패/);
+    expect(err).toBeTruthy();
+    // '새로 등록: undefined' 성공 alert 도, refresh 도 없다.
+    expect(alertMock).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+  });
 });

@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ADMIN_COOKIE, checkPassword, sessionToken, verifyToken } from './admin-auth';
+import {
+  ADMIN_COOKIE,
+  SESSION_TTL_MS,
+  checkPassword,
+  issueSessionToken,
+  verifyToken,
+} from './admin-auth';
 
 describe('admin-auth', () => {
   beforeEach(() => {
@@ -15,25 +21,24 @@ describe('admin-auth', () => {
     expect(ADMIN_COOKIE).toBe('pulse_admin');
   });
 
-  it('sessionToken은 sha256 hex (64자, 소문자 hex)', async () => {
-    const token = await sessionToken();
-    expect(token).toMatch(/^[0-9a-f]{64}$/);
+  it('토큰 형식은 exp.nonce.sig (sig 는 64자 hex HMAC)', async () => {
+    const now = Date.now();
+    const token = await issueSessionToken(now);
+    const parts = token.split('.');
+    expect(parts).toHaveLength(3);
+    expect(Number(parts[0])).toBe(now + SESSION_TTL_MS);
+    expect(parts[1]).toMatch(/^[0-9a-f]{32}$/); // 16바이트 랜덤 nonce
+    expect(parts[2]).toMatch(/^[0-9a-f]{64}$/); // HMAC-SHA256 hex
   });
 
-  it('같은 입력은 항상 같은 토큰 (해시 결정성)', async () => {
-    const a = await sessionToken('secret');
-    const b = await sessionToken('secret');
-    expect(a).toBe(b);
-  });
-
-  it('다른 비밀번호는 다른 토큰', async () => {
-    const a = await sessionToken('one');
-    const b = await sessionToken('two');
+  it('로그인마다 고유 토큰 발급 (랜덤 nonce)', async () => {
+    const a = await issueSessionToken();
+    const b = await issueSessionToken();
     expect(a).not.toBe(b);
   });
 
-  it('verifyToken — 올바른 토큰만 통과', async () => {
-    const valid = await sessionToken(); // 'pulse' 기반
+  it('verifyToken — 발급한 토큰만 통과', async () => {
+    const valid = await issueSessionToken();
     expect(await verifyToken(valid)).toBe(true);
   });
 
@@ -41,6 +46,48 @@ describe('admin-auth', () => {
     expect(await verifyToken('wrong')).toBe(false);
     expect(await verifyToken('')).toBe(false);
     expect(await verifyToken(undefined)).toBe(false);
+    // 형식만 맞는 위조 토큰도 거부
+    expect(await verifyToken(`${Date.now() + 1000}.deadbeef.${'0'.repeat(64)}`)).toBe(false);
+  });
+
+  it('verifyToken — 서명 훼손 시 거부', async () => {
+    const valid = await issueSessionToken();
+    const [exp, nonce, sig] = valid.split('.');
+    const flipped = sig.endsWith('0') ? `${sig.slice(0, -1)}1` : `${sig.slice(0, -1)}0`;
+    expect(await verifyToken(`${exp}.${nonce}.${flipped}`)).toBe(false);
+  });
+
+  it('verifyToken — exp 변조 시 거부 (서명 불일치)', async () => {
+    const valid = await issueSessionToken();
+    const [, nonce, sig] = valid.split('.');
+    const farFuture = Date.now() + 1000 * SESSION_TTL_MS;
+    expect(await verifyToken(`${farFuture}.${nonce}.${sig}`)).toBe(false);
+  });
+
+  it('verifyToken — 만료된 토큰 거부 (서버측 만료 강제)', async () => {
+    const now = Date.now();
+    const token = await issueSessionToken(now);
+    // TTL 이내는 통과
+    expect(await verifyToken(token, now + SESSION_TTL_MS - 1)).toBe(true);
+    // TTL 경과 후 거부
+    expect(await verifyToken(token, now + SESSION_TTL_MS + 1)).toBe(false);
+  });
+
+  it('ADMIN_SESSION_SECRET 회전 시 기존 토큰 전부 무효화', async () => {
+    vi.stubEnv('ADMIN_SESSION_SECRET', 'secret-v1');
+    const token = await issueSessionToken();
+    expect(await verifyToken(token)).toBe(true);
+
+    vi.stubEnv('ADMIN_SESSION_SECRET', 'secret-v2');
+    expect(await verifyToken(token)).toBe(false);
+  });
+
+  it('ADMIN_SESSION_SECRET 미설정 시 비밀번호 파생 시크릿 — 비밀번호 변경 = 전 세션 무효화', async () => {
+    const token = await issueSessionToken(); // 'pulse' 파생 시크릿
+    expect(await verifyToken(token)).toBe(true);
+
+    vi.stubEnv('ADMIN_PASSWORD', 'changed-pw');
+    expect(await verifyToken(token)).toBe(false);
   });
 
   it('checkPassword — 평문 비밀번호 비교', async () => {
@@ -52,10 +99,6 @@ describe('admin-auth', () => {
     vi.stubEnv('ADMIN_PASSWORD', 'custom-pw');
     expect(await checkPassword('custom-pw')).toBe(true);
     expect(await checkPassword('pulse')).toBe(false);
-
-    // verifyToken도 custom-pw 기반 토큰만 통과
-    const token = await sessionToken('custom-pw');
-    expect(await verifyToken(token)).toBe(true);
   });
 
   describe('ADMIN_PASSWORD 미설정 — 폴백 없이 모두 거부', () => {
@@ -70,7 +113,9 @@ describe('admin-auth', () => {
     });
 
     it('verifyToken 은 어떤 토큰도 거부', async () => {
-      const token = await sessionToken('pulse');
+      vi.stubEnv('ADMIN_PASSWORD', 'pulse');
+      const token = await issueSessionToken();
+      vi.stubEnv('ADMIN_PASSWORD', undefined);
       expect(await verifyToken(token)).toBe(false);
     });
   });

@@ -15,7 +15,7 @@ import { Queue } from 'bullmq';
 import { AdminGuard } from '../common/admin.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import type { VideoAnalyzeJobData } from './video-analysis.processor';
-import { VideoAnalyzerService } from './video-analyzer.service';
+import { VIDEO_ANALYZE_JOB_OPTS, VideoAnalyzerService } from './video-analyzer.service';
 import { YouTubeSyncService } from './youtube-sync.service';
 
 @Controller('videos')
@@ -54,7 +54,7 @@ export class VideosController {
   async addByUrl(@Body() body: { url?: string }) {
     if (!body.url) throw new BadRequestException('url 필수');
     const video = await this.analyzer.fetchAndStore(body.url);
-    await this.analyzeQueue.add('analyze', { videoDbId: video.id });
+    await this.analyzeQueue.add('analyze', { videoDbId: video.id }, VIDEO_ANALYZE_JOB_OPTS);
     return { ...video, queuedForAnalysis: true };
   }
 
@@ -69,16 +69,9 @@ export class VideosController {
   @UseGuards(AdminGuard)
   async sync() {
     const result = await this.youtube.syncAllConferences();
-    // sync 직후 모든 미분석 영상에 analyze 잡 enqueue
-    const fresh = await this.prisma.video.findMany({
-      where: { analyzedAt: null },
-      select: { id: true },
-      take: 200,
-    });
-    for (const v of fresh) {
-      await this.analyzeQueue.add('analyze', { videoDbId: v.id });
-    }
-    return { ...result, queuedForAnalysis: fresh.length };
+    // sync 직후 모든 미분석 영상에 analyze 잡 enqueue (주간 크론과 정책 공유)
+    const queued = await this.analyzer.enqueueUnanalyzed();
+    return { ...result, queuedForAnalysis: queued };
   }
 
   /** 동기 분석 (DB 즉시 업데이트). force=1 이면 기존 결과 무시하고 재분석. */
@@ -99,10 +92,11 @@ export class VideosController {
       take: 500,
     });
     for (const v of targets) {
-      await this.analyzeQueue.add('analyze', {
-        videoDbId: v.id,
-        force: force === '1',
-      });
+      await this.analyzeQueue.add(
+        'analyze',
+        { videoDbId: v.id, force: force === '1' },
+        VIDEO_ANALYZE_JOB_OPTS,
+      );
     }
     return { queued: targets.length };
   }

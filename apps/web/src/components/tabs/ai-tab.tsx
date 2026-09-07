@@ -4,54 +4,20 @@ import {
   AI_HARNESSES,
   AI_MODELS,
   AI_THEMES,
+  type AiFacet,
   harnessesOf,
   isAiArticle,
   modelsOf,
   themesOf,
 } from '@/lib/ai-topics';
-import { useEffect, useMemo, useState } from 'react';
+import { useUrlFilters } from '@/lib/use-url-filter';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ArticleDto } from '../article-card';
 import { ArticleRow } from '../article-row';
 import { BenchmarkDashboard } from '../benchmark-dashboard';
 import { type FilterGroup, FilterSidebar } from '../filter-sidebar';
 import { Pagination } from '../pagination';
 import { SectionHeader } from '../section-header';
-
-function AiSectionHeader({
-  color,
-  label,
-  count,
-}: {
-  color: string;
-  label: string;
-  count: number;
-}) {
-  return (
-    <div className="flex items-center gap-2.5 mb-4">
-      <span
-        aria-hidden
-        className="inline-block w-1 h-5 rounded-full"
-        style={{ background: color }}
-      />
-      <h2
-        className="text-[1.125rem] leading-none tracking-[-0.015em]"
-        style={{ color: 'var(--color-fg-strong)', fontWeight: 800 }}
-      >
-        {label}
-      </h2>
-      <span
-        className="text-[12px] tabular-nums px-2 py-0.5 rounded-full"
-        style={{
-          color: 'var(--color-fg-muted)',
-          background: 'var(--color-bg-sunken)',
-          fontWeight: 600,
-        }}
-      >
-        {count}
-      </span>
-    </div>
-  );
-}
 
 interface Props {
   articles: ArticleDto[];
@@ -61,60 +27,88 @@ interface Props {
   onBookmark?: (id: string) => void;
 }
 
+/** AI 탭 필터 조합 — faceted count 용으로 특정 그룹 조건만 뺀 부분 적용도 가능하게 분리 */
+interface AiFilter {
+  model?: string | null;
+  harness?: string | null;
+  theme?: string | null;
+  query?: string;
+}
+
+function matchesAiFilter(a: ArticleDto, f: AiFilter): boolean {
+  const q = (f.query ?? '').trim().toLowerCase();
+  if (f.model && !modelsOf(a).some((x) => x.key === f.model)) return false;
+  if (f.harness && !harnessesOf(a).some((x) => x.key === f.harness)) return false;
+  if (f.theme && !themesOf(a).some((x) => x.key === f.theme)) return false;
+  if (q) {
+    const hay =
+      `${a.title} ${a.titleKo ?? ''} ${a.summaryOneLine ?? ''} ${a.tags.join(' ')}`.toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  return true;
+}
+
+/**
+ * 파셋 옵션 집계 — '목록'은 전체 AI 글 기준으로 고정하고(옵션이 나타났다 사라지지 않게),
+ * 표시 '카운트'는 해당 그룹 조건을 뺀 나머지 필터(rest)를 적용한 부분집합 기준(faceted count).
+ * 활성 옵션은 교차 카운트가 0이어도 목록에 남아 해제할 수 있다.
+ */
+function facetOptions(
+  aiArticles: ArticleDto[],
+  facets: AiFacet[],
+  of: (a: ArticleDto) => AiFacet[],
+  rest: AiFilter,
+) {
+  const sub = aiArticles.filter((a) => matchesAiFilter(a, rest));
+  return facets
+    .filter((f) => aiArticles.some((a) => of(a).some((x) => x.key === f.key)))
+    .map((f) => ({
+      value: f.key,
+      label: f.label,
+      color: f.color,
+      count: sub.filter((a) => of(a).some((x) => x.key === f.key)).length,
+    }));
+}
+
 export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Props) {
   const aiArticles = useMemo(() => articles.filter(isAiArticle), [articles]);
-  const [model, setModel] = useState<string | null>(null);
-  const [harness, setHarness] = useState<string | null>(null);
-  const [theme, setTheme] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
+
+  // 필터 상태는 URL 쿼리에서 파생 — articles 탭(q/source/cat/unread)과 같은 패턴.
+  // 새로고침/뒤로가기/링크 공유 시 그대로 복원된다. 키는 탭 전환 시 서로 새어 들어가지
+  // 않게 AI 탭 전용(model/tool/theme/aq)으로 분리.
+  const { searchParams, setParam, setParamDebounced } = useUrlFilters();
+  const model = searchParams.get('model') || null;
+  const harness = searchParams.get('tool') || null;
+  const theme = searchParams.get('theme') || null;
+  const query = searchParams.get('aq') ?? '';
+
+  const setModel = useCallback((v: string | null) => setParam('model', v), [setParam]);
+  const setHarness = useCallback((v: string | null) => setParam('tool', v), [setParam]);
+  const setTheme = useCallback((v: string | null) => setParam('theme', v), [setParam]);
+  const setQuery = useCallback(
+    (v: string) => setParamDebounced('aq', v.trim() || null),
+    [setParamDebounced],
+  );
 
   const modelOptions = useMemo(
-    () =>
-      AI_MODELS.map((m) => ({
-        value: m.key,
-        label: m.label,
-        color: m.color,
-        count: aiArticles.filter((a) => modelsOf(a).some((x) => x.key === m.key)).length,
-      })).filter((o) => o.count > 0),
-    [aiArticles],
+    () => facetOptions(aiArticles, AI_MODELS, modelsOf, { harness, theme, query }),
+    [aiArticles, harness, theme, query],
   );
 
   const harnessOptions = useMemo(
-    () =>
-      AI_HARNESSES.map((h) => ({
-        value: h.key,
-        label: h.label,
-        color: h.color,
-        count: aiArticles.filter((a) => harnessesOf(a).some((x) => x.key === h.key)).length,
-      })).filter((o) => o.count > 0),
-    [aiArticles],
+    () => facetOptions(aiArticles, AI_HARNESSES, harnessesOf, { model, theme, query }),
+    [aiArticles, model, theme, query],
   );
 
   const themeOptions = useMemo(
-    () =>
-      AI_THEMES.map((t) => ({
-        value: t.key,
-        label: t.label,
-        color: t.color,
-        count: aiArticles.filter((a) => themesOf(a).some((x) => x.key === t.key)).length,
-      })).filter((o) => o.count > 0),
-    [aiArticles],
+    () => facetOptions(aiArticles, AI_THEMES, themesOf, { model, harness, query }),
+    [aiArticles, model, harness, query],
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return aiArticles.filter((a) => {
-      if (model && !modelsOf(a).some((x) => x.key === model)) return false;
-      if (harness && !harnessesOf(a).some((x) => x.key === harness)) return false;
-      if (theme && !themesOf(a).some((x) => x.key === theme)) return false;
-      if (q) {
-        const hay =
-          `${a.title} ${a.titleKo ?? ''} ${a.summaryOneLine ?? ''} ${a.tags.join(' ')}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [aiArticles, model, harness, theme, query]);
+  const filtered = useMemo(
+    () => aiArticles.filter((a) => matchesAiFilter(a, { model, harness, theme, query })),
+    [aiArticles, model, harness, theme, query],
+  );
 
   const isFiltering = !!(model || harness || theme || query.trim());
 
@@ -198,9 +192,9 @@ export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Pr
           </p>
         ) : isFiltering ? (
           <>
-            <SectionHeader label="필터된 소식" count={filtered.length} hint="filtered" />
+            <SectionHeader label="필터된 소식" count={filtered.length} />
             <ul className="grid xl:grid-cols-2 gap-x-10">
-              {pageSlice.map((a, i) => (
+              {pageSlice.map((a) => (
                 <ArticleRow
                   key={a.id}
                   article={a}
@@ -208,7 +202,6 @@ export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Pr
                   bookmarked={bookmarkSet?.has(a.id)}
                   onOpen={() => onOpen(a.id)}
                   onBookmark={onBookmark}
-                  index={start + i}
                   badges={badgesOf(a)}
                 />
               ))}
@@ -220,11 +213,7 @@ export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Pr
             <BenchmarkDashboard />
             {themeGroups.map((g) => (
               <section key={g.theme.key}>
-                <AiSectionHeader
-                  color={g.theme.color}
-                  label={g.theme.label}
-                  count={g.articles.length}
-                />
+                <SectionHeader label={g.theme.label} count={g.articles.length} />
                 <ul className="grid xl:grid-cols-2 gap-x-10">
                   {g.articles.map((a) => (
                     <ArticleRow
@@ -242,11 +231,7 @@ export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Pr
             ))}
             {etcArticles.length > 0 && (
               <section>
-                <AiSectionHeader
-                  color="var(--color-fg-subtle)"
-                  label="그 외 AI 소식"
-                  count={etcArticles.length}
-                />
+                <SectionHeader label="그 외 AI 소식" count={etcArticles.length} />
                 <ul className="grid xl:grid-cols-2 gap-x-10">
                   {etcArticles.map((a) => (
                     <ArticleRow

@@ -1,5 +1,8 @@
-export function relativeTime(iso: string): string {
-  const now = Date.now();
+/**
+ * 발행 시각의 상대시간 라벨. now 는 테스트/고정 기준 시각 주입용(기본 현재 시각).
+ * 30일 초과 폴백은 KST 고정 — 서버(UTC)/클라(KST) 어디서 렌더돼도 같은 날짜가 나온다.
+ */
+export function relativeTime(iso: string, now: number = Date.now()): string {
   const then = new Date(iso).getTime();
   const diff = now - then;
 
@@ -17,5 +20,6 @@ export function relativeTime(iso: string): string {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+    timeZone: 'Asia/Seoul',
   });
 }

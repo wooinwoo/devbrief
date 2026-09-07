@@ -1,25 +1,44 @@
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ArticleDto } from './article-card';
 
-// next/navigation 모킹 — 탭은 URL 쿼리에서 파생되므로 router.replace 와 searchParams 를 제어한다.
+// next/navigation 모킹 — 탭/필터는 URL 쿼리에서 파생되므로 router.replace 와 searchParams 를 제어한다.
 const replace = vi.fn();
-let currentTab: string | null = null;
+let currentSearch = '';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
-  useSearchParams: () => ({ get: (k: string) => (k === 'tab' ? currentTab : null) }),
+  useSearchParams: () => new URLSearchParams(currentSearch),
 }));
 
 import { ArticlesView } from './articles-view';
 
+function makeArticle(partial: Partial<ArticleDto> & { id: string }): ArticleDto {
+  return {
+    title: 'title',
+    titleKo: null,
+    url: 'https://x',
+    summaryOneLine: null,
+    summaryThreeLine: null,
+    publishedAt: '2026-05-30T00:00:00Z',
+    tags: [],
+    imageUrl: null,
+    language: 'ko',
+    source: { name: 'GeekNews', provider: 'geeknews' },
+    ...partial,
+  };
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  localStorage.clear();
 });
 
 beforeEach(() => {
   replace.mockClear();
-  currentTab = null;
+  currentSearch = '';
 });
 
 describe('ArticlesView 탭 키보드 접근성', () => {
@@ -59,8 +78,136 @@ describe('ArticlesView 탭 키보드 접근성', () => {
   });
 
   it('콘텐츠 영역은 role=tabpanel 로 활성 탭과 연결된다', () => {
-    const { getByRole } = render(<ArticlesView articles={[]} />);
+    const { getByRole, getAllByRole } = render(<ArticlesView articles={[]} />);
     const panel = getByRole('tabpanel');
     expect(panel.getAttribute('aria-labelledby')).toBe('tab-all');
+    for (const tab of getAllByRole('tab')) {
+      expect(document.getElementById(tab.getAttribute('aria-controls') ?? '')).toBe(panel);
+    }
+  });
+});
+
+describe('setTab 쿼리 보존', () => {
+  it('화살표 키 탭 전환 시 기존 필터 쿼리(cat/unread)를 보존한다', () => {
+    currentSearch = 'tab=articles&cat=ai&unread=1';
+    const { getAllByRole } = render(<ArticlesView articles={[]} />);
+    const active = getAllByRole('tab').find((t) => t.getAttribute('aria-selected') === 'true');
+    expect(active?.textContent).toBe('개발 뉴스');
+
+    fireEvent.keyDown(active as HTMLElement, { key: 'ArrowRight' });
+
+    // 다음 탭은 conferences — tab 키만 바뀌고 cat/unread 는 남는다.
+    expect(replace).toHaveBeenCalledWith('/?tab=conferences&cat=ai&unread=1', { scroll: true });
+  });
+
+  it('현재 활성 탭을 재클릭해도 필터 쿼리가 초기화되지 않는다', () => {
+    currentSearch = 'tab=articles&q=react';
+    const { getAllByRole } = render(<ArticlesView articles={[]} />);
+    const active = getAllByRole('tab').find((t) => t.getAttribute('aria-selected') === 'true');
+
+    fireEvent.click(active as HTMLElement);
+
+    expect(replace).toHaveBeenCalledWith('/?tab=articles&q=react', { scroll: true });
+  });
+
+  it("'오늘' 탭 전환은 tab 키만 지우고 나머지 쿼리는 유지", () => {
+    currentSearch = 'tab=articles&q=react';
+    const { getAllByRole } = render(<ArticlesView articles={[]} />);
+    const today = getAllByRole('tab').find((t) => t.textContent === '오늘');
+
+    fireEvent.click(today as HTMLElement);
+
+    expect(replace).toHaveBeenCalledWith('/?q=react', { scroll: true });
+  });
+});
+
+describe('저장 배지', () => {
+  it('배지는 로드된 목록 교집합이 아닌 북마크 저장소 전체 크기를 표시한다', () => {
+    // 목록(articles=[])에 없는 과거 글 2건 — 저장소 기준이면 2, 교집합 기준이면 배지 없음.
+    localStorage.setItem('devbrief.bookmarks.v1', JSON.stringify(['old-1', 'old-2']));
+    const { getByText } = render(<ArticlesView articles={[]} />);
+    const badge = getByText('2');
+    expect(badge.closest('a')?.getAttribute('href')).toBe('/bookmarks');
+  });
+
+  it('북마크가 없으면 배지를 그리지 않는다', () => {
+    const { queryByText } = render(<ArticlesView articles={[]} />);
+    expect(queryByText('저장')?.querySelector('span')).toBeFalsy();
+  });
+});
+
+describe("articles 탭 '전체' 통계 + 더 불러오기 (c62)", () => {
+  it("'전체'는 로드된 개수가 아닌 X-Total-Count 의 서버 전체 건수를 표시한다", () => {
+    currentSearch = 'tab=articles';
+    const { getByText } = render(
+      <ArticlesView articles={[makeArticle({ id: 'a1' })]} total={250} />,
+    );
+    // 로드 1건이지만 '전체'는 서버 count 250
+    expect(getByText('250')).toBeTruthy();
+  });
+
+  it('total 미상(null)이면 로드 수로 폴백하고 더 불러오기를 노출하지 않는다', () => {
+    currentSearch = 'tab=articles';
+    const { queryByText } = render(
+      <ArticlesView articles={[makeArticle({ id: 'a1' })]} total={null} />,
+    );
+    expect(queryByText('이전 글 더 불러오기')).toBeNull();
+  });
+
+  it('클릭 → offset 페치로 이전 글을 append 하고, 전부 로드되면 버튼을 접는다', async () => {
+    currentSearch = 'tab=articles';
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [makeArticle({ id: 'a3', title: '아카이브 글' })],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { getByText, queryByText, findByText } = render(
+      <ArticlesView articles={[makeArticle({ id: 'a1' }), makeArticle({ id: 'a2' })]} total={3} />,
+    );
+    fireEvent.click(getByText('이전 글 더 불러오기'));
+
+    // append 된 이전 글이 목록 풀에 합류해 렌더된다.
+    await findByText('아카이브 글');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('offset=2');
+    // 3/3 전부 로드 → hasMore false → 버튼 접힘.
+    expect(queryByText('이전 글 더 불러오기')).toBeNull();
+  });
+
+  it('중복 id 가 내려와도(offset 드리프트) 목록에 두 번 넣지 않는다', async () => {
+    currentSearch = 'tab=articles';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        // a1 은 이미 로드된 글 — 첫 로드 뒤 새 글이 끼면 offset 페치에 겹쳐 내려올 수 있다.
+        json: async () => [
+          makeArticle({ id: 'a1' }),
+          makeArticle({ id: 'a2', title: '새 이전 글' }),
+        ],
+      }),
+    );
+
+    const { getAllByText, getByText, findByText } = render(
+      <ArticlesView articles={[makeArticle({ id: 'a1', title: '원본 글' })]} total={2} />,
+    );
+    fireEvent.click(getByText('이전 글 더 불러오기'));
+
+    await findByText('새 이전 글');
+    // 중복 병합이면 a1 이 두 번 렌더된다.
+    expect(getAllByText('원본 글')).toHaveLength(1);
+  });
+
+  it('서버가 빈 응답을 주면(전체 count 와 드리프트) 버튼을 접는다', async () => {
+    currentSearch = 'tab=articles';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+
+    const { getByText, queryByText } = render(
+      <ArticlesView articles={[makeArticle({ id: 'a1' })]} total={5} />,
+    );
+    fireEvent.click(getByText('이전 글 더 불러오기'));
+
+    await waitFor(() => expect(queryByText('이전 글 더 불러오기')).toBeNull());
   });
 });

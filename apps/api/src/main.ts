@@ -1,5 +1,6 @@
 // dotenv 강제 로드 — Prisma Client 가 ConfigModule 초기화 전에 process.env 를 읽기 때문
 import 'dotenv/config';
+import { TOTAL_COUNT_HEADER } from '@devbrief/shared';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -18,7 +19,12 @@ async function bootstrap() {
     .filter(Boolean);
   // '*' 은 명시적 와일드카드(자격증명 없이 공개)로만 처리.
   const origin = allowList.includes('*') ? '*' : allowList;
-  app.enableCors({ origin, credentials: false });
+  // X-Total-Count(목록 total) 는 CORS 기본 노출 목록에 없어 명시해야 브라우저가 읽는다 (감사 c62).
+  app.enableCors({
+    origin,
+    credentials: false,
+    exposedHeaders: [TOTAL_COUNT_HEADER],
+  });
   // /api/v1 prefix — 단, 헬스체크(/health)는 prefix 없이 노출 (Railway healthcheckPath)
   app.setGlobalPrefix('api/v1', { exclude: ['health'] });
 

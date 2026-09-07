@@ -12,16 +12,6 @@ datasource db {
   extensions = [vector]
 }
 
-model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  name         String?
-  imageUrl     String?
-  createdAt    DateTime       @default(now())
-  readingEvts  ReadingEvent[]
-  chatSessions ChatSession[]
-}
-
 model Source {
   id        String         @id @default(cuid())
   provider  String // SourceProvider
@@ -31,6 +21,8 @@ model Source {
   language  String         @default("en") // ko / en / mixed
   active    Boolean        @default(true)
   createdAt DateTime       @default(now())
+  lastFetchedAt DateTime? // 마지막 수집 성공 시각 — 죽은 피드 감지용
+  lastError     String? // 마지막 수집 실패 사유 (성공 시 null 로 리셋)
   articles  Article[]
 }
 
@@ -45,6 +37,7 @@ model Article {
   publishedAt      DateTime
   summaryOneLine   String? // 한국어 1줄 요약 (영문이면 요약+번역 같이)
   summaryThreeLine String? // 한국어 3줄 요약
+  summarySource    String? // 'gemini' | 'free' — free 는 키 복구 후 백필 대상
   contentSnippet   String? @db.Text // 요약 재생성용 본문 평문 발췌 (수집 시 저장)
   contentHtml      String? @db.Text // 정제(sanitize)된 본문 HTML — 상세페이지 직접 읽기용 (CLI extract 가 채움)
   tags             String[] @default([])
@@ -57,7 +50,7 @@ model Article {
   // pgvector embedding — Gemini text-embedding-004 기본 768 차원
   embedding  Unsupported("vector(768)")?
 
-  readingEvts ReadingEvent[]
+  discoveredConferences Conference[] @relation("ConferenceDiscoveredFrom")
 
   @@index([publishedAt])
   @@index([sourceId, publishedAt])
@@ -82,12 +75,16 @@ model Conference {
   // REJECTED — 잘못된 후보 (스팸/중복). 다음 discovery에서 재제안 안 함
   status               String  @default("ACTIVE")
   discoveredFromArticleId String?
+  // 발견 출처 글 — 글 삭제 시 참조만 끊는다 (SetNull). 고아 id 방지 (감사 c67)
+  discoveredFromArticle Article? @relation("ConferenceDiscoveredFrom", fields: [discoveredFromArticleId], references: [id], onDelete: SetNull)
   discoveredAt         DateTime?
 
   createdAt       DateTime  @default(now())
 
   videos          Video[]
 
+  // 시더/디스커버리의 name+startDate 코드 dedupe 와 짝을 이루는 DB 방어선 (감사 c28)
+  @@unique([name, startDate])
   @@index([startDate])
   @@index([status])
 }
@@ -123,40 +120,6 @@ model Video {
   @@index([conferenceId])
 }
 
-model ReadingEvent {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  articleId String
-  article   Article  @relation(fields: [articleId], references: [id])
-  event     String // viewed / opened / saved / dismissed
-  createdAt DateTime @default(now())
-
-  @@index([userId, createdAt])
-  @@index([userId, articleId])
-}
-
-model ChatSession {
-  id        String        @id @default(cuid())
-  userId    String
-  user      User          @relation(fields: [userId], references: [id])
-  title     String?
-  createdAt DateTime      @default(now())
-  messages  ChatMessage[]
-}
-
-model ChatMessage {
-  id        String      @id @default(cuid())
-  sessionId String
-  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  role      String // user / assistant / system
-  content   String      @db.Text
-  citations Json? // [{ articleId, snippet }]
-  createdAt DateTime    @default(now())
-
-  @@index([sessionId, createdAt])
-}
-
 /**
  * 매일 09:30 KST 자동 생성. 그 날 들어온 글 중 Gemini 가 선별한 5개 핵심.
  * date 는 yyyy-mm-dd 자정 기준.
@@ -168,8 +131,6 @@ model DailyDigest {
   items       Json
   intro       String? // 그 날 전반의 한 줄 요약 (선택)
   generatedAt DateTime @default(now())
-
-  @@index([date])
 }
 
 /**

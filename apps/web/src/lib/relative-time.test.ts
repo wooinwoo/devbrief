@@ -42,4 +42,16 @@ describe('relativeTime', () => {
     expect(result).toMatch(/2026/);
     expect(result).toMatch(/3월/);
   });
+
+  it('30일 초과 폴백은 KST 날짜 — UTC 저녁 발행(=KST 다음날)이 서버/클라 동일하게 나온다', () => {
+    // 2026-03-31 16:00 UTC = KST 4월 1일 01:00 — UTC 기준으로 렌더하면 3월 31일이 되는 함정 케이스
+    const result = relativeTime('2026-03-31T16:00:00Z');
+    expect(result).toMatch(/4월/);
+    expect(result).not.toMatch(/3월/);
+  });
+
+  it('now 를 주입하면 시스템 시계와 무관하게 계산 — 고정 기준 시각용', () => {
+    const now = new Date('2026-07-01T12:00:00Z').getTime();
+    expect(relativeTime('2026-07-01T11:55:00Z', now)).toBe('5분 전');
+  });
 });

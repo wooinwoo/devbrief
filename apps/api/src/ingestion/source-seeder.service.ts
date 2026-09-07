@@ -193,24 +193,34 @@ export class SourceSeederService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     try {
-      for (const src of DEFAULT_SOURCES) {
-        await this.prisma.source.upsert({
-          where: { feedUrl: src.feedUrl },
-          create: src,
-          update: {
-            name: src.name,
-            homepage: src.homepage,
-            language: src.language,
-            active: true,
-          },
+      // 시드는 '최초 생성'만 담당한다. 기존 행의 active/name 등 어드민 편집 값을
+      // 재시작마다 시드 값으로 되돌리지 않는다 (비활성화한 소스 부활 방지).
+      const existing = await this.prisma.source.findMany({
+        where: { feedUrl: { in: DEFAULT_SOURCES.map((s) => s.feedUrl) } },
+        select: { feedUrl: true, homepage: true },
+      });
+      const byFeedUrl = new Map(existing.map((s) => [s.feedUrl, s]));
+
+      const toCreate = DEFAULT_SOURCES.filter((s) => !byFeedUrl.has(s.feedUrl));
+      if (toCreate.length > 0) {
+        await this.prisma.source.createMany({
+          data: toCreate,
+          skipDuplicates: true,
         });
       }
-      // 공식 RSS 가 사라진 Anthropic 소스 비활성화 (404)
-      await this.prisma.source.updateMany({
-        where: { provider: 'anthropic' },
-        data: { active: false },
-      });
-      this.logger.log(`Seeded ${DEFAULT_SOURCES.length} sources`);
+
+      // 기존 행은 비어 있는 필드만 시드 값으로 보충 — non-null 값은 어드민 편집 우선.
+      for (const src of DEFAULT_SOURCES) {
+        const row = byFeedUrl.get(src.feedUrl);
+        if (row && !row.homepage && src.homepage) {
+          await this.prisma.source.update({
+            where: { feedUrl: src.feedUrl },
+            data: { homepage: src.homepage },
+          });
+        }
+      }
+
+      this.logger.log(`Seeded sources: +${toCreate.length} created, ${existing.length} existing`);
     } catch (e) {
       this.logger.warn(`Source seeding skipped: ${(e as Error).message}`);
     }

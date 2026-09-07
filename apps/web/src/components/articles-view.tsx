@@ -1,15 +1,16 @@
 'use client';
 
 import { isAiArticle } from '@/lib/ai-topics';
+import { API_BASE } from '@/lib/api';
 import { bookmarks } from '@/lib/bookmark';
-import { daysUntil } from '@/lib/date-utils';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { RepoDto } from '@/lib/mock-repos';
 import type { VideoDto } from '@/lib/mock-videos';
 import { readTracking } from '@/lib/read-tracking';
+import type { ArticleListItem } from '@devbrief/shared';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ArticleDto } from './article-card';
 import type { DigestDto } from './daily-digest';
 import { LangToggle } from './lang-toggle';
@@ -24,6 +25,8 @@ import { VideosTab } from './tabs/videos-tab';
 
 interface Props {
   articles: ArticleDto[];
+  /** GET /articles 의 X-Total-Count — 서버 전체 글 수. null/미지정이면 전체 미상 (감사 c62). */
+  total?: number | null;
   videos?: VideoDto[];
   conferences?: ConferenceDto[];
   digest?: DigestDto | null;
@@ -33,16 +36,20 @@ interface Props {
 type Tab = 'all' | 'ai' | 'articles' | 'conferences' | 'videos' | 'repos';
 
 const TABS: Array<{ id: Tab; label: string; title: string }> = [
-  { id: 'all', label: '오늘', title: '오늘의 흐름' },
+  { id: 'all', label: '오늘', title: '오늘, 무엇을 읽을까요?' },
   { id: 'ai', label: 'AI', title: 'AI 트렌드 레이더' },
   { id: 'articles', label: '개발 뉴스', title: '개발 뉴스' },
-  { id: 'conferences', label: '컨퍼런스', title: '개발자 컨퍼런스' },
+  { id: 'conferences', label: '행사', title: '행사' },
   { id: 'videos', label: '발표 영상', title: '발표 영상' },
   { id: 'repos', label: '오픈소스', title: '급성장 오픈소스' },
 ];
 
+// '더 불러오기' 1회 페치 분량 — 첫 로드(page.tsx limit=100)와 동일, 서버 캡(최대 100) 이내.
+const LOAD_MORE_LIMIT = 100;
+
 export function ArticlesView({
   articles,
+  total = null,
   videos = [],
   conferences = [],
   digest = null,
@@ -53,10 +60,74 @@ export function ArticlesView({
   // 탭은 URL 쿼리에서 파생 — 새로고침/뒤로가기/링크 공유 시 그대로 복원됨.
   const tabParam = (searchParams.get('tab') as Tab) ?? 'all';
   const tab: Tab = TABS.some((t) => t.id === tabParam) ? tabParam : 'all';
-  const setTab = (t: Tab) => router.replace(t === 'all' ? '/' : `/?tab=${t}`, { scroll: true });
+  // 탭 전환 시에도 tab 키만 갱신하고 나머지 쿼리(q/source/cat/unread 등)는 보존한다 —
+  // 각 탭의 setParam 이 tab 키를 보존하는 것과 같은 계약. 화살표 키 탐색·재클릭에
+  // 필터가 통째로 날아가던 문제 방지.
+  const setTab = useCallback(
+    (t: Tab) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (t === 'all') next.delete('tab');
+      else next.set('tab', t);
+      const qs = next.toString();
+      router.replace(qs ? `/?${qs}` : '/', { scroll: true });
+    },
+    [searchParams, router],
+  );
   const [readSet, setReadSet] = useState<Set<string>>(new Set());
   const [bookmarkSet, setBookmarkSet] = useState<Set<string>>(new Set());
   const [today, setToday] = useState('');
+
+  // c62 — '더 불러오기': 서버 첫 로드(최신 100건) 뒤 offset 페치로 이전 글을 이어 붙인다.
+  // NEXT_PUBLIC_API_BASE 직접 호출(서버가 CORS exposedHeaders 처리 완료).
+  const [moreArticles, setMoreArticles] = useState<ArticleDto[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // 서버 응답이 비면 total 과의 드리프트(삭제 등)로 판단하고 버튼을 접는다.
+  const [drained, setDrained] = useState(false);
+
+  const allArticles = useMemo(() => {
+    if (moreArticles.length === 0) return articles;
+    // 첫 로드 이후 새 글이 목록 앞에 끼면 offset 페치가 겹칠 수 있어 id 기준 중복 제거.
+    const seen = new Set<string>();
+    const merged: ArticleDto[] = [];
+    for (const a of [...articles, ...moreArticles]) {
+      if (seen.has(a.id)) continue;
+      seen.add(a.id);
+      merged.push(a);
+    }
+    return merged;
+  }, [articles, moreArticles]);
+
+  const hasMore = total !== null && allArticles.length < total && !drained;
+
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/articles?limit=${LOAD_MORE_LIMIT}&offset=${allArticles.length}`,
+        { cache: 'no-store' },
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as ArticleListItem[];
+      if (data.length === 0) {
+        setDrained(true);
+        return;
+      }
+      // 실데이터의 tags/source 누락 방어 (page.tsx getArticles 와 같은 계약 방어)
+      setMoreArticles((prev) => [
+        ...prev,
+        ...data.map((a) => ({
+          ...a,
+          tags: a.tags ?? [],
+          source: a.source ?? { name: '출처 미상', provider: 'rss_generic' },
+        })),
+      ]);
+    } catch {
+      // 네트워크 실패 — 버튼이 남아 있어 다시 시도할 수 있다.
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, allArticles.length]);
 
   useEffect(() => {
     setReadSet(readTracking.load());
@@ -67,21 +138,14 @@ export function ArticlesView({
         month: 'long',
         day: 'numeric',
         weekday: 'long',
+        timeZone: 'Asia/Seoul', // 방문자 로컬 TZ 아닌 서비스 기준(KST) 날짜
       }),
     );
   }, []);
 
-  const savedArticles = useMemo(
-    () => articles.filter((a) => bookmarkSet.has(a.id)),
-    [articles, bookmarkSet],
-  );
   const unreadCount = useMemo(
-    () => articles.filter((a) => !readSet.has(a.id)).length,
-    [articles, readSet],
-  );
-  const upcomingCount = useMemo(
-    () => conferences.filter((c) => daysUntil(c.startDate) >= 0).length,
-    [conferences],
+    () => allArticles.filter((a) => !readSet.has(a.id)).length,
+    [allArticles, readSet],
   );
 
   const handleOpen = (id: string) => {
@@ -96,7 +160,7 @@ export function ArticlesView({
   const activeTab = TABS.find((t) => t.id === tab);
 
   // 제목줄 우측 통계 — 활성 탭과 무관한 숫자를 늘어놓지 않고 탭별로 맞춘다.
-  const aiArticles = useMemo(() => articles.filter(isAiArticle), [articles]);
+  const aiArticles = useMemo(() => allArticles.filter(isAiArticle), [allArticles]);
   const aiCount = aiArticles.length;
   const aiUnread = useMemo(
     () => aiArticles.filter((a) => !readSet.has(a.id)).length,
@@ -115,14 +179,12 @@ export function ArticlesView({
         ];
       case 'articles':
         return [
-          { label: '전체', value: articles.length },
+          // '전체'는 로드된 개수가 아닌 서버 전체 건수(X-Total-Count) — 미상이면 로드 수로 폴백.
+          { label: '전체', value: total ?? allArticles.length },
           { label: '안 본 글', value: unreadCount, accent: true },
         ];
       case 'conferences':
-        return [
-          { label: '예정', value: upcomingCount, accent: true },
-          { label: '전체', value: conferences.length },
-        ];
+        return [];
       case 'videos':
         return [{ label: '영상', value: videos.length }];
       case 'repos':
@@ -139,52 +201,42 @@ export function ArticlesView({
         ];
       default:
         return [
-          { label: '전체', value: articles.length },
-          { label: '안 본 글', value: unreadCount, accent: true },
-          { label: '컨퍼런스', value: upcomingCount },
-          { label: '영상', value: videos.length },
+          { label: '불러온 글', value: allArticles.length },
+          { label: '안 읽은 글', value: unreadCount, accent: true },
         ];
     }
-  }, [
-    tab,
-    aiCount,
-    aiUnread,
-    articles.length,
-    unreadCount,
-    upcomingCount,
-    conferences.length,
-    videos.length,
-    repos,
-    savedArticles.length,
-  ]);
+  }, [tab, aiCount, aiUnread, allArticles.length, total, unreadCount, videos.length, repos]);
 
   return (
     <div className="w-full flex flex-col min-h-screen">
       {/* === 상단 가로 헤더 바 (sticky) ===================== */}
       <header
-        className="sticky top-0 z-30 mx-[calc(50%-50vw)] border-b backdrop-blur-md"
+        className="sticky top-0 z-30 mx-[calc(50%-50vw)] border-b [&_:focus-visible]:outline-(--bar-accent)"
         style={{
           borderColor: 'var(--bar-line)',
-          background: 'oklch(25% 0.035 265 / 0.92)',
+          background: 'var(--bar-bg)',
         }}
       >
-        <div className="px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32 flex items-center gap-4 sm:gap-8 h-[68px]">
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 grid grid-cols-[1fr_auto] lg:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-6 lg:gap-x-8">
           {/* 로고 */}
           <Link
             href="/"
             aria-label="Devbrief 홈"
-            className="shrink-0 text-[21px] tracking-[-0.02em]"
+            className="flex items-center min-h-[60px] lg:min-h-[72px] shrink-0 text-[21px] tracking-[-0.02em]"
             style={{ color: 'var(--bar-fg)', fontWeight: 800 }}
           >
             Dev<span style={{ color: 'var(--bar-accent)' }}>brief</span>
           </Link>
 
           {/* 탭 nav — WAI-ARIA tabs 패턴. 좌우 화살표로 탭 간 이동(roving tabindex). */}
-          <nav className="no-scrollbar flex items-center gap-0.5 sm:gap-1 flex-1 min-w-0 overflow-x-auto">
+          <nav
+            aria-label="콘텐츠 탐색"
+            className="no-scrollbar order-3 col-span-2 lg:order-none lg:col-span-1 flex items-center gap-1 min-w-0 overflow-x-auto pb-2 lg:py-0"
+          >
             <div
               role="tablist"
               aria-label="콘텐츠 탭"
-              className="flex items-center gap-0.5 sm:gap-1"
+              className="flex shrink-0 items-center gap-0.5 sm:gap-1"
             >
               {TABS.map((t, i) => {
                 const isActive = tab === t.id;
@@ -194,6 +246,7 @@ export function ArticlesView({
                     type="button"
                     role="tab"
                     id={`tab-${t.id}`}
+                    aria-controls="content-panel"
                     aria-selected={isActive}
                     aria-current={isActive ? 'page' : undefined}
                     // roving tabindex — 활성 탭만 Tab 으로 진입, 나머지는 화살표로 이동.
@@ -210,10 +263,10 @@ export function ArticlesView({
                         document.getElementById(`tab-${next.id}`)?.focus(),
                       );
                     }}
-                    className="shrink-0 px-3 sm:px-3.5 py-2 rounded-lg text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors relative"
+                    className="shrink-0 px-3 sm:px-3.5 min-h-11 py-2 rounded-sm text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors relative"
                     style={{
                       color: isActive ? 'var(--bar-fg)' : 'var(--bar-fg-muted)',
-                      background: isActive ? 'oklch(100% 0 0 / 0.1)' : 'transparent',
+                      background: 'transparent',
                       fontWeight: isActive ? 700 : 500,
                       boxShadow: isActive ? 'inset 0 -2px 0 0 var(--bar-accent)' : undefined,
                     }}
@@ -226,11 +279,13 @@ export function ArticlesView({
             {/* 저장: 메인 목록에 의존하지 않는 전용 페이지(/bookmarks)로 분리 */}
             <Link
               href="/bookmarks"
-              className="shrink-0 px-3 sm:px-3.5 py-2 rounded-lg text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors relative hover:bg-[oklch(100%_0_0/0.1)]"
+              className="shrink-0 px-3 sm:px-3.5 min-h-11 py-2 rounded-sm text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors relative hover:bg-[oklch(100%_0_0/0.1)]"
               style={{ color: 'var(--bar-fg-muted)', fontWeight: 500 }}
             >
               저장
-              {savedArticles.length > 0 && (
+              {/* 배지는 로드된 목록(최신 100건)과의 교집합이 아닌 북마크 저장소 전체 크기 —
+                  /bookmarks 총계와 항상 일치한다(둘 다 localStorage 기준). */}
+              {bookmarkSet.size > 0 && (
                 <span
                   className="ml-1 tabular-nums text-[11px] px-1.5 py-px rounded-full align-middle"
                   style={{
@@ -239,14 +294,14 @@ export function ArticlesView({
                     fontWeight: 700,
                   }}
                 >
-                  {savedArticles.length}
+                  {bookmarkSet.size}
                 </span>
               )}
             </Link>
           </nav>
 
           {/* 우측 날짜 + 언어 토글 */}
-          <div className="shrink-0 flex items-center gap-3">
+          <div className="shrink-0 flex items-center justify-end gap-3">
             {today && (
               <span
                 className="hidden xl:block text-[12px] tabular-nums"
@@ -262,20 +317,32 @@ export function ArticlesView({
 
       {/* === 콘텐츠 (전체 흰 배경 위 직접, 박스 없이 선·여백으로 구분) === */}
       <div
-        className="mt-8 flex-1"
+        className="mt-8 sm:mt-12 flex-1"
         role="tabpanel"
-        id={`panel-${tab}`}
+        id="content-panel"
         aria-labelledby={`tab-${tab}`}
       >
         {/* (이전 흰 패널 박스 제거 — 배경이 이미 흰색이라 불필요) */}
         {/* === 페이지 제목 줄 ============================== */}
-        <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
-          <h1
-            className="text-[1.625rem] sm:text-[2rem] leading-none tracking-[-0.03em] break-keep"
-            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-          >
-            {activeTab?.title ?? '오늘의 흐름'}
-          </h1>
+        <div className="flex items-end justify-between gap-4 flex-wrap mb-8 pb-6 border-b border-(--color-line)">
+          <div>
+            <h1
+              className="text-[1.75rem] sm:text-[2.25rem] leading-[1.2] tracking-[-0.03em] break-keep"
+              style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+            >
+              {activeTab?.title ?? '오늘, 무엇을 읽을까요?'}
+            </h1>
+            {tab === 'all' && (
+              <p className="mt-3 max-w-[60ch] text-base leading-relaxed text-(--color-fg-muted)">
+                관심 분야의 새 글을 고르고, 요약부터 살펴보세요.
+              </p>
+            )}
+            {tab === 'conferences' && (
+              <p className="mt-3 max-w-[60ch] text-base leading-relaxed text-(--color-fg-muted)">
+                국내외 컨퍼런스·해커톤 일정
+              </p>
+            )}
+          </div>
           <p
             className="text-[12.5px] tabular-nums pb-0.5"
             style={{ color: 'var(--color-fg-muted)' }}
@@ -299,7 +366,7 @@ export function ArticlesView({
         {/* === 탭별 레이아웃 (각자 다름) ====================== */}
         {tab === 'all' && (
           <OverviewTab
-            articles={articles}
+            articles={allArticles}
             conferences={conferences}
             videos={videos}
             digest={digest}
@@ -312,7 +379,7 @@ export function ArticlesView({
         )}
         {tab === 'ai' && (
           <AiTab
-            articles={articles}
+            articles={allArticles}
             readSet={readSet}
             bookmarkSet={bookmarkSet}
             onOpen={handleOpen}
@@ -321,7 +388,7 @@ export function ArticlesView({
         )}
         {tab === 'articles' && (
           <ArticlesTab
-            articles={articles}
+            articles={allArticles}
             readSet={readSet}
             bookmarkSet={bookmarkSet}
             onOpen={handleOpen}
@@ -329,6 +396,11 @@ export function ArticlesView({
             conferences={conferences}
             videos={videos}
             onNavigate={setTab}
+            loadMore={
+              hasMore && total !== null
+                ? { total, loading: loadingMore, onLoadMore: handleLoadMore }
+                : undefined
+            }
           />
         )}
         {tab === 'conferences' && <ConferencesTab conferences={conferences} />}
@@ -336,7 +408,7 @@ export function ArticlesView({
         {tab === 'repos' && <ReposTab repos={repos} />}
       </div>
 
-      <PageFooter total={articles.length} />
+      <PageFooter total={allArticles.length} />
       <ScrollTop />
     </div>
   );

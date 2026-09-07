@@ -1,0 +1,75 @@
+{
+  "engine": "Chromium",
+  "preview": "actual harvested feed candidates; fixture API, no approval writes",
+  "records": [
+    {
+      "surface": "public",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "surface": "public",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "surface": "public",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "surface": "public",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "surface": "standalone",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "surface": "standalone",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "surface": "standalone",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "surface": "standalone",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "surface": "admin",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "surface": "admin",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "surface": "admin",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "surface": "admin",
+      "width": 1440,
+      "overflow": false
+    }
+  ],
+  "checks": [
+    "public event search",
+    "public next page",
+    "empty search recovery",
+    "admin login",
+    "admin20perpage",
+    "admin hackathon search resets page"
+  ],
+  "pageErrors": []
+}

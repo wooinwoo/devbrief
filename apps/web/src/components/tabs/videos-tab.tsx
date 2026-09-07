@@ -55,19 +55,19 @@ export function VideosTab({ videos }: { videos: VideoDto[] }) {
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
+    <div className="flex flex-col lg:flex-row gap-8 xl:gap-10">
       <FilterSidebar groups={groups} />
 
       <div className="flex-1 min-w-0">
         <div
-          className="flex items-baseline gap-4 mb-6 pt-1 border-t-2"
-          style={{ borderColor: 'var(--color-fg-strong)' }}
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-6 pb-3 border-b"
+          style={{ borderColor: 'var(--color-line-strong)' }}
         >
           <span
-            className="text-[14px] tracking-[-0.005em]"
+            className="text-[14px] tracking-[-0.005em] shrink-0"
             style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
           >
-            <span style={{ color: 'var(--color-accent)' }}>{filtered.length}</span> 개
+            영상 <span className="tabular-nums">{filtered.length}</span>개
           </span>
           <span className="flex-1" />
           <SortLink active={sort === 'recent'} onClick={() => setSort('recent')}>
@@ -83,9 +83,9 @@ export function VideosTab({ videos }: { videos: VideoDto[] }) {
             조건에 맞는 영상이 없어요.
           </p>
         ) : (
-          <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((v, i) => (
-              <VideoCard key={v.id} video={v} index={i} />
+          <ul className="grid gap-x-6 gap-y-9 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((v) => (
+              <VideoCard key={v.id} video={v} />
             ))}
           </ul>
         )}
@@ -107,7 +107,8 @@ function SortLink({
     <button
       type="button"
       onClick={onClick}
-      className="text-[12.5px] transition-colors"
+      aria-pressed={active}
+      className="min-h-11 px-2 text-[13px] transition-colors"
       style={{
         color: active ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
         fontWeight: active ? 700 : 500,

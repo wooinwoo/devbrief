@@ -13,8 +13,7 @@ export function LangToggle() {
 
   return (
     <div
-      className="inline-flex items-center rounded-lg p-0.5"
-      style={{ background: 'oklch(100% 0 0 / 0.1)' }}
+      className="inline-flex items-center rounded-md border border-(--bar-line) p-0.5"
       role="group"
       aria-label="언어 전환"
     >
@@ -26,7 +25,7 @@ export function LangToggle() {
             type="button"
             onClick={() => setLang(it.value)}
             aria-pressed={active}
-            className="px-2 py-0.5 rounded-md text-[11.5px] transition-colors"
+            className="min-h-11 min-w-11 px-2.5 py-1.5 rounded-sm text-[12px] transition-colors"
             style={
               active
                 ? {

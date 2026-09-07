@@ -37,7 +37,23 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      # 배치 실패의 원인 로그 다수가 debug 레벨 — Actions 에서는 debug 를 켠다 (cli.ts resolveLogLevels)
+      LOG_LEVEL: debug
+      # 수동 실행(workflow_dispatch)이면 선택한 command, 스케줄이면 all
+      COMMAND: ${{ github.event.inputs.command || 'all' }}
     steps:
+      # 미정의 secret 은 Actions 가 빈 문자열로 주입한다 — 회전 실수/오타를 여기서 빨간불로 만든다.
+      # (CLI 도 부트 전에 같은 검증을 하지만, install/build 전에 즉시 실패하는 편이 빠르다)
+      - name: Preflight (secrets 검증)
+        run: |
+          [ -n "$DATABASE_URL" ] || { echo "::error title=Preflight::DATABASE_URL secret 이 비어 있습니다"; exit 1; }
+          case "$COMMAND" in
+            all|reanalyze)
+              [ -n "$GEMINI_API_KEY" ] || { echo "::error title=Preflight::GEMINI_API_KEY secret 이 비어 있습니다 (command=$COMMAND 에 필수)"; exit 1; }
+              ;;
+          esac
+          [ -n "$YOUTUBE_API_KEY" ] || echo "::warning title=Preflight::YOUTUBE_API_KEY 미설정 — videos 스텝이 skip 됩니다"
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -62,5 +78,46 @@ jobs:
         run: pnpm --filter @devbrief/api run build
 
       - name: Run CLI
-        # 수동 실행(workflow_dispatch)이면 선택한 command, 스케줄이면 all
-        run: node apps/api/dist/cli.js "${{ github.event.inputs.command || 'all' }}"
+        id: cli
+        # tee 로 로그 사본을 남겨 아래 Summary/알림 스텝에서 재사용.
+        # (Actions 기본 bash 는 -o pipefail 이라 CLI 실패가 tee 뒤로도 전파된다)
+        run: node apps/api/dist/cli.js "$COMMAND" 2>&1 | tee /tmp/cli.log
+
+      # run 목록에서 클릭 한 번으로 스텝별 결과/실패를 확인 (성공/실패 무관하게 기록)
+      - name: Step summary
+        if: always()
+        env:
+          CLI_OUTCOME: ${{ steps.cli.outcome }}
+        run: |
+          {
+            echo "## Ingest 결과 — command=\`$COMMAND\` (cli: $CLI_OUTCOME)"
+            echo ""
+            echo '```text'
+            if [ -f /tmp/cli.log ]; then
+              grep -aE '✔|✖|실패|전멸|· ' /tmp/cli.log | tail -n 60 || echo '(요약 라인 없음)'
+            else
+              echo '(CLI 미실행 — 이전 스텝 실패)'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CLI_OUTCOME" != "success" ] && [ -f /tmp/cli.log ]; then
+            echo "::group::실패 관련 로그 (ERROR/WARN)"
+            grep -aE 'ERROR|WARN|실패|✖' /tmp/cli.log || true
+            echo "::endgroup::"
+          fi
+
+      # SLACK_WEBHOOK_URL secret 이 있으면 실패 알림, 없으면 조용히 skip
+      - name: Notify Slack (실패 시)
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL 미설정 — 알림 skip"
+            exit 0
+          fi
+          FIRST_FAIL=$( { [ -f /tmp/cli.log ] && grep -aE '실패|✖|ERROR' /tmp/cli.log | head -n 1 | tr -d '"\\' | cut -c1-200; } || true )
+          payload=$(printf '{"text":"devbrief ingest 실패 — command=%s\\n%s\\n%s"}' "$COMMAND" "$RUN_URL" "$FIRST_FAIL")
+          curl -sf -X POST -H 'Content-Type: application/json' -d "$payload" "$SLACK_WEBHOOK_URL" \
+            || echo "::warning title=Slack::알림 전송 실패"

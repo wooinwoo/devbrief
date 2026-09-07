@@ -1,6 +1,7 @@
 import { SiteNav } from '@/components/site-nav';
 import { VideoDetail } from '@/components/video-detail';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
+import { MOCKS_ENABLED } from '@/lib/mocks-enabled';
 import { notFound } from 'next/navigation';
 
 import { API_BASE } from '@/lib/api';
@@ -38,17 +39,27 @@ async function getOne(id: string): Promise<VideoDto | null> {
   }
 }
 
+// 관련 영상 목록: mock 폴백은 개발 환경 한정 — 프로덕션은 빈 배열로 섹션을 숨긴다.
 async function getAll(): Promise<VideoDto[]> {
   try {
     const res = await fetch(`${API_BASE}/videos?limit=20`, {
       cache: 'no-store',
     });
-    if (!res.ok) return MOCK_VIDEOS;
+    if (!res.ok) return mockFallback();
     const data = (await res.json()) as DbVideo[];
-    return data.length > 0 ? data.map(mapDbToDto) : MOCK_VIDEOS;
+    return data.length > 0 ? data.map(mapDbToDto) : mockFallback();
   } catch {
-    return MOCK_VIDEOS;
+    return mockFallback();
   }
+}
+
+function mockFallback(): VideoDto[] {
+  return MOCKS_ENABLED ? MOCK_VIDEOS : [];
+}
+
+// mock 영상 상세(v1~)는 개발 환경 한정 — 프로덕션은 notFound 로 떨어진다.
+function findMockVideo(id: string): VideoDto | undefined {
+  return MOCKS_ENABLED ? MOCK_VIDEOS.find((v) => v.id === id) : undefined;
 }
 
 function mapDbToDto(d: DbVideo): VideoDto {
@@ -74,7 +85,7 @@ function mapDbToDto(d: DbVideo): VideoDto {
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const fromApi = await getOne(id);
-  const video = fromApi ?? MOCK_VIDEOS.find((v) => v.id === id);
+  const video = fromApi ?? findMockVideo(id);
   return {
     title: video ? `${video.title} · Devbrief` : 'Devbrief',
     description: video?.channel,
@@ -84,15 +95,18 @@ export async function generateMetadata({ params }: Props) {
 export default async function VideoDetailPage({ params }: Props) {
   const { id } = await params;
   const [fromApi, all] = await Promise.all([getOne(id), getAll()]);
-  const video = fromApi ?? MOCK_VIDEOS.find((v) => v.id === id);
+  const video = fromApi ?? findMockVideo(id);
   if (!video) notFound();
 
   const related = all.filter((v) => v.id !== video.id).slice(0, 5);
 
   return (
-    <main className="min-h-screen w-full px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32">
+    <main
+      id="main-content"
+      className="min-h-screen w-full max-w-[1600px] mx-auto px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32"
+    >
       <SiteNav />
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto pb-16 sm:pb-24">
         <VideoDetail video={video} related={related} />
       </div>
     </main>

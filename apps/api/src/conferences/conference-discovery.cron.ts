@@ -13,10 +13,14 @@ export class ConferenceDiscoveryCron {
   async daily() {
     this.logger.log('Daily conference discovery triggered');
     try {
-      const result = await this.discovery.discoverFromRecentArticles({
+      const result = await this.discovery.discover({
         days: 7,
         limit: 100,
       });
+      if (result.failedSources > 0 || result.failed > 0)
+        this.logger.error(
+          `행사 수집 일부 실패: sources=${result.failedSources} writes=${result.failed}`,
+        );
       this.logger.log(
         `Discovery done: scanned=${result.scannedArticles} llm=${result.llmCalls} proposed=${result.proposed} skipped=${result.skipped}`,
       );

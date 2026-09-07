@@ -1,4 +1,5 @@
 import type { ArticleDto } from '@/components/article-card';
+import { CATEGORIES, categoryOf } from '@/lib/category';
 import { sourceColor } from '@/lib/source-colors';
 
 /** 글 목록 필터 조건. 모든 필드는 선택. 비어 있으면 해당 조건 미적용. */
@@ -7,7 +8,10 @@ export interface ArticleFilter {
   query?: string;
   /** 소스 provider (예: geeknews) */
   source?: string | null;
-  /** 카테고리 — 태그 lowercase 정규화 키와 정확히 일치 */
+  /**
+   * 카테고리 — 표시 칩과 같은 진실인 categoryOf 6분류 키(ai/frontend/…)와 일치.
+   * 유효하지 않은 키(과거 태그 기반 URL 의 ?cat=react 등)는 무시해 빈 결과를 만들지 않는다.
+   */
   category?: string | null;
   /** true 면 read 집합에 든 글을 제외 */
   hideRead?: boolean;
@@ -32,10 +36,13 @@ export function filterArticles(
   readSet?: Set<string>,
 ): ArticleDto[] {
   const { query = '', source = null, category = null, hideRead = false } = filter;
+  // 카테고리는 목록 칩(categoryOf)과 같은 진실로 매칭 — 태그 없는 글도 제목/요약 기반으로 잡힌다.
+  // (과거엔 원시 RSS 태그 정확 일치라, 칩은 Frontend 인데 어떤 카테고리를 골라도 안 나오는 글이 생겼다.)
   const cat = category?.toLowerCase() ?? null;
+  const catKey = cat && CATEGORIES[cat] ? cat : null;
   return articles.filter((a) => {
     if (source && a.source.provider !== source) return false;
-    if (cat && !a.tags.some((t) => t.toLowerCase() === cat)) return false;
+    if (catKey && categoryOf(a).key !== catKey) return false;
     if (hideRead && readSet?.has(a.id)) return false;
     if (!matchesQuery(a, query)) return false;
     return true;
@@ -79,25 +86,18 @@ export interface CategoryOption {
 }
 
 /**
- * 글 태그를 빈도 내림차순으로 집계해 상위 N개 카테고리 옵션 반환.
- * 대소문자만 다른 태그(#AI/#ai)는 lowercase 키로 합치고,
- * label 은 가장 많이 쓰인 원형 표기를 쓴다.
+ * 표시 칩과 같은 진실(categoryOf 6분류)로 카테고리 옵션 집계.
+ * 과거엔 원시 RSS 태그 빈도 상위 N개였으나, 글 다수가 태그가 없어
+ * 칩(제목+요약 기반)과 사이드바 필터가 서로 다른 분류를 가리켰다.
+ * 옵션 순서는 CATEGORIES 선언 순서로 고정(데이터에 따라 출렁이지 않게), 글이 없는 분류는 제외.
  */
-export function categoryOptionsOf(articles: ArticleDto[], limit = 6): CategoryOption[] {
-  const map = new Map<string, { count: number; forms: Map<string, number> }>();
-  for (const a of articles)
-    for (const t of a.tags) {
-      const key = t.toLowerCase();
-      const cur = map.get(key) ?? { count: 0, forms: new Map() };
-      cur.count += 1;
-      cur.forms.set(t, (cur.forms.get(t) ?? 0) + 1);
-      map.set(key, cur);
-    }
-  return [...map.entries()]
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, limit)
-    .map(([value, { count, forms }]) => {
-      const label = [...forms.entries()].sort((a, b) => b[1] - a[1])[0][0];
-      return { value, label: `#${label}`, count };
-    });
+export function categoryOptionsOf(articles: ArticleDto[]): CategoryOption[] {
+  const counts = new Map<string, number>();
+  for (const a of articles) {
+    const key = categoryOf(a).key;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return Object.values(CATEGORIES)
+    .map((c) => ({ value: c.key, label: c.label, count: counts.get(c.key) ?? 0 }))
+    .filter((o) => o.count > 0);
 }

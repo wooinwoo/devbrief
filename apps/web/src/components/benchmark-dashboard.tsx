@@ -25,31 +25,24 @@ export function BenchmarkDashboard() {
 
   return (
     <section
-      className="rounded-xl p-5 mb-12"
+      className="border-y py-6 sm:py-7"
       style={{
-        background: 'transparent',
-        border: '1px solid var(--color-line)',
+        borderColor: 'var(--color-line-strong)',
       }}
     >
       {/* 헤더 */}
-      <div className="flex items-center gap-3 flex-wrap mb-5">
-        <span
-          aria-hidden
-          className="inline-block w-1 h-5 rounded-full"
-          style={{ background: 'var(--color-accent)' }}
-        />
+      <div className="flex items-baseline justify-between gap-x-5 gap-y-2 flex-wrap mb-5">
         <h2
-          className="text-[1.125rem] leading-none tracking-[-0.015em]"
-          style={{ color: 'var(--color-fg-strong)', fontWeight: 800 }}
+          className="text-[1.125rem] leading-snug tracking-[-0.015em]"
+          style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
         >
           LLM 벤치마크
         </h2>
-        <span className="flex-1" />
         <a
           href={BENCHMARK_SOURCE.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[11px] transition-colors hover:text-(--color-accent)"
+          className="inline-flex min-h-11 items-center text-[12px] leading-relaxed transition-colors hover:text-(--color-accent)"
           style={{ color: 'var(--color-fg-subtle)' }}
         >
           {BENCHMARK_SOURCE.name} · {BENCHMARK_SOURCE.updatedAt} ↗
@@ -60,8 +53,7 @@ export function BenchmarkDashboard() {
       <div
         role="group"
         aria-label="벤치마크 지표 선택"
-        className="inline-flex items-center rounded-lg p-0.5 mb-6"
-        style={{ background: 'var(--color-bg-sunken)' }}
+        className="grid grid-cols-2 sm:flex items-center gap-x-2 mb-6 border-b border-(--color-line)"
       >
         {TABS.map((t) => {
           const active = view === t.key;
@@ -71,16 +63,15 @@ export function BenchmarkDashboard() {
               type="button"
               onClick={() => setView(t.key)}
               aria-pressed={active}
-              className="px-3 py-1.5 rounded-md text-[12.5px] transition-colors"
+              className="min-h-11 px-2 sm:px-3 py-2 border-b-2 text-[12.5px] transition-colors hover:text-(--color-fg-strong)"
               style={
                 active
                   ? {
-                      background: 'var(--color-bg-elevated)',
-                      color: 'var(--color-fg-strong)',
-                      fontWeight: 700,
-                      boxShadow: 'var(--shadow-card)',
+                      borderColor: 'var(--color-accent)',
+                      color: 'var(--color-accent-strong)',
+                      fontWeight: 600,
                     }
-                  : { color: 'var(--color-fg-muted)', fontWeight: 600 }
+                  : { borderColor: 'transparent', color: 'var(--color-fg-muted)', fontWeight: 500 }
               }
             >
               {t.label}
@@ -94,18 +85,18 @@ export function BenchmarkDashboard() {
       ) : (
         <BarMetric metric={view as 'intelligence' | 'speed' | 'coding'} />
       )}
-      <p className="text-[11px] mt-3" style={{ color: 'var(--color-fg-subtle)' }}>
+      <p className="text-[12px] leading-relaxed mt-5" style={{ color: 'var(--color-fg-subtle)' }}>
         {view === 'intelligence' &&
           '* Artificial Analysis Intelligence Index (0~100, 높을수록 우수)'}
         {view === 'coding' &&
           '* SWE-bench Verified (% resolved) · 일부 모델만 공개, GPT-5.5는 추정치'}
         {view === 'speed' && '* 출력 속도 중앙값 (tokens/s, 높을수록 빠름)'}
-        {view === 'value' && '* x축 가격($/1M tokens), y축 지능 지수'}
+        {view === 'value' && '* 가격: 100만 토큰당 달러, 지능: Intelligence Index'}
       </p>
 
       {/* 범례 */}
       <div
-        className="flex items-center gap-4 flex-wrap mt-5 pt-4 border-t text-[11px]"
+        className="flex items-center gap-4 flex-wrap mt-5 pt-4 border-t text-[12px]"
         style={{ borderColor: 'var(--color-line)' }}
       >
         {VENDORS.map((v) => (
@@ -140,7 +131,7 @@ function BarMetric({ metric }: { metric: 'intelligence' | 'speed' | 'coding' }) 
         return (
           <li
             key={m.name}
-            className="grid grid-cols-[130px_1fr_auto] sm:grid-cols-[160px_1fr_auto] gap-3 items-center"
+            className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[160px_minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 items-center"
           >
             <span
               className="text-[12.5px] truncate"
@@ -150,16 +141,17 @@ function BarMetric({ metric }: { metric: 'intelligence' | 'speed' | 'coding' }) 
               {m.name}
             </span>
             <span
-              className="h-5 rounded"
+              aria-hidden="true"
+              className="col-span-2 row-start-2 sm:col-span-1 sm:row-auto h-2 sm:h-3"
               style={{ background: 'var(--color-bg-sunken)', display: 'block' }}
             >
               <span
-                className="h-5 rounded block transition-all"
+                className="h-2 sm:h-3 block"
                 style={{ width: `${(val / max) * 100}%`, background: vendorColor(m.vendor) }}
               />
             </span>
             <span
-              className="text-[12.5px] tabular-nums text-right w-16"
+              className="row-start-1 col-start-2 sm:col-start-3 text-[12.5px] tabular-nums text-right w-16"
               style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
             >
               {val}
@@ -188,11 +180,11 @@ function ScatterValue() {
   return (
     <div>
       <p className="text-[11.5px] mb-2" style={{ color: 'var(--color-fg-muted)' }}>
-        ← 왼쪽·위일수록 가성비 좋음 (가격 낮고 지능 높음)
+        가격은 낮을수록, 지능 지수는 높을수록 좋습니다.
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full"
+        className="hidden sm:block w-full"
         style={{ maxHeight: 340 }}
         role="img"
         aria-label="LLM 가격 대비 성능 산점도. 왼쪽·위일수록 가성비가 좋습니다."
@@ -242,6 +234,33 @@ function ScatterValue() {
           </g>
         ))}
       </svg>
+      <table className="w-full table-fixed text-[13px] sm:sr-only">
+        <caption className="sr-only">모델별 가격과 지능 지수</caption>
+        <thead>
+          <tr className="border-b border-(--color-line)">
+            <th scope="col" className="w-1/2 text-left py-3">
+              모델
+            </th>
+            <th scope="col" className="text-right py-3">
+              가격
+            </th>
+            <th scope="col" className="text-right py-3">
+              지능
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((model) => (
+            <tr key={model.name} className="border-b border-(--color-line)">
+              <th scope="row" className="text-left font-medium py-3 pr-2">
+                {model.name}
+              </th>
+              <td className="text-right tabular-nums">${model.price}</td>
+              <td className="text-right tabular-nums">{model.intelligence}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

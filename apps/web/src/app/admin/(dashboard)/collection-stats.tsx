@@ -15,7 +15,7 @@ interface DailyCount {
   count: number;
 }
 
-interface CollectionStats {
+export interface CollectionStatsData {
   articles: {
     total: number;
     summarized: number;
@@ -32,7 +32,7 @@ interface CollectionStats {
 type State =
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'ready'; data: CollectionStats };
+  | { status: 'ready'; data: CollectionStatsData };
 
 /** 요일 (월~일) — 막대 보조 라벨 */
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
@@ -41,16 +41,24 @@ function weekday(iso: string): string {
   return WEEKDAY[day];
 }
 
-export function CollectionStats() {
-  const [state, setState] = useState<State>({ status: 'loading' });
+/**
+ * initialData — 서버 컴포넌트가 이미 받아둔 /stats/collection 스냅샷.
+ * 있으면 클라이언트 재페치를 생략해 상단 카드와 같은 스냅샷을 보여준다.
+ * null/미전달이면 기존처럼 클라이언트에서 직접 페치한다 (재시도 경로 유지).
+ */
+export function CollectionStats({ initialData }: { initialData?: CollectionStatsData | null }) {
+  const [state, setState] = useState<State>(
+    initialData ? { status: 'ready', data: initialData } : { status: 'loading' },
+  );
 
   useEffect(() => {
+    if (initialData) return;
     let alive = true;
     setState({ status: 'loading' });
     fetch(`${API_BASE}/stats/collection`, { cache: 'no-store' })
       .then((res) => {
         if (!res.ok) throw new Error(`stats ${res.status}`);
-        return res.json() as Promise<CollectionStats>;
+        return res.json() as Promise<CollectionStatsData>;
       })
       .then((data) => {
         if (alive) setState({ status: 'ready', data });
@@ -61,17 +69,17 @@ export function CollectionStats() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [initialData]);
 
   return (
     <section className="mb-10" aria-labelledby="collection-stats-heading">
       <h2
-        className="text-[13px] tracking-[-0.005em] mb-4 pt-1 border-t-2"
+        className="text-[18px] tracking-[-0.015em] mb-5 pt-6 border-t"
         id="collection-stats-heading"
         style={{
           color: 'var(--color-fg-strong)',
           fontWeight: 700,
-          borderColor: 'var(--color-fg-strong)',
+          borderColor: 'var(--color-line)',
         }}
       >
         수집 통계
@@ -84,12 +92,12 @@ export function CollectionStats() {
   );
 }
 
-function StatsBody({ data }: { data: CollectionStats }) {
+function StatsBody({ data }: { data: CollectionStatsData }) {
   const { articles, topSources, recentDaily, conferences, videos, repos } = data;
   const embedPct = articles.total > 0 ? Math.round((articles.embedded / articles.total) * 100) : 0;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <TrendChart days={recentDaily} />
 
       <SourceBreakdown sources={topSources} />
@@ -99,7 +107,7 @@ function StatsBody({ data }: { data: CollectionStats }) {
           <MetricRow label="요약 대기" value={articles.unsummarized} unit="건" />
           <MetricRow label="임베딩 완료" value={articles.embedded} unit={`건 · ${embedPct}%`} />
           <MetricRow label="등록 레포" value={repos} unit="건" />
-          <MetricRow label="컨퍼런스" value={conferences} unit="건" />
+          <MetricRow label="행사" value={conferences} unit="건" />
           <MetricRow label="발표 영상" value={videos} unit="건" />
         </dl>
       </Panel>
@@ -214,18 +222,17 @@ function Panel({
 }) {
   return (
     <div
-      className="p-5 rounded-xl border"
+      className="min-w-0 py-5 sm:px-5 border-b"
       style={{
-        background: 'var(--color-bg-elevated)',
         borderColor: 'var(--color-line)',
       }}
     >
       <div className="flex items-baseline justify-between mb-4">
-        <h3 className="text-[12px]" style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}>
+        <h3 className="text-[14px]" style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}>
           {title}
         </h3>
         {sub && (
-          <span className="text-[11.5px] tabular-nums" style={{ color: 'var(--color-fg-muted)' }}>
+          <span className="text-[13px] tabular-nums" style={{ color: 'var(--color-fg-muted)' }}>
             {sub}
           </span>
         )}
@@ -237,12 +244,12 @@ function Panel({
 
 function MetricRow({ label, value, unit }: { label: string; value: number; unit: string }) {
   return (
-    <div className="flex items-baseline justify-between">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
       <dt className="text-[12px]" style={{ color: 'var(--color-fg-muted)' }}>
         {label}
       </dt>
       <dd
-        className="text-[13px] tabular-nums"
+        className="text-[14px] tabular-nums"
         style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}
       >
         {value} <span style={{ color: 'var(--color-fg-subtle)', fontWeight: 400 }}>{unit}</span>
@@ -253,7 +260,7 @@ function MetricRow({ label, value, unit }: { label: string; value: number; unit:
 
 function StatsSkeleton() {
   return (
-    <div className="grid gap-4 lg:grid-cols-3" aria-hidden="true">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
       {[0, 1, 2].map((i) => (
         <div
           key={i}
@@ -284,7 +291,7 @@ function StatsError({ onRetry }: { onRetry: () => void }) {
       <button
         type="button"
         onClick={onRetry}
-        className="px-3 py-1.5 text-[12px] rounded-lg shrink-0"
+        className="min-h-11 px-3 py-1.5 text-[12px] rounded-lg shrink-0"
         style={{
           background: 'var(--color-bg-elevated)',
           border: '1px solid var(--color-line-strong)',

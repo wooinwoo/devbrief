@@ -41,8 +41,7 @@ const SEEDS: ConfSeed[] = [
   },
   {
     name: 'SLASH 26',
-    // slash-26 미개설(404) → 최근 SLASH 페이지. 26 열리면 교체
-    url: 'https://toss.im/slash-24',
+    url: 'https://toss.im/slash-26',
     startDate: '2026-09-04',
     location: '서울 / 그랜드워커힐',
     topics: ['Fintech', 'Backend', 'Mobile'],
@@ -85,23 +84,7 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     try {
       for (const seed of SEEDS) {
-        await this.prisma.conference.upsert({
-          where: { url: seed.url },
-          create: {
-            ...seed,
-            startDate: new Date(seed.startDate),
-            endDate: seed.endDate ? new Date(seed.endDate) : null,
-          },
-          // update에서 imageUrl 빼서 자동 sync된 값을 보존
-          update: {
-            name: seed.name,
-            location: seed.location,
-            topics: seed.topics,
-            description: seed.description,
-            brandColor: seed.brandColor,
-            youtubeChannelId: seed.youtubeChannelId,
-          },
-        });
+        await this.applySeed(seed);
       }
       this.logger.log(`Seeded ${SEEDS.length} conferences`);
     } catch (e) {
@@ -109,7 +92,7 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
       return;
     }
 
-    // 백그라운드: imageUrl 비어 있는 컨퍼런스 og:image 자동 추출
+    // 백그라운드: 이미지/브랜드색 비어 있는 ACTIVE 컨퍼런스 og:image 자동 추출
     // await 하지 않고 fire-and-forget — 부팅 차단 X
     this.imageSync
       .syncAll()
@@ -119,5 +102,52 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
         ),
       )
       .catch((e) => this.logger.warn(`Conference image sync 실패: ${(e as Error).message}`));
+  }
+
+  /**
+   * 시드 1건 반영. url 또는 name+startDate 로 기존 행을 찾고,
+   * - 있으면 비어 있는(null) 필드만 시드값으로 채움 — 운영자 편집·자동 image sync 결과 보존
+   * - 없으면 create
+   * url 을 upsert 키로 쓰지 않으므로 시드 url 정정(예: slash-24 → slash-26)이나
+   * 운영자의 DB url 수정에도 다음 부팅에서 중복 행이 생기지 않는다 (name+startDate 로 재매칭).
+   */
+  private async applySeed(seed: ConfSeed) {
+    const startDate = new Date(seed.startDate);
+    const existing = await this.prisma.conference.findFirst({
+      where: {
+        OR: [{ url: seed.url }, { AND: [{ name: seed.name }, { startDate }] }],
+      },
+    });
+
+    if (!existing) {
+      await this.prisma.conference.create({
+        data: {
+          ...seed,
+          startDate,
+          endDate: seed.endDate ? new Date(seed.endDate) : null,
+        },
+      });
+      return;
+    }
+
+    // 비어 있는 필드만 시드로 채움. name/url/startDate/status 는 절대 덮어쓰지 않음
+    // (force 이미지싱크의 brandColor 자동추출·운영자 DB 정정이 재배포에 유실되지 않게).
+    const fill: Record<string, unknown> = {};
+    if (!existing.endDate && seed.endDate) fill.endDate = new Date(seed.endDate);
+    if (!existing.location && seed.location) fill.location = seed.location;
+    if (!existing.topics?.length && seed.topics.length) fill.topics = seed.topics;
+    if (!existing.description && seed.description) fill.description = seed.description;
+    if (!existing.imageUrl && seed.imageUrl) fill.imageUrl = seed.imageUrl;
+    if (!existing.brandColor && seed.brandColor) fill.brandColor = seed.brandColor;
+    if (!existing.youtubeChannelId && seed.youtubeChannelId) {
+      fill.youtubeChannelId = seed.youtubeChannelId;
+    }
+
+    if (Object.keys(fill).length > 0) {
+      await this.prisma.conference.update({
+        where: { id: existing.id },
+        data: fill,
+      });
+    }
   }
 }

@@ -1,25 +1,22 @@
 import { Test, type TestingModule } from '@nestjs/testing';
+import { kstDateLabel, kstDayStart } from '../common/kst';
 import { PrismaService } from '../prisma/prisma.service';
-import { StatsService, fillRecentDays, startOfDayUtc, toIsoDate } from './stats.service';
+import { StatsService, fillRecentDays, toIsoDate } from './stats.service';
+
+const DAY_MS = 86_400_000;
 
 describe('stats helpers', () => {
-  describe('startOfDayUtc', () => {
-    it('UTC 자정으로 내린다 (시/분/초 제거)', () => {
-      const d = new Date('2026-06-23T15:42:09.123Z');
-      expect(startOfDayUtc(d).toISOString()).toBe('2026-06-23T00:00:00.000Z');
-    });
-  });
-
   describe('toIsoDate', () => {
     it('yyyy-mm-dd 로 자른다', () => {
       expect(toIsoDate(new Date('2026-06-23T00:00:00.000Z'))).toBe('2026-06-23');
     });
   });
 
-  describe('fillRecentDays', () => {
-    const since = new Date('2026-06-17T00:00:00.000Z'); // 오늘 2026-06-23 기준 7일 윈도우 시작
+  describe('fillRecentDays (KST 경계)', () => {
+    // KST 2026-06-17 00:00 = UTC 2026-06-16 15:00 — 오늘 KST 2026-06-23 기준 7일 윈도우 시작
+    const since = new Date('2026-06-16T15:00:00.000Z');
 
-    it('빠진 날짜를 0 으로 채워 항상 7일을 반환한다', () => {
+    it('빠진 날짜를 0 으로 채워 항상 7일을 KST 라벨로 반환한다', () => {
       const rows = [
         { date: '2026-06-17', count: 3 },
         { date: '2026-06-20', count: 5 },
@@ -51,10 +48,12 @@ describe('StatsService.collection', () => {
     $queryRaw: jest.Mock;
   };
 
-  // 오늘/어제(UTC 자정) — collection 의 윈도우는 실제 now 기준이므로 동적으로 만든다.
-  const today = startOfDayUtc(new Date());
-  const yesterday = new Date(today);
-  yesterday.setUTCDate(today.getUTCDate() - 1);
+  // 오늘/어제(KST 자정의 UTC 순간) — collection 의 윈도우는 실제 now 기준이므로 동적으로 만든다.
+  const todayStart = kstDayStart(new Date());
+  const yesterdayStart = new Date(todayStart.getTime() - DAY_MS);
+  // SQL 의 date_trunc('day', fetchedAt + 9h) 결과 = "KST 자정을 UTC 인 척 담은" naive 값
+  const todayRow = new Date(`${kstDateLabel(todayStart)}T00:00:00.000Z`);
+  const yesterdayRow = new Date(`${kstDateLabel(yesterdayStart)}T00:00:00.000Z`);
 
   beforeEach(async () => {
     prisma = {
@@ -74,8 +73,8 @@ describe('StatsService.collection', () => {
     prisma.$queryRaw
       .mockResolvedValueOnce([{ count: 120n }]) // embedded
       .mockResolvedValueOnce([
-        { day: yesterday, count: 12n },
-        { day: today, count: 8n },
+        { day: yesterdayRow, count: 12n },
+        { day: todayRow, count: 8n },
       ]);
     prisma.article.groupBy.mockResolvedValue([
       { sourceId: 's1', _count: { _all: 80 } },
@@ -124,15 +123,26 @@ describe('StatsService.collection', () => {
     ]);
   });
 
-  it('최근 7일을 채워 반환하고 빠진 날은 0 이다', async () => {
+  it('최근 7일을 KST 라벨로 채워 반환하고 빠진 날은 0 이다', async () => {
     const res = await service.collection();
     expect(res.recentDaily).toHaveLength(7);
     const last = res.recentDaily.at(-1);
     const prev = res.recentDaily.at(-2);
-    expect(last).toEqual({ date: toIsoDate(today), count: 8 });
-    expect(prev).toEqual({ date: toIsoDate(yesterday), count: 12 });
+    expect(last).toEqual({ date: kstDateLabel(todayStart), count: 8 });
+    expect(prev).toEqual({ date: kstDateLabel(yesterdayStart), count: 12 });
     // 윈도우 앞쪽 빈 날은 0
     expect(res.recentDaily[0].count).toBe(0);
+  });
+
+  it('일자 집계는 KST 경계다 — since 는 KST 자정 기준, SQL 은 +9h 시프트 trunc', async () => {
+    await service.collection();
+    // 두 번째 $queryRaw = dailyCounts. 태그드 템플릿이라 [0]=문자열 조각, [1]=since.
+    const call = prisma.$queryRaw.mock.calls[1];
+    const sql = (call[0] as string[]).join('');
+    expect(sql).toContain("interval '9 hours'");
+    expect(sql).not.toContain("AT TIME ZONE 'UTC'");
+    const since = call[1] as Date;
+    expect(since.toISOString()).toBe(new Date(todayStart.getTime() - 6 * DAY_MS).toISOString());
   });
 
   it('컨퍼런스/영상/레포 카운트를 포함한다', async () => {

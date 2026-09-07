@@ -16,7 +16,8 @@ export class ReposCron {
       const result = await this.repos.refreshAll();
       this.logger.log(`Trending sync done: daily=${result.daily} weekly=${result.weekly}`);
     } catch (e) {
-      this.logger.error(`Trending sync failed: ${(e as Error).message}`);
+      // 메시지만 남기면 스택이 유실된다 — 라이브러리 기본 catch 보다 정보가 줄지 않게 스택 포함.
+      this.logger.error(`Trending sync failed: ${(e as Error).message}`, (e as Error).stack);
     }
   }
 }

@@ -1,9 +1,46 @@
-import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
+import type { Prisma } from '@devbrief/db';
+import {
+  type ArticleDetail,
+  type ArticleListItem,
+  BATCH_MAX_IDS,
+  type Equals,
+  type Expect,
+  TOTAL_COUNT_HEADER,
+  type Wire,
+} from '@devbrief/shared';
+import { Controller, Get, NotFoundException, Param, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { ArticlesService } from './articles.service';
 
-/** 한 번에 배치 조회할 수 있는 글 id 최대 개수 */
-const BATCH_MAX_IDS = 100;
+/**
+ * 목록/배치 공용 select — 웹 ArticleDto(article-card.tsx)와 1:1 화이트리스트.
+ * omit(블랙리스트) 방식은 스키마에 무거운 컬럼이 추가될 때마다 페이로드 누수가
+ * 재발한다. contentSnippet(최대 800자)/contentHtml/author/fetchedAt 등 웹이 쓰지
+ * 않는 필드는 내려보내지 않고, 본문은 상세(GET /articles/:id)에서만 제공한다.
+ */
+const LIST_SELECT = {
+  id: true,
+  title: true,
+  titleKo: true,
+  url: true,
+  summaryOneLine: true,
+  summaryThreeLine: true,
+  publishedAt: true,
+  tags: true,
+  imageUrl: true,
+  language: true,
+  source: { select: { name: true, provider: true } },
+} as const;
+
+/**
+ * 계약 브리지 — Prisma 결과(직렬화 전)를 @devbrief/shared 와이어 계약과 대조한다.
+ * select 나 스키마가 shared 타입과 어긋나면 아래 두 줄에서 컴파일이 깨진다 (감사 c58).
+ */
+type ArticleListRow = Prisma.ArticleGetPayload<{ select: typeof LIST_SELECT }>;
+type ArticleDetailRow = Prisma.ArticleGetPayload<{ include: { source: true } }>;
+type _ListContract = Expect<Equals<Wire<ArticleListRow>, ArticleListItem>>;
+type _DetailContract = Expect<Equals<Wire<ArticleDetailRow>, ArticleDetail>>;
 
 @Controller('articles')
 export class ArticlesController {
@@ -12,17 +49,36 @@ export class ArticlesController {
     private articles: ArticlesService,
   ) {}
 
+  /**
+   * 목록. 본문은 하위호환을 위해 배열 그대로 두고, 전체 건수(동일 where 의 count)는
+   * X-Total-Count 헤더로 내려 offset 페이지네이션을 지원한다 (감사 c62).
+   */
   @Get()
-  async list(@Query('source') source?: string, @Query('limit') limitStr?: string) {
+  async list(
+    @Res({ passthrough: true }) res: Response,
+    @Query('source') source?: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
+  ) {
     const limit = Math.min(Number(limitStr) || 30, 100);
-    return this.prisma.article.findMany({
-      where: source ? { source: { provider: source } } : undefined,
-      orderBy: { publishedAt: 'desc' },
-      take: limit,
-      // contentHtml(원문 전문)은 피드 페이로드 비대화 방지로 목록에서 제외 — 상세에서만 내려준다.
-      omit: { contentHtml: true },
-      include: { source: { select: { name: true, provider: true } } },
-    });
+    // offset — NaN/음수/Infinity 는 전부 기본 0 으로 방어
+    const parsedOffset = Math.trunc(Number(offsetStr));
+    const offset = Number.isFinite(parsedOffset) && parsedOffset > 0 ? parsedOffset : 0;
+    const where = source ? { source: { provider: source } } : undefined;
+
+    const [rows, total] = await Promise.all([
+      this.prisma.article.findMany({
+        where,
+        orderBy: { publishedAt: 'desc' },
+        skip: offset,
+        take: limit,
+        select: LIST_SELECT,
+      }),
+      this.prisma.article.count({ where }),
+    ]);
+
+    res.setHeader(TOTAL_COUNT_HEADER, String(total));
+    return rows;
   }
 
   /**
@@ -44,8 +100,8 @@ export class ArticlesController {
 
     return this.prisma.article.findMany({
       where: { id: { in: ids } },
-      omit: { contentHtml: true },
-      include: { source: true },
+      // 목록과 동일 계약 — source 전체(include)를 내려보내던 것도 name/provider 로 좁힌다.
+      select: LIST_SELECT,
     });
   }
 

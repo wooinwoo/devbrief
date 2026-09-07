@@ -1,7 +1,6 @@
 'use client';
 
 import type { RepoDto } from '@/lib/mock-repos';
-import { motion } from 'motion/react';
 
 const CATEGORY_LABEL: Record<string, string> = {
   ai: 'AI',
@@ -17,25 +16,46 @@ function fmtK(n: number): string {
   return `${n}`;
 }
 
-export function RepoCard({ repo: r, index = 0 }: { repo: RepoDto; index?: number }) {
+export function RepoCard({ repo: r }: { repo: RepoDto }) {
   const periodLabel = r.period === 'weekly' ? '이번 주' : '오늘';
 
   return (
-    <motion.li
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.2, 0, 0, 1], delay: 0.03 * index }}
-    >
+    <li className="min-w-0">
       <a
         href={r.url}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`${r.fullName}${r.language ? `, ${r.language}` : ''} — ${periodLabel} 스타 ${r.periodStars.toLocaleString()} 증가, 총 ${r.stars.toLocaleString()} 스타. GitHub에서 새 탭으로 열기`}
-        className="group block py-4 border-b transition-colors"
+        className="group block h-full py-5 border-b transition-colors"
         style={{ borderColor: 'var(--color-line)' }}
       >
-        {/* 상단: 언어 · 분야 */}
-        <div className="flex items-center gap-2.5 mb-1.5 text-[11.5px]">
+        {/* 제목: owner/repo */}
+        <h3 className="text-[18px] leading-snug tracking-[-0.02em] break-words">
+          <span style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}>{r.owner}/</span>
+          <span
+            className="group-hover:underline underline-offset-2"
+            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
+          >
+            {r.name}
+          </span>
+        </h3>
+
+        {/* 설명 — 2줄 높이 고정(min-h)으로 2열 그리드의 border 라인 정렬 */}
+        <p
+          className="mt-2 text-[14px] leading-[1.7] break-keep min-h-[3.4em]"
+          style={{
+            color: 'var(--color-fg-muted)',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {r.description ?? ''}
+        </p>
+
+        {/* 언어 · 분야 */}
+        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-3 text-[12px]">
           {r.language && (
             <span
               className="inline-flex items-center gap-1.5"
@@ -54,37 +74,12 @@ export function RepoCard({ repo: r, index = 0 }: { repo: RepoDto; index?: number
           </span>
         </div>
 
-        {/* 제목: owner/repo */}
-        <h3 className="text-[15.5px] leading-snug tracking-[-0.01em] break-all">
-          <span style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}>{r.owner}/</span>
-          <span
-            className="group-hover:underline underline-offset-2"
-            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-          >
-            {r.name}
-          </span>
-        </h3>
-
-        {/* 설명 — 2줄 높이 고정(min-h)으로 2열 그리드의 border 라인 정렬 */}
-        <p
-          className="mt-1 text-[13px] leading-[1.5] break-keep min-h-[2.7em]"
-          style={{
-            color: 'var(--color-fg-muted)',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {r.description ?? ''}
-        </p>
-
         {/* 메타: velocity(강조) + 총 star/fork */}
-        <div className="mt-2.5 flex items-center gap-4 text-[12px] tabular-nums">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] tabular-nums">
           {/* velocity */}
           <span
             className="inline-flex items-center gap-1"
-            style={{ color: 'var(--color-accent-strong)', fontWeight: 700 }}
+            style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
           >
             <svg width="9" height="11" viewBox="0 0 9 11" fill="none" aria-hidden="true">
               <path d="M4.5 0.5L8.5 5H6V10.5H3V5H0.5L4.5 0.5Z" fill="currentColor" />
@@ -116,6 +111,6 @@ export function RepoCard({ repo: r, index = 0 }: { repo: RepoDto; index?: number
           <span style={{ color: 'var(--color-fg-subtle)' }}>포크 {fmtK(r.forks)}</span>
         </div>
       </a>
-    </motion.li>
+    </li>
   );
 }

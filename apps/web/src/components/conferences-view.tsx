@@ -1,5 +1,6 @@
 'use client';
 
+import { daysUntil } from '@/lib/date-utils';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import { motion } from 'motion/react';
 
@@ -7,22 +8,17 @@ interface Props {
   conferences: ConferenceDto[];
 }
 
-function daysUntil(iso: string): number {
-  const target = new Date(iso).getTime();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.ceil((target - today.getTime()) / (1000 * 60 * 60 * 24));
-}
-
+// 날짜 표시는 KST 고정 — 서버(UTC)/클라 어디서 렌더돼도 같은 달력 날짜가 나온다
 function formatDate(iso: string, end?: string | null): string {
-  const fmt = (d: Date) => d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', timeZone: 'Asia/Seoul' });
   const s = new Date(iso);
   if (!end || end === iso) return fmt(s);
   return `${fmt(s)} ~ ${fmt(new Date(end))}`;
 }
 
 function fmtWeekday(iso: string): string {
-  return new Date(iso).toLocaleDateString('ko-KR', { weekday: 'long' });
+  return new Date(iso).toLocaleDateString('ko-KR', { weekday: 'long', timeZone: 'Asia/Seoul' });
 }
 
 export function ConferencesView({ conferences }: Props) {

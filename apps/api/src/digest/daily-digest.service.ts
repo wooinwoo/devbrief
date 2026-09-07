@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GeminiService } from '../ai/gemini.service';
+import { kstDateLabel, kstDayStart } from '../common/kst';
 import { PrismaService } from '../prisma/prisma.service';
 
 const SYSTEM_PROMPT = `당신은 한국 개발자 매체의 시니어 에디터입니다.
@@ -49,25 +50,15 @@ export class DailyDigestService {
   ) {}
 
   // 다이제스트 날짜 경계는 KST(Asia/Seoul, UTC+9) 기준. 크론이 09:30 KST에 돌 때
-  // 서버가 UTC면 setHours(0,0,0,0)이 전날로 어긋난다. 로컬타임 의존 없이 KST 자정의
-  // UTC 순간을 계산한다. (서울은 DST 없어 +9 고정)
-  private static readonly KST_OFFSET_MS = 9 * 60 * 60 * 1000;
-
+  // 서버가 UTC면 setHours(0,0,0,0)이 전날로 어긋난다. 경계 계산은 공용 KST 헬퍼
+  // (common/kst.ts)를 사용해 stats·chat 등 다른 화면과 "그날" 정의를 통일한다.
   private dayStart(date: Date = new Date()): Date {
-    const kstMs = date.getTime() + DailyDigestService.KST_OFFSET_MS;
-    const kst = new Date(kstMs);
-    // KST 기준 연/월/일을 UTC getter로 읽어 그 날 00:00 KST의 UTC 순간 도출
-    const kstMidnightUtcMs =
-      Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) -
-      DailyDigestService.KST_OFFSET_MS;
-    return new Date(kstMidnightUtcMs);
+    return kstDayStart(date);
   }
 
   /** dayStart(=KST 자정의 UTC 순간)를 KST 기준 yyyy-mm-dd 문자열로. */
   private dayLabel(dayStartUtc: Date): string {
-    return new Date(dayStartUtc.getTime() + DailyDigestService.KST_OFFSET_MS)
-      .toISOString()
-      .slice(0, 10);
+    return kstDateLabel(dayStartUtc);
   }
 
   /**
@@ -85,7 +76,12 @@ export class DailyDigestService {
     });
     if (existing && !opts.force) {
       this.logger.debug(`Daily digest already generated for ${this.dayLabel(today)}`);
-      return existing.items as unknown as DigestPayload;
+      // 신규 생성·휴리스틱 경로와 동일한 { intro, items } shape 으로 반환한다.
+      // (items Json 컬럼은 bare 배열이라 그대로 return 하면 최상위 shape 이 갈렸다)
+      return {
+        intro: existing.intro ?? '',
+        items: existing.items as unknown as DigestPayload['items'],
+      };
     }
 
     // 그 날 (또는 그 직전) 들어온 글 30개
@@ -155,6 +151,14 @@ export class DailyDigestService {
     // 유효한 articleId 만 유지
     const validIds = new Set(input.map((a) => a.id));
     const cleanItems = (parsed.items ?? []).filter((it) => validIds.has(it.articleId)).slice(0, 5);
+
+    // 파싱은 성공했지만 모델이 id 를 전부 변형/요약해 에코한 경우 — 빈 items 를
+    // 저장하면 existing 가드에 막혀 그날 내내 빈 다이제스트가 노출된다.
+    // 빈 결과는 저장하지 않고 휴리스틱으로 폴백한다. (warn 은 프롬프트/모델 회귀 감지용)
+    if (cleanItems.length === 0) {
+      this.logger.warn('digest: Gemini items 전부 무효 articleId → 휴리스틱 폴백');
+      return this.generateHeuristic(today, articles);
+    }
 
     const result: DigestPayload = {
       intro: parsed.intro?.trim() ?? '',
@@ -256,7 +260,11 @@ export class DailyDigestService {
 
     await this.prisma.dailyDigest.upsert({
       where: { date: today },
-      create: { date: today, intro: result.intro, items: result.items as never },
+      create: {
+        date: today,
+        intro: result.intro,
+        items: result.items as never,
+      },
       update: {
         intro: result.intro,
         items: result.items as never,

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import Parser from 'rss-parser';
 import { OgImageService } from '../common/og-image.service';
+import { assertPublicHttpUrl, isBlockedHostname } from '../common/url-guard';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface DiscoveredFeed {
@@ -31,6 +32,10 @@ export class RssDiscoveryService {
   async discover(input: string): Promise<DiscoveredFeed[]> {
     const url = input.trim();
     if (!url) return [];
+
+    // SSRF 가드 — 어드민 입력이라도 내부망/메타데이터 대역이면 즉시 거부(400).
+    // 이후 파생 후보(HTML link/경로 추측)는 tryParseFeed 진입부에서 개별 검사한다.
+    await assertPublicHttpUrl(url);
 
     // 1) 직접 피드 시도
     const direct = await this.tryParseFeed(url);
@@ -84,6 +89,9 @@ export class RssDiscoveryService {
 
   private async tryParseFeed(url: string): Promise<DiscoveredFeed | null> {
     try {
+      // 후보 URL(HTML 에서 추출·경로 추측 포함)도 전부 여기로 수렴하므로
+      // fetch 직전에 SSRF 가드를 다시 태운다. 위반이면 조용히 후보 탈락(null).
+      await assertPublicHttpUrl(url);
       const feed = await this.parser.parseURL(url);
       const title = feed.title ?? url;
       return { feedUrl: url, title, type: 'rss' };
@@ -98,6 +106,14 @@ export class RssDiscoveryService {
         timeout: 5000,
         maxContentLength: 2_000_000,
         responseType: 'text',
+        maxRedirects: 3,
+        // 리다이렉트로 내부망/메타데이터 대역으로 우회하는 것 차단 (각 hop 호스트 sync 검사).
+        beforeRedirect: (options: { hostname?: string; host?: string }) => {
+          const host = options.hostname ?? options.host ?? '';
+          if (isBlockedHostname(host)) {
+            throw new Error(`redirect blocked: ${host}`);
+          }
+        },
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.dev)',
         },

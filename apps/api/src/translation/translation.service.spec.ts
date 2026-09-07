@@ -58,4 +58,41 @@ describe('TranslationService', () => {
       expect(await svc.toKorean('Hello')).toBeNull();
     });
   });
+
+  describe('스로틀 (비공식 엔드포인트 IP 차단 방지)', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('연속 호출은 최소 300ms 간격을 두고 나간다 (첫 호출은 지연 0)', async () => {
+      mockGet.mockResolvedValue({ data: [[['번역', 'src']]] });
+
+      // 첫 호출 — lastCallAt=0 이라 대기 없이 즉시
+      await svc.toKorean('One');
+      expect(mockGet).toHaveBeenCalledTimes(1);
+
+      // 두 번째 호출 — 간격이 안 지났으므로 대기
+      const second = svc.toKorean('Two');
+      await jest.advanceTimersByTimeAsync(0);
+      expect(mockGet).toHaveBeenCalledTimes(1); // 아직 스로틀 대기 중
+
+      await jest.advanceTimersByTimeAsync(300);
+      expect(await second).toBe('번역');
+      expect(mockGet).toHaveBeenCalledTimes(2);
+    });
+
+    it('간격이 이미 지난 뒤의 호출은 대기 없이 즉시 나간다', async () => {
+      mockGet.mockResolvedValue({ data: [[['번역', 'src']]] });
+      await svc.toKorean('One');
+
+      jest.advanceTimersByTime(500); // 300ms 초과 경과
+      const p = svc.toKorean('Two');
+      await jest.advanceTimersByTimeAsync(0);
+      expect(mockGet).toHaveBeenCalledTimes(2);
+      await p;
+    });
+  });
 });

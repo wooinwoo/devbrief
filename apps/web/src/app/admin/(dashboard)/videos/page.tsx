@@ -20,12 +20,15 @@ export default async function AdminVideosPage() {
     <div>
       <header className="mb-8">
         <h1
-          className="text-[1.75rem] tracking-[-0.025em] mb-1"
+          className="text-[1.75rem] sm:text-[2rem] leading-tight tracking-[-0.025em] mb-3"
           style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
         >
           발표 영상
         </h1>
-        <p className="text-[13px] max-w-2xl" style={{ color: 'var(--color-fg-muted)' }}>
+        <p
+          className="text-[14px] leading-relaxed max-w-2xl"
+          style={{ color: 'var(--color-fg-muted)' }}
+        >
           좋은 컨퍼런스 발표 YouTube URL 을 붙여넣으면 제목 / 썸네일 / 길이 / 챕터 / 요약을 자동으로
           채웁니다. 챕터는 유튜버 표시 → 영상 설명 → Gemini 자동 순으로 추출합니다.
         </p>

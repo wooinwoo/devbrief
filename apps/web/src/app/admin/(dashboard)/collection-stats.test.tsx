@@ -69,6 +69,28 @@ describe('CollectionStats', () => {
     });
   });
 
+  it('initialData 가 있으면 클라이언트 fetch 없이 바로 렌더한다', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const { getByText } = render(<CollectionStats initialData={STATS} />);
+
+    expect(getByText('Hacker News')).toBeTruthy();
+    expect(getByText(/60%/)).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('initialData 가 null 이면 기존처럼 클라이언트에서 페치한다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => STATS }),
+    );
+    const { getByText } = render(<CollectionStats initialData={null} />);
+
+    await waitFor(() => {
+      expect(getByText('Hacker News')).toBeTruthy();
+    });
+  });
+
   it('수집 0건이면 빈 상태 문구를 보여준다', async () => {
     const empty = {
       ...STATS,

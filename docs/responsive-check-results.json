@@ -1,0 +1,52 @@
+{
+  "fixture": true,
+  "engine": "Chromium",
+  "routes": [
+    "/",
+    "/?tab=ai",
+    "/?tab=articles",
+    "/?tab=conferences",
+    "/?tab=videos",
+    "/?tab=repos",
+    "/articles/m1",
+    "/videos/v1",
+    "/bookmarks",
+    "/admin/login",
+    "/admin",
+    "/admin/sources",
+    "/admin/conferences",
+    "/admin/videos",
+    "/admin/chat"
+  ],
+  "widths": [
+    320,
+    390,
+    640,
+    768,
+    844,
+    1024,
+    1280,
+    1440,
+    1920,
+    2560
+  ],
+  "scenarios": 150,
+  "documentOverflow": 0,
+  "contentClipping": 0,
+  "uncaughtPageErrors": 0,
+  "interactions": [
+    "160-article fixture: mobile previous/next/live counter, desktop last-page jump, disabled boundaries",
+    "All four benchmark metrics; mobile numeric table",
+    "Search empty state and recovery",
+    "Long article code scroll is contained",
+    "Mobile admin navigation closes after route change; RSS failure retains URL",
+    "Video add failure visible and contained",
+    "Mobile logout returns to login"
+  ],
+  "limitations": [
+    "Read-only local API fixtures, not production data",
+    "Chromium desktop emulation; no physical-device checks",
+    "WebKit unavailable: libwoff2dec.so.1.0.2 missing",
+    "Console hydration warnings are separate from uncaught page errors"
+  ]
+}

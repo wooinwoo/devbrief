@@ -1,24 +1,16 @@
 'use client';
 
-import { relativeTime } from '@/lib/relative-time';
+import type { ArticleDetail, ArticleListItem } from '@devbrief/shared';
 import Link from 'next/link';
 import { Highlight } from './highlight';
+import { RelativeTimeText } from './relative-time-text';
 
-export interface ArticleDto {
-  id: string;
-  title: string;
-  titleKo?: string | null; // 영문 글이면 한국어 자동 번역, 한국어 글이면 null
-  url: string;
-  summaryOneLine: string | null;
-  summaryThreeLine: string | null;
-  publishedAt: string;
-  tags: string[];
-  imageUrl: string | null;
-  language?: 'ko' | 'en' | 'mixed' | string;
-  source: { name: string; provider: string };
-  // 정제된 원문 본문 HTML — 상세 조회에서만 채워진다(목록/배치에는 없음).
-  contentHtml?: string | null;
-}
+/**
+ * 웹 전역에서 쓰는 글 DTO — 와이어 계약의 단일 소스는 @devbrief/shared 다 (감사 c58).
+ * 목록/배치/related(ArticleListItem)가 기본형이고, 상세(GET /articles/:id)에서만 내려오는
+ * contentHtml 을 optional 로 얹는다 (목록/배치에는 없음).
+ */
+export type ArticleDto = ArticleListItem & Partial<Pick<ArticleDetail, 'contentHtml'>>;
 
 // 소스마다 다른 색을 쓰던 V1 → 잭 톤 정돈: 모든 카드 회색 톤으로 통일,
 // 소스 이름 옆 작은 점(dot)에만 brand 색을 남겨 구분.
@@ -110,7 +102,7 @@ function ArticleCard({
           </span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
           <span style={{ color: 'var(--color-fg-muted)' }}>
-            {relativeTime(article.publishedAt)}
+            <RelativeTimeText iso={article.publishedAt} />
           </span>
           <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
           <span className="tabular-nums" style={{ color: 'var(--color-fg-muted)' }}>

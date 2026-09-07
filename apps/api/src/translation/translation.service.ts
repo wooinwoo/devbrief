@@ -5,11 +5,29 @@ import axios from 'axios';
  * 무료 번역 (키 불필요). Gemini 한도/만료와 무관하게 한국어화를 유지하기 위한 경로.
  * 1순위 Google 비공식(translate_a) → 2순위 MyMemory. 둘 다 실패하면 null.
  *
- * 비공식 엔드포인트라 대량 호출 시 IP 차단 위험 → 호출부(요약 큐)에서 rate limit 적용.
+ * 비공식 엔드포인트라 대량 호출 시 IP 차단 위험 → 서비스 내부에서 최소 호출
+ * 간격을 보장한다 (큐 limiter 를 우회하는 CLI 직접 호출 경로 포함).
  */
 @Injectable()
 export class TranslationService {
   private readonly logger = new Logger(TranslationService.name);
+
+  /** 외부 번역 호출 최소 간격 — 연속 발사만 늦추고 드문 호출엔 지연 0 */
+  private static readonly MIN_INTERVAL_MS = 300;
+  private lastCallAt = 0;
+  private throttleChain: Promise<void> = Promise.resolve();
+
+  /** 직전 호출로부터 MIN_INTERVAL_MS 를 보장. 동시 호출은 promise 체인으로 직렬화. */
+  private throttle(): Promise<void> {
+    const waited = this.throttleChain.then(async () => {
+      const wait = this.lastCallAt + TranslationService.MIN_INTERVAL_MS - Date.now();
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      this.lastCallAt = Date.now();
+    });
+    // 실패해도 체인이 끊기지 않게
+    this.throttleChain = waited.catch(() => undefined);
+    return waited;
+  }
 
   // 번역하면 안 되는 매체·고유명사 (그대로 두어야 자연스러움).
   // 번역 전 placeholder로 가렸다가 번역 후 복원한다.
@@ -49,6 +67,7 @@ export class TranslationService {
       );
     }
 
+    await this.throttle();
     const out = (await this.viaGoogle(masked)) ?? (await this.viaMyMemory(masked));
     if (!out) return null;
     // 복원 (혹시 번역기가 placeholder를 깨먹었으면 잔여물 제거)

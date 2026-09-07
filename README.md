@@ -1,6 +1,6 @@
 # Devbrief
 
-> 매일 쏟아지는 기술 정보를 한 곳에서. 자동으로 모으고, AI가 한국어로 요약한다.
+> 관심 분야의 새 글을, 요약부터. 읽을 글을 고르고 다음에 읽을 글을 모아 둡니다.
 
 RSS 글, 컨퍼런스, GitHub 트렌딩, 발표 영상을 자동 수집해 한국어로 요약하는
 개인용 기술 큐레이션 도구입니다. 수집한 글은 pgvector로 임베딩해 두며,
@@ -45,9 +45,12 @@ Devbrief는 여러 소스를 한 파이프라인으로 모아 **자동 수집 �
 | **발표 영상 분석** | YouTube 메타 수집 → 공식 챕터/설명 타임스탬프/자막 기반 AI 챕터·요약 3단 폴백 | 매주 월 04:00 KST cron + 수동 |
 | **데일리 다이제스트** | 그날 들어온 글 중 핵심 5개를 LLM이 선별해 다이제스트 카드 생성 | 매일 09:30 KST cron |
 | **관련글 추천** | 글 상세에서 기준 글 임베딩으로 pgvector 코사인 유사도 Top-K "비슷한 글" 표시. 임베딩 없으면 최신글 폴백 | 글 상세 진입 (`GET /articles/:id/related`) |
+| **관심 분야 읽기 브리핑** | 브라우저에 기억한 관심 분야와 읽음 기록으로 최근 7일 글 최대 3편을 선정. 출처를 분산하고, 홈에서 요약 확인·저장·읽음 처리 | 오늘 탭 진입·관심 분야 변경 |
 | **검색 / 필터** | 제목·번역·요약·태그 키워드 검색 + 소스/카테고리/읽음숨김 필터, 조건을 URL 쿼리로 동기화 | articles 탭에서 입력 |
-| **북마크 모아보기** | 저장한 글을 `/bookmarks`에서 모아 보기. 글 id 배치 조회로 N+1 회피, 읽음 여부를 로컬에 기록 | `/bookmarks` 진입 (`GET /articles/batch?ids=`) |
+| **북마크 모아보기** | 저장 글 검색·안 읽은 글 필터·발행순/저장순 정렬·20개씩 페이지 이동. 글 id 배치 조회로 N+1 회피, 저장·읽음 기록은 브라우저에 보관 | `/bookmarks` 진입 (`GET /articles/batch?ids=`) |
 | **RSS 소스 자동 등록** | 블로그 URL만 입력하면 `<link alternate>`로 피드 자동 탐지 후 소스 등록 | 어드민에서 URL 입력 |
+
+홈의 읽기 흐름과 선정 기준은 [관심 분야 브리핑 설계·검증 기록](docs/case-personal-reading.md)에 정리했습니다.
 
 ## 기술 스택
 
@@ -60,7 +63,7 @@ Devbrief는 여러 소스를 한 파이프라인으로 모아 **자동 수집 �
 | **큐 / 캐시** | Redis + BullMQ (수집·요약·임베딩·영상분석 워커) |
 | **수집** | `rss-parser` / `cheerio` (트렌딩 스크래핑) / `youtubei.js` (YouTube 메타·자막) |
 | **인프라** | Docker Compose (Postgres + Redis) / pnpm workspace 모노레포 / Biome / GitHub Actions CI |
-| **테스트** | api Jest (158 tests / 21 suites) / web Vitest (155 tests / 19 files) |
+| **테스트** | Jest (API) / Vitest + Testing Library (웹), 회귀 검사와 CI |
 
 ## 아키텍처
 
@@ -134,8 +137,10 @@ flowchart LR
 
 1. **pgvector 기반 RAG 검색 (어드민 도구).** 질문을 `RETRIEVAL_QUERY`로, 문서를 `RETRIEVAL_DOCUMENT`로 임베딩해
    `embedding <=> $1::vector` 코사인 거리로 Top-K를 뽑습니다. 검색 결과를 컨텍스트로 넣고
-   답변에 `[1] [2]` 형식 출처를 강제해 환각을 줄였습니다. 일반 사용자 단가 부담 때문에
+   답변에 `[1] [2]` 형식 출처 표기를 요청합니다. 검색 결과의 원문 URL을 SSE로 보내 출처 카드와 연결하고,
+   검색 결과가 비면 답변 생성 API를 호출하지 않습니다. 일반 사용자 단가 부담 때문에
    이 챗봇은 어드민 전용으로 두고, `/chat` 진입은 `/admin/chat`으로 우회시켜 운영자만 쓰게 했습니다.
+   구현과 검증 범위는 [RAG 출처 연결과 실패 처리 사례](docs/case-rag-evidence.md)에 정리했습니다.
 
 2. **BullMQ 비동기 수집 파이프라인.** 수집과 AI 처리를 분리했습니다. 수집은 글을 DB에 넣고
    즉시 `summarization`/`embedding` 큐에 작업만 넣고 끝납니다. 요약 작업은 지수 백오프
@@ -233,8 +238,8 @@ curl -X POST http://localhost:4000/api/v1/conferences/discover
 
 ```bash
 pnpm lint && pnpm typecheck && pnpm build
-pnpm --filter @devbrief/api test    # api 단위 테스트 (Jest, 158 tests / 21 suites)
-pnpm --filter @devbrief/web test    # web 단위 테스트 (Vitest, 155 tests / 19 files)
+pnpm --filter @devbrief/api test    # api 단위 테스트 (Jest)
+pnpm --filter @devbrief/web test    # web 단위 테스트 (Vitest)
 ```
 
 이 과정은 GitHub Actions CI(`.github/workflows/ci.yml`)에서도 push/PR마다 동일하게
@@ -258,7 +263,7 @@ devbrief/
 │        ├─ embedding/     768차원 벡터 임베딩 워커
 │        ├─ articles/      글 조회 + 배치(batch) + 관련글 추천(related)
 │        ├─ chat/          RAG 검색 + SSE 스트리밍 답변
-│        ├─ conferences/   LLM NER 자동 발견 + 승인 흐름
+│        ├─ conferences/   공개 일정 피드 + LLM NER + 해커톤 후보 승인
 │        ├─ repos/         GitHub 트렌딩 스크래핑
 │        ├─ videos/        YouTube 메타 + 3단 챕터 분석
 │        ├─ digest/        데일리 다이제스트 생성
@@ -270,3 +275,5 @@ devbrief/
    ├─ db/                  Prisma 스키마 + 마이그레이션 (pgvector)
    └─ shared/              공유 TypeScript 타입
 ```
+
+컨퍼런스·해커톤 공개 피드와 후보 검토: [수집 경로·실행·데이터 출처](docs/event-collection.md).

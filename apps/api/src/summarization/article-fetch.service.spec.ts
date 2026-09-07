@@ -51,4 +51,70 @@ describe('ArticleFetchService.fetchBody', () => {
     mockGet.mockRejectedValue(new Error('ECONNRESET'));
     expect(await svc.fetchBody('https://x.com/a')).toBeNull();
   });
+
+  describe('리다이렉트 수동 추종 (SSRF 가드)', () => {
+    const redirect = (to: string) => ({
+      status: 301,
+      headers: { location: to },
+      data: '',
+    });
+    const para = '본문내용'.repeat(20);
+    const okPage = {
+      status: 200,
+      ...page(`<article><p>${para}</p></article>`),
+    };
+
+    it('자동 추종은 꺼져 있다 (maxRedirects: 0)', async () => {
+      mockGet.mockResolvedValue(okPage);
+      await svc.fetchBody('https://x.com/a');
+      expect(mockGet.mock.calls[0][1].maxRedirects).toBe(0);
+    });
+
+    it('3회 이내 리다이렉트는 홉마다 재검증하며 추종한다', async () => {
+      mockGet
+        .mockResolvedValueOnce(redirect('https://x.com/b'))
+        .mockResolvedValueOnce(redirect('https://x.com/c'))
+        .mockResolvedValueOnce(okPage);
+      const out = await svc.fetchBody('https://x.com/a');
+      expect(out).toContain('본문내용');
+      expect(mockGet).toHaveBeenCalledTimes(3);
+      expect(mockGet.mock.calls[1][0]).toBe('https://x.com/b');
+      expect(mockGet.mock.calls[2][0]).toBe('https://x.com/c');
+    });
+
+    it('상대경로 Location 은 현재 URL 기준으로 해석한다', async () => {
+      mockGet.mockResolvedValueOnce(redirect('/moved')).mockResolvedValueOnce(okPage);
+      await svc.fetchBody('https://x.com/a');
+      expect(mockGet.mock.calls[1][0]).toBe('https://x.com/moved');
+    });
+
+    it('리다이렉트가 3회를 넘으면 중단하고 null', async () => {
+      mockGet.mockResolvedValue(redirect('https://x.com/loop'));
+      expect(await svc.fetchBody('https://x.com/a')).toBeNull();
+      expect(mockGet).toHaveBeenCalledTimes(4); // 최초 1 + 리다이렉트 3
+    });
+
+    it('http/https 외 프로토콜로의 리다이렉트는 거부한다', async () => {
+      mockGet.mockResolvedValueOnce(redirect('file:///etc/passwd'));
+      expect(await svc.fetchBody('https://x.com/a')).toBeNull();
+      expect(mockGet).toHaveBeenCalledTimes(1);
+    });
+
+    it('내부망 호스트로의 리다이렉트는 거부한다 (클라우드 메타데이터)', async () => {
+      mockGet.mockResolvedValueOnce(redirect('http://169.254.169.254/latest/meta-data'));
+      expect(await svc.fetchBody('https://x.com/a')).toBeNull();
+      expect(mockGet).toHaveBeenCalledTimes(1);
+    });
+
+    it('시작 URL 자체가 내부망이면 fetch 하지 않는다', async () => {
+      expect(await svc.fetchBody('http://localhost:6379/x')).toBeNull();
+      expect(await svc.fetchBody('http://10.0.0.5/internal')).toBeNull();
+      expect(mockGet).not.toHaveBeenCalled();
+    });
+
+    it('3xx 인데 Location 이 없으면 null', async () => {
+      mockGet.mockResolvedValueOnce({ status: 304, headers: {}, data: '' });
+      expect(await svc.fetchBody('https://x.com/a')).toBeNull();
+    });
+  });
 });

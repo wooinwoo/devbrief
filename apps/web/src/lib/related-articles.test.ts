@@ -12,6 +12,7 @@ function makeArticle(over: Partial<ArticleDto> & { id: string }): ArticleDto {
     publishedAt: '2026-06-01T00:00:00Z',
     tags: [],
     imageUrl: null,
+    language: 'ko',
     source: { name: 'S', provider: 'rss_generic' },
     ...over,
   };

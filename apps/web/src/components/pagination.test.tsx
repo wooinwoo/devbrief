@@ -5,6 +5,15 @@ import { Pagination } from './pagination';
 afterEach(cleanup);
 
 describe('Pagination', () => {
+  it('페이지 변경 시 모바일 현재 위치 안내를 갱신한다', () => {
+    const { container, rerender } = render(
+      <Pagination page={1} totalPages={20} onChange={() => {}} />,
+    );
+    expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe('1 / 20');
+    rerender(<Pagination page={2} totalPages={20} onChange={() => {}} />);
+    expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe('2 / 20');
+  });
+
   it('totalPages <= 1 이면 렌더하지 않음', () => {
     const { container } = render(<Pagination page={1} totalPages={1} onChange={() => {}} />);
     expect(container.firstChild).toBeNull();

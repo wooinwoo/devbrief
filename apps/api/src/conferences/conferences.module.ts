@@ -5,6 +5,7 @@ import { CommonModule } from '../common/common.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConferenceDiscoveryCron } from './conference-discovery.cron';
 import { ConferenceDiscoveryService } from './conference-discovery.service';
+import { ConferenceFeedService } from './conference-feed.service';
 import { ConferenceImageSyncService } from './conference-image-sync.service';
 import { ConferenceSeederService } from './conference-seeder.service';
 import { ConferencesController } from './conferences.controller';
@@ -16,6 +17,7 @@ import { ConferencesController } from './conferences.controller';
     ConferenceSeederService,
     ConferenceImageSyncService,
     ConferenceDiscoveryService,
+    ConferenceFeedService,
     // 서빙(Redis 없음) 인스턴스에서는 수집성 Cron 미로드
     ...whenRedis(ConferenceDiscoveryCron),
   ],

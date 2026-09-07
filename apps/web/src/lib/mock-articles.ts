@@ -1,7 +1,12 @@
 import type { ArticleDto } from '@/components/article-card';
 
+// 시드 단계에서는 실계약(ArticleDto)의 필수 필드 중 전 항목 공통 기본값(titleKo/language)을
+// 생략할 수 있게 한다 — 아래 map 에서 채워 MOCK_ARTICLES 는 온전한 ArticleDto[] 가 된다.
+type MockSeed = Omit<ArticleDto, 'titleKo' | 'language'> &
+  Partial<Pick<ArticleDto, 'titleKo' | 'language'>>;
+
 // 실제 다이제스트에서 추출한 시드 데이터 (API 미가동 시 시각 검증용)
-export const MOCK_ARTICLES: ArticleDto[] = [
+const SEEDS: MockSeed[] = [
   {
     id: 'm1',
     title: 'Anthropic, Claude Opus 4.8 출시',
@@ -334,3 +339,10 @@ export const MOCK_ARTICLES: ArticleDto[] = [
     source: { name: 'GeekNews', provider: 'geeknews' },
   },
 ];
+
+// 시드는 전부 한국어 큐레이션 문구라 titleKo(번역) 없음 · language 'ko' 가 기본.
+export const MOCK_ARTICLES: ArticleDto[] = SEEDS.map((s) => ({
+  titleKo: null,
+  language: 'ko',
+  ...s,
+}));

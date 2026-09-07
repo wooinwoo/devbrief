@@ -14,6 +14,11 @@ export class GeminiService {
 
   static readonly EMBED_DIM = 768; // text-embedding-004 기본 차원
 
+  // 소켓이 행 걸리면 워커 슬롯/크론이 무한 점유되므로 호출 단위 타임아웃 강제.
+  // (streamText 는 SSE 챗 등 정상적으로 길어질 수 있어 여기서 묶지 않는다)
+  static readonly GENERATE_TIMEOUT_MS = 60_000;
+  static readonly EMBED_TIMEOUT_MS = 30_000;
+
   constructor(config: ConfigService) {
     this.apiKey = config.get<string>('GEMINI_API_KEY') ?? '';
     if (this.apiKey) {
@@ -32,6 +37,29 @@ export class GeminiService {
     return this.client;
   }
 
+  /**
+   * AbortController 기반 호출 타임아웃. 초과 시 요청을 abort 하고 명확한 에러로 throw
+   * — 잡이 실패 처리돼 BullMQ 재시도를 타거나 크론이 다음 주기로 넘어갈 수 있게.
+   */
+  private async withTimeout<T>(
+    label: string,
+    ms: number,
+    run: (signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await run(controller.signal);
+    } catch (e) {
+      if (controller.signal.aborted) {
+        throw new Error(`Gemini ${label} 타임아웃 (${ms / 1000}s)`);
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   /** 텍스트 generation. system 지원 (systemInstruction). */
   async generateText(opts: {
     prompt: string;
@@ -40,15 +68,18 @@ export class GeminiService {
     model?: string;
     json?: boolean; // responseMimeType=application/json 강제
   }): Promise<string> {
-    const res = await this.ensure().models.generateContent({
-      model: opts.model ?? process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite',
-      contents: [{ role: 'user', parts: [{ text: opts.prompt }] }],
-      config: {
-        systemInstruction: opts.system,
-        maxOutputTokens: opts.maxTokens ?? 800,
-        responseMimeType: opts.json ? 'application/json' : undefined,
-      },
-    });
+    const res = await this.withTimeout('generate', GeminiService.GENERATE_TIMEOUT_MS, (signal) =>
+      this.ensure().models.generateContent({
+        model: opts.model ?? process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite',
+        contents: [{ role: 'user', parts: [{ text: opts.prompt }] }],
+        config: {
+          abortSignal: signal,
+          systemInstruction: opts.system,
+          maxOutputTokens: opts.maxTokens ?? 800,
+          responseMimeType: opts.json ? 'application/json' : undefined,
+        },
+      }),
+    );
     return res.text ?? '';
   }
 
@@ -100,11 +131,13 @@ export class GeminiService {
     text: string,
     taskType?: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY',
   ): Promise<number[]> {
-    const res = await this.ensure().models.embedContent({
-      model: 'text-embedding-004',
-      contents: text,
-      config: taskType ? { taskType } : undefined,
-    });
+    const res = await this.withTimeout('embed', GeminiService.EMBED_TIMEOUT_MS, (signal) =>
+      this.ensure().models.embedContent({
+        model: 'text-embedding-004',
+        contents: text,
+        config: { abortSignal: signal, ...(taskType ? { taskType } : {}) },
+      }),
+    );
     const vec = res.embeddings?.[0]?.values;
     if (!vec) throw new Error('Gemini embed 응답 비어 있음');
     return vec;

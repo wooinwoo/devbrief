@@ -18,6 +18,7 @@ function makeArticle(partial: Partial<ArticleDto> & { id: string }): ArticleDto 
     publishedAt: '2026-05-30T00:00:00Z',
     tags: [],
     imageUrl: null,
+    language: 'ko',
     source: { name: 'GeekNews', provider: 'geeknews' },
     ...partial,
   };
@@ -84,14 +85,25 @@ describe('filterArticles', () => {
     expect(r.map((a) => a.id)).toEqual(['b']);
   });
 
-  it('카테고리는 태그와 정확 일치(대소문자 무시), 부분 일치 아님', () => {
-    expect(filterArticles(ARTICLES, { category: 'ai' }).map((a) => a.id)).toEqual(['b', 'c']);
-    // 'ai' 가 'frontend' 같은 태그의 부분으로 잘못 매칭되면 안 됨
-    expect(filterArticles(ARTICLES, { category: 'front' })).toHaveLength(0);
+  // 카테고리는 목록 칩과 같은 진실(categoryOf 6분류) — a=frontend(react), b=ai(claude),
+  // c=backend(postgres; 태그에 ai 가 있어도 칩과 같은 backend 로 분류).
+  it('카테고리는 칩과 같은 categoryOf 6분류 키로 매칭', () => {
+    expect(filterArticles(ARTICLES, { category: 'ai' }).map((a) => a.id)).toEqual(['b']);
+    expect(filterArticles(ARTICLES, { category: 'frontend' }).map((a) => a.id)).toEqual(['a']);
+    expect(filterArticles(ARTICLES, { category: 'backend' }).map((a) => a.id)).toEqual(['c']);
+  });
+
+  it('태그 없는 글도 제목 기반으로 필터에 잡힌다(칩=필터 일치)', () => {
+    const list = [makeArticle({ id: 'x', title: 'React 19 출시', tags: [] })];
+    expect(filterArticles(list, { category: 'frontend' }).map((a) => a.id)).toEqual(['x']);
   });
 
   it('카테고리 키 대문자 입력도 정규화', () => {
-    expect(filterArticles(ARTICLES, { category: 'AI' }).map((a) => a.id)).toEqual(['b', 'c']);
+    expect(filterArticles(ARTICLES, { category: 'AI' }).map((a) => a.id)).toEqual(['b']);
+  });
+
+  it('유효하지 않은 카테고리 키(과거 태그 URL 잔재)는 무시 — 빈 결과를 만들지 않음', () => {
+    expect(filterArticles(ARTICLES, { category: 'react' })).toHaveLength(3);
   });
 
   it('hideRead 는 readSet 의 글을 제외', () => {
@@ -105,8 +117,9 @@ describe('filterArticles', () => {
   });
 
   it('여러 조건 AND 결합', () => {
-    const r = filterArticles(ARTICLES, { category: 'ai', source: 'geeknews' });
+    const r = filterArticles(ARTICLES, { category: 'backend', source: 'geeknews' });
     expect(r.map((a) => a.id)).toEqual(['c']);
+    expect(filterArticles(ARTICLES, { category: 'ai', source: 'geeknews' })).toHaveLength(0);
   });
 
   it('입력 배열을 변형하지 않음', () => {
@@ -151,26 +164,28 @@ describe('sourceOptionsOf', () => {
 });
 
 describe('categoryOptionsOf', () => {
-  it('태그 빈도 내림차순, # 접두 라벨', () => {
-    const opts = categoryOptionsOf(ARTICLES);
-    const ai = opts.find((o) => o.value === 'ai');
-    expect(ai).toMatchObject({ value: 'ai', count: 2 });
-    expect(ai?.label.startsWith('#')).toBe(true);
+  it('categoryOf 6분류 기준으로 집계, CATEGORIES 선언 순서 고정', () => {
+    expect(categoryOptionsOf(ARTICLES)).toEqual([
+      { value: 'ai', label: 'AI', count: 1 },
+      { value: 'frontend', label: 'Frontend', count: 1 },
+      { value: 'backend', label: 'Backend', count: 1 },
+    ]);
   });
 
-  it('대소문자만 다른 태그는 lowercase 키로 합치고 최빈 표기를 라벨로', () => {
+  it('태그 없는 글도 제목 기반으로 집계 — 칩과 옵션이 같은 분류를 가리킨다', () => {
     const list = [
-      makeArticle({ id: '1', tags: ['AI'] }),
-      makeArticle({ id: '2', tags: ['ai'] }),
-      makeArticle({ id: '3', tags: ['ai'] }),
+      makeArticle({ id: '1', title: 'React 19 출시' }),
+      makeArticle({ id: '2', title: 'Next.js 16 정식 릴리스' }),
     ];
-    const opts = categoryOptionsOf(list);
-    expect(opts).toHaveLength(1);
-    expect(opts[0]).toMatchObject({ value: 'ai', count: 3, label: '#ai' });
+    expect(categoryOptionsOf(list)).toEqual([{ value: 'frontend', label: 'Frontend', count: 2 }]);
   });
 
-  it('limit 으로 상위 N개만', () => {
-    const list = [makeArticle({ id: '1', tags: ['a', 'b', 'c', 'd'] })];
-    expect(categoryOptionsOf(list, 2)).toHaveLength(2);
+  it('신호 없는 글은 기타로 집계되고, 글이 없는 분류는 옵션에서 제외', () => {
+    const list = [makeArticle({ id: '1', title: '주말에 다녀온 제주도 맛집 후기' })];
+    expect(categoryOptionsOf(list)).toEqual([{ value: 'etc', label: '기타', count: 1 }]);
+  });
+
+  it('빈 배열 → []', () => {
+    expect(categoryOptionsOf([])).toEqual([]);
   });
 });

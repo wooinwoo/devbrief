@@ -21,6 +21,7 @@ interface DiscoveredFeed {
 }
 
 import { adminFetch } from '@/lib/api';
+import { ensureOk } from '../ensure-ok';
 
 export function SourcesPanel({
   initialSources,
@@ -46,6 +47,8 @@ export function SourcesPanel({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ url }),
       });
+      // 에러 응답(401/500 등)을 '피드 0개'로 오인하지 않게 먼저 검사한다.
+      await ensureOk(res, '피드 탐색');
       const data = (await res.json()) as { feeds: DiscoveredFeed[] };
       setDiscovered(data.feeds ?? []);
     } catch (e) {
@@ -65,6 +68,8 @@ export function SourcesPanel({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ url }),
       });
+      // 실패를 '새로 등록: undefined' 성공 alert 로 마무리하지 않게 먼저 검사한다.
+      await ensureOk(res, '소스 등록');
       const data = (await res.json()) as {
         created: number;
         existing: number;
@@ -85,7 +90,7 @@ export function SourcesPanel({
     setError(null);
     try {
       const res = await adminFetch(`/sources/${id}/toggle`, { method: 'PATCH' });
-      if (!res.ok) throw new Error(`소스 상태 변경 실패 (${res.status})`);
+      await ensureOk(res, '소스 상태 변경');
       startTransition(() => router.refresh());
     } catch (e) {
       setError((e as Error).message);
@@ -100,7 +105,7 @@ export function SourcesPanel({
     setError(null);
     try {
       const res = await adminFetch(`/sources/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`소스 삭제 실패 (${res.status})`);
+      await ensureOk(res, '소스 삭제');
       startTransition(() => router.refresh());
     } catch (e) {
       setError((e as Error).message);
@@ -112,31 +117,28 @@ export function SourcesPanel({
   return (
     <div>
       {/* 추가 패널 */}
-      <section
-        className="p-6 mb-10 border"
-        style={{ borderColor: 'var(--color-line)', borderRadius: 4 }}
-      >
+      <section className="py-6 mb-10 border-y" style={{ borderColor: 'var(--color-line)' }}>
         <h2
-          className="text-[14px] tracking-[-0.005em] mb-4"
+          className="text-[18px] tracking-[-0.015em] mb-4"
           style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
         >
           새 소스 추가
         </h2>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 sm:flex gap-2">
           <input
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://blog.example.com"
             aria-label="소스 URL"
-            className="flex-1 px-3 py-2 text-[13px] outline-none border rounded"
+            className="col-span-2 min-w-0 w-full sm:w-auto flex-1 min-h-11 px-3 py-2 text-[16px] outline-none border rounded"
             style={{ borderColor: 'var(--color-line-strong)' }}
           />
           <button
             type="button"
             onClick={onDiscover}
             disabled={!url || discovering}
-            className="px-4 py-2 text-[13px] rounded border transition-opacity disabled:opacity-50"
+            className="min-h-11 px-4 py-2 text-[14px] rounded border transition-opacity disabled:opacity-50"
             style={{
               borderColor: 'var(--color-line-strong)',
               color: 'var(--color-fg-default)',
@@ -148,9 +150,9 @@ export function SourcesPanel({
             type="button"
             onClick={onRegister}
             disabled={!url || registering}
-            className="px-4 py-2 text-[13px] rounded transition-opacity disabled:opacity-50"
+            className="min-h-11 px-4 py-2 text-[14px] rounded transition-opacity disabled:opacity-50"
             style={{
-              background: 'oklch(48% 0.16 160)',
+              background: 'var(--color-fg-strong)',
               color: 'oklch(99% 0 0)',
               fontWeight: 600,
             }}
@@ -166,24 +168,24 @@ export function SourcesPanel({
         {discovered && (
           <div className="mt-4">
             <p
-              className="text-[11px] tracking-wide uppercase mb-2"
+              className="text-[12px] tracking-wide uppercase mb-2"
               style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}
             >
               발견된 피드 {discovered.length}개
             </p>
             {discovered.length === 0 ? (
-              <p className="text-[12.5px]" style={{ color: 'var(--color-fg-muted)' }}>
+              <p className="text-[14px] leading-relaxed" style={{ color: 'var(--color-fg-muted)' }}>
                 이 URL 에서 RSS / Atom 피드를 찾지 못했어요.
               </p>
             ) : (
               <ul className="space-y-1">
                 {discovered.map((f) => (
-                  <li key={f.feedUrl} className="text-[12.5px] flex items-center gap-3">
+                  <li key={f.feedUrl} className="text-[14px] flex flex-wrap items-center gap-3">
                     <span
                       className="px-1.5 py-0.5 text-[10px] tracking-wide uppercase rounded"
                       style={{
                         color: 'var(--color-fg-muted)',
-                        background: 'var(--color-bg-subtle)',
+                        background: 'var(--color-bg-sunken)',
                       }}
                     >
                       {f.type}
@@ -220,10 +222,10 @@ export function SourcesPanel({
           {initialSources.map((s) => (
             <li
               key={s.id}
-              className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center py-3 border-b text-[13px]"
+              className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-x-3 gap-y-2 items-center py-3 border-b text-[14px]"
               style={{ borderColor: 'var(--color-line)' }}
             >
-              <div className="min-w-0">
+              <div className="min-w-0 col-span-3 sm:col-span-1">
                 <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                   <span
                     style={{
@@ -237,24 +239,24 @@ export function SourcesPanel({
                     className="text-[10px] px-1.5 py-0.5 rounded tracking-wide uppercase"
                     style={{
                       color: 'var(--color-fg-muted)',
-                      background: 'var(--color-bg-subtle)',
+                      background: 'var(--color-bg-sunken)',
                     }}
                   >
                     {s.language}
                   </span>
                 </div>
                 <span
-                  className="text-[11.5px] block truncate"
+                  className="text-[13px] block truncate leading-relaxed"
                   style={{ color: 'var(--color-fg-muted)' }}
                 >
                   {s.feedUrl}
                 </span>
               </div>
               <span
-                className="text-[11px] px-2 py-0.5 rounded"
+                className="text-[12px] px-2 py-0.5 rounded"
                 style={{
                   color: s.active ? 'oklch(48% 0.16 160)' : 'var(--color-fg-muted)',
-                  background: s.active ? 'oklch(80% 0.15 160 / 0.15)' : 'var(--color-bg-subtle)',
+                  background: s.active ? 'oklch(80% 0.15 160 / 0.15)' : 'var(--color-bg-sunken)',
                   fontWeight: 600,
                 }}
               >
@@ -264,7 +266,7 @@ export function SourcesPanel({
                 type="button"
                 onClick={() => onToggle(s.id)}
                 disabled={busy === s.id || isPending}
-                className="text-[12px] px-2.5 py-1 rounded border transition-opacity disabled:opacity-50"
+                className="min-h-11 min-w-11 text-[12px] px-2.5 py-1 rounded border transition-opacity disabled:opacity-50"
                 style={{
                   color: 'var(--color-fg-default)',
                   borderColor: 'var(--color-line-strong)',
@@ -276,7 +278,7 @@ export function SourcesPanel({
                 type="button"
                 onClick={() => onDelete(s.id)}
                 disabled={busy === s.id || isPending}
-                className="text-[12px] transition-opacity disabled:opacity-50"
+                className="min-h-11 min-w-11 text-[12px] transition-opacity disabled:opacity-50"
                 style={{ color: 'oklch(50% 0.21 15)' }}
               >
                 삭제
@@ -284,7 +286,7 @@ export function SourcesPanel({
             </li>
           ))}
           {initialSources.length === 0 && (
-            <li className="py-6 text-center text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
+            <li className="py-6 text-center text-[14px]" style={{ color: 'var(--color-fg-muted)' }}>
               등록된 소스가 없어요. 위에서 URL 을 입력해 추가하세요.
             </li>
           )}

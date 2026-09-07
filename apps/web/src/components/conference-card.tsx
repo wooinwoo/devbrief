@@ -1,158 +1,113 @@
 'use client';
 
 import { daysUntil } from '@/lib/date-utils';
+import { eventType } from '@/lib/event-type';
 import type { ConferenceDto } from '@/lib/mock-conferences';
-import { motion } from 'motion/react';
 import { useState } from 'react';
 
-function fmtDateWeekday(iso: string): string {
-  const d = new Date(iso);
-  const date = d.toLocaleDateString('ko-KR', {
-    month: '2-digit',
-    day: '2-digit',
-  });
-  const weekday = d.toLocaleDateString('ko-KR', { weekday: 'short' });
-  return `${date.replace(/\. /g, '월').replace('.', '일')} (${weekday})`;
-}
+const WEEKDAY = new Intl.DateTimeFormat('ko-KR', { weekday: 'short', timeZone: 'Asia/Seoul' });
 
-interface Props {
-  conference: ConferenceDto;
-  index?: number;
-}
-
-/**
- * onoffmix 톤 — 키비주얼 이미지 위주 카드.
- * 이미지 없으면 brand 그라데이션 + 큰 D-day 타이포로 fallback.
- */
-export function ConferenceCard({ conference: c, index = 0 }: Props) {
+export function ConferenceCard({ conference: c }: { conference: ConferenceDto }) {
   const d = daysUntil(c.startDate);
-  const brand = c.brand ?? 'oklch(50% 0.012 245)';
-  const [imgError, setImgError] = useState(false);
-  const hasImage = !!c.imageUrl && !imgError; // 404 등 로드 실패 시 placeholder 로
+  const hackathon = eventType(c) === 'hackathon';
+  const [imageFailed, setImageFailed] = useState(false);
+  const date = c.startDate.slice(0, 10);
+  const end = c.endDate?.slice(0, 10);
+  const sourceDescription = c.description?.startsWith('일정 출처:') ? c.description : null;
+  const topics = c.topics.filter((topic) => !/^hackathon$/i.test(topic)).slice(0, 3);
 
   return (
-    <motion.li
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.2, 0, 0, 1], delay: 0.04 * index }}
-    >
-      <a
-        href={c.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group block transition-transform motion-safe:hover:-translate-y-1"
-      >
-        {/* 키비주얼 영역 */}
-        <div
-          className="relative aspect-[16/10] overflow-hidden mb-3"
-          style={{
-            borderRadius: 8,
-            background: hasImage
-              ? 'oklch(92% 0.01 290)'
-              : `linear-gradient(135deg, ${brand}, ${brand.replace(')', ' / 0.6)')})`,
-          }}
+    <li className="py-6 sm:py-7 border-b border-(--color-line) last:border-b-0">
+      <article className="grid grid-cols-[3.5rem_minmax(0,1fr)] sm:grid-cols-[5rem_minmax(0,1fr)] gap-x-4 sm:gap-x-7">
+        <time
+          dateTime={date}
+          className="flex flex-col items-start tabular-nums"
+          aria-label={end && end !== date ? `${date}부터 ${end}까지` : date}
         >
-          {hasImage && (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={c.imageUrl!}
-                alt={c.name}
-                onError={() => setImgError(true)}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              {/* 살짝 어두운 오버레이로 텍스트 가독성 확보 */}
-              <div
-                aria-hidden
-                className="absolute inset-0"
-                style={{
-                  background: 'linear-gradient(to top, oklch(0% 0 0 / 0.35) 0%, transparent 50%)',
-                }}
-              />
-            </>
-          )}
+          <span className="text-[11px] sm:text-xs text-(--color-fg-muted)">
+            {date.slice(0, 7).replace('-', '.')}
+          </span>
+          <span className="text-[2rem] sm:text-[2.5rem] leading-[1.2] tracking-[-0.03em] font-semibold text-(--color-fg-strong)">
+            {date.slice(8)}
+          </span>
+          <span className="mt-1 text-xs text-(--color-fg-muted)">
+            {end && end !== date
+              ? `~ ${end.slice(5).replace('-', '.')}`
+              : WEEKDAY.format(new Date(c.startDate))}
+          </span>
+        </time>
 
-          {/* 우상단 D-day batch */}
-          <span
-            className="absolute top-3 right-3 tabular-nums text-[12px] px-2 py-0.5"
-            style={{
-              background: hasImage ? 'oklch(99% 0 0 / 0.95)' : brand,
-              color: hasImage ? brand : 'oklch(99% 0 0)',
-              fontWeight: 700,
-              borderRadius: 3,
-            }}
+        <div className="min-w-0">
+          <a
+            href={c.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group block rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--color-accent)"
           >
-            D-{d}
-          </span>
-
-          {/* 이미지 없을 때 — 이름을 포스터처럼 (키비주얼 대용) */}
-          {!hasImage && (
-            <div className="absolute inset-0 flex flex-col justify-center items-start gap-2 p-5">
-              <span
-                className="text-[10px] tracking-[0.22em] uppercase"
-                style={{ color: 'oklch(99% 0 0 / 0.72)', fontWeight: 600 }}
-              >
-                Conference
-              </span>
-              <span
-                className="text-[1.25rem] leading-[1.22] tracking-[-0.01em] break-keep"
-                style={{
-                  color: 'oklch(99% 0 0)',
-                  fontWeight: 700,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
-              >
-                {c.name}
-              </span>
+            <div className="flex items-start gap-5">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <h3 className="text-[17px] sm:text-[21px] font-semibold leading-snug tracking-[-0.02em] text-(--color-fg-strong) group-hover:underline decoration-1 underline-offset-4">
+                    {c.name}
+                  </h3>
+                  <span
+                    className={`shrink-0 text-xs font-medium ${hackathon ? 'text-(--color-accent)' : 'text-(--color-fg-muted)'}`}
+                  >
+                    {hackathon ? '해커톤' : '컨퍼런스'}
+                  </span>
+                  {d <= 0 && (
+                    <span className="text-xs font-semibold text-(--color-accent)">
+                      {d < 0 ? '진행 중' : '오늘'}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-2 text-sm text-(--color-fg-muted)">{c.location || '장소 미정'}</p>
+                {!sourceDescription && c.description && (
+                  <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-(--color-fg-default)">
+                    {c.description}
+                  </p>
+                )}
+                {topics.length > 0 && (
+                  <p className="mt-2 text-xs text-(--color-fg-muted)">{topics.join(' · ')}</p>
+                )}
+                <span className="mt-3 inline-flex min-h-7 items-center text-[13px] font-medium text-(--color-fg-strong) group-hover:text-(--color-accent)">
+                  {hackathon ? '모집·팀 규정 확인' : '프로그램·참가 안내'}
+                  <svg
+                    className="ml-2"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    aria-hidden="true"
+                  >
+                    <path d="M7 17 17 7M7 7h10v10" />
+                  </svg>
+                </span>
+              </div>
+              {c.imageUrl && !imageFailed && (
+                <img
+                  src={c.imageUrl}
+                  alt=""
+                  loading="lazy"
+                  onError={() => setImageFailed(true)}
+                  className="hidden sm:block w-24 h-16 shrink-0 object-cover rounded-sm"
+                />
+              )}
             </div>
+          </a>
+          {sourceDescription && (
+            <details className="mt-1 text-xs text-(--color-fg-muted)">
+              <summary className="min-h-8 w-fit cursor-pointer py-2 hover:text-(--color-fg-strong)">
+                일정 출처
+                {sourceDescription.includes('CC BY-NC') ? ' · Agenda · CC BY-NC 4.0' : ' · MLH'}
+              </summary>
+              <p className="max-w-[65ch] pb-2 leading-relaxed break-words">{sourceDescription}</p>
+            </details>
           )}
         </div>
-
-        {/* 메타: 날짜 + 장소 */}
-        <div className="flex items-baseline gap-2 mb-1.5 text-[12px]">
-          <span style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}>
-            {fmtDateWeekday(c.startDate)}
-          </span>
-          {c.location && (
-            <>
-              <span style={{ color: 'var(--color-fg-subtle)' }}>·</span>
-              <span style={{ color: 'var(--color-fg-muted)' }}>{c.location}</span>
-            </>
-          )}
-        </div>
-
-        {/* 제목 */}
-        <h3
-          className="text-[15px] leading-[1.35] tracking-[-0.005em] break-keep group-hover:underline underline-offset-2 decoration-(--color-fg-subtle)"
-          style={{
-            color: 'var(--color-fg-strong)',
-            fontWeight: 700,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {c.name}
-        </h3>
-
-        {/* 토픽 + 가격 한 줄 */}
-        <div className="mt-2 flex items-center gap-2 text-[11.5px]">
-          {c.topics.length > 0 && (
-            <span style={{ color: 'var(--color-fg-subtle)' }}>
-              {c.topics
-                .slice(0, 3)
-                .map((t) => `#${t}`)
-                .join(' ')}
-            </span>
-          )}
-          <span className="flex-1" />
-          <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>무료 / 미정</span>
-        </div>
-      </a>
-    </motion.li>
+      </article>
+    </li>
   );
 }

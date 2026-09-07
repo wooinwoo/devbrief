@@ -1,6 +1,7 @@
 'use client';
 
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
+import { MOCKS_ENABLED } from '@/lib/mocks-enabled';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   type FormEvent,
@@ -24,26 +25,22 @@ interface Message {
   citations?: Citation[];
 }
 
-const QUICK_PROMPTS: Array<{ label: string; hint: string; tone: string }> = [
+const QUICK_PROMPTS: Array<{ label: string; hint: string }> = [
   {
     label: '이번 주 AI 모델 출시 소식만',
     hint: 'GPT-5 / Opus 4.8 / Gemini',
-    tone: 'oklch(55% 0.17 60)',
   },
   {
     label: 'Anthropic 관련 최근 글',
     hint: '최근 7일',
-    tone: 'oklch(55% 0.17 60)',
   },
   {
     label: '내가 안 본 글 중 핵심만',
     hint: 'unread 우선 큐레이션',
-    tone: 'oklch(48% 0.16 160)',
   },
   {
     label: '한국 개발 블로그 핫이슈',
     hint: 'GeekNews · 카카오 · 토스',
-    tone: 'oklch(48% 0.16 160)',
   },
 ];
 
@@ -88,12 +85,21 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
   const [streaming, setStreaming] = useState(false);
   const [highlightCite, setHighlightCite] = useState<{ msgId: string; index: number } | null>(null);
   const autoSentRef = useRef(false);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    },
+    [],
+  );
 
   function handleCitationClick(msgId: string, index: number) {
     setHighlightCite({ msgId, index });
-    const el = document.getElementById(`cite-${index}`);
+    const el = document.getElementById(`${msgId}-cite-${index}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => setHighlightCite(null), 2200);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlightCite(null), 2200);
   }
 
   async function send(text: string) {
@@ -129,15 +135,27 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
           if (!part.startsWith('data: ')) continue;
           const payload = part.slice(6).trim();
           if (payload === '[DONE]') continue;
-          let obj: { delta?: string; error?: string };
+          let obj: { delta?: string; error?: string; citations?: Citation[] };
           try {
-            obj = JSON.parse(payload) as { delta?: string; error?: string };
+            obj = JSON.parse(payload) as {
+              delta?: string;
+              error?: string;
+              citations?: Citation[];
+            };
           } catch (err) {
             console.warn('[inline-chat] SSE 파싱 실패, 청크 건너뜀', err, payload);
             continue;
           }
           // 서버 에러는 catch 바깥에서 throw → 폴백 답변으로 전환
           if (obj.error) throw new Error(obj.error);
+          // 인용 근거 이벤트 — delta 없이 citations 만 오면 답변으로 치지 않는다(gotAny 미설정).
+          if (Array.isArray(obj.citations)) {
+            const citations = obj.citations.map((c) => ({
+              ...c,
+              sourceProvider: c.sourceProvider ?? 'rss_generic',
+            }));
+            setMessages((m) => m.map((msg) => (msg.id === asstId ? { ...msg, citations } : msg)));
+          }
           if (obj.delta) {
             gotAny = true;
             setMessages((m) =>
@@ -150,6 +168,21 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
       }
       if (!gotAny) throw new Error('empty stream');
     } catch {
+      if (!MOCKS_ENABLED) {
+        // 프로덕션: 가짜 답변으로 위장하지 않고 실패를 그대로 알린다.
+        setMessages((m) =>
+          m.map((msg) =>
+            msg.id === asstId
+              ? {
+                  ...msg,
+                  content: '지금은 답변을 가져오지 못했어요. 잠시 후 다시 시도해주세요.',
+                  citations: undefined,
+                }
+              : msg,
+          ),
+        );
+        return;
+      }
       const citations = buildMockCitations(text);
       const answer = buildMockAnswer(text, citations);
       for (let i = 0; i < answer.length; i += 4) {
@@ -188,23 +221,22 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
 
   return (
     <section ref={sectionRef} className="mb-14 scroll-mt-4">
-      <p
-        className="text-[11px] mb-3 tracking-[0.2em] uppercase"
-        style={{ color: 'var(--color-fg-subtle)' }}
+      <h2
+        className="text-[20px] font-semibold mb-4 tracking-[-0.02em]"
+        style={{ color: 'var(--color-fg-strong)' }}
       >
         오늘 무엇이 궁금하세요?
-      </p>
+      </h2>
 
       <form onSubmit={onSubmit}>
         <label htmlFor="inline-chat-input" className="sr-only">
           질문
         </label>
         <div
-          className="flex gap-2 rounded-xl px-2 py-2"
+          className="flex gap-2 rounded-lg p-2"
           style={{
             border: '1px solid var(--color-line-strong)',
-            background:
-              'linear-gradient(to right, var(--color-accent-glow), transparent 60%), var(--color-bg-elevated)',
+            background: 'var(--color-bg-elevated)',
           }}
         >
           <input
@@ -216,13 +248,13 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={streaming}
-            className="flex-1 bg-transparent outline-none px-3 py-2.5 text-[15px] disabled:opacity-50 placeholder:text-[var(--color-fg-subtle)]"
+            className="min-w-0 flex-1 bg-transparent outline-none px-3 py-2.5 text-[16px] disabled:opacity-50 placeholder:text-[var(--color-fg-subtle)]"
             style={{ color: 'var(--color-fg-strong)' }}
           />
           <button
             type="submit"
             disabled={streaming || !input.trim()}
-            className="px-4 py-2 text-[13px] rounded-md disabled:opacity-40 transition-colors"
+            className="shrink-0 min-h-11 px-4 py-2 text-[14px] rounded-md disabled:opacity-40 transition-colors hover:opacity-80"
             style={{
               background: 'var(--color-fg-strong)',
               color: 'var(--bg-base)',
@@ -235,45 +267,29 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
       </form>
 
       {!hasConversation && (
-        <div className="mt-5">
+        <div className="mt-8">
           <p
-            className="text-[11px] mb-3 tracking-[0.2em] uppercase"
+            className="text-[14px] mb-3"
             style={{ color: 'var(--color-fg-muted)', fontWeight: 500 }}
           >
             빠른 질문
           </p>
-          <ul className="space-y-1.5">
+          <ul className="divide-y divide-(--color-line) border-y border-(--color-line)">
             {QUICK_PROMPTS.map((p) => (
               <li key={p.label}>
                 <button
                   type="button"
                   onClick={() => send(p.label)}
-                  className="group relative w-full text-left pl-3 pr-3 py-2.5 transition-all motion-safe:hover:-translate-y-px"
-                  style={{
-                    borderRadius: 8,
-                    border: '1px solid var(--color-line)',
-                    background: 'var(--color-bg-base)',
-                  }}
+                  className="group min-h-11 w-full text-left py-4 transition-colors hover:bg-(--color-bg-sunken)"
                 >
-                  <span
-                    aria-hidden
-                    className="absolute left-0 top-2 bottom-2 w-[2px] opacity-50 group-hover:opacity-100 transition-opacity"
-                    style={{
-                      background: p.tone,
-                      boxShadow: `0 0 6px ${p.tone}`,
-                    }}
-                  />
-                  <div className="flex items-baseline justify-between gap-3">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <span
-                      className="text-[14.5px] transition-colors"
+                      className="text-[16px] transition-colors"
                       style={{ color: 'var(--color-fg-default)', fontWeight: 500 }}
                     >
                       <span className="group-hover:text-(--color-fg-strong)">{p.label}</span>
                     </span>
-                    <span
-                      className="text-[11.5px] tracking-wide shrink-0"
-                      style={{ color: 'var(--color-fg-muted)' }}
-                    >
+                    <span className="text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
                       {p.hint}
                     </span>
                   </div>
@@ -291,7 +307,7 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
-            className="mt-6 space-y-6 overflow-hidden"
+            className="mt-8 space-y-8 overflow-hidden"
           >
             {messages.map((m) => (
               <motion.li
@@ -299,32 +315,28 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
-                className={m.role === 'user' ? 'leading-relaxed' : 'leading-relaxed pl-4 relative'}
+                className={
+                  m.role === 'user'
+                    ? 'leading-relaxed border-b border-(--color-line) pb-5'
+                    : 'leading-relaxed'
+                }
               >
-                {m.role === 'assistant' && (
-                  <span
-                    aria-hidden
-                    className="absolute left-0 top-1 bottom-1 w-px"
-                    style={{
-                      background:
-                        'linear-gradient(to bottom, var(--color-accent), transparent 80%)',
-                    }}
-                  />
-                )}
                 <p
-                  className="text-[10px] mb-1.5 tracking-[0.2em] uppercase"
-                  style={{ color: 'var(--color-fg-subtle)' }}
+                  className="text-[13px] font-semibold mb-3"
+                  style={{ color: 'var(--color-fg-muted)' }}
                 >
                   {m.role === 'user' ? 'You' : 'Devbrief'}
                 </p>
-                {m.role === 'assistant' && !streaming && m.content ? (
+                {/* [n] 인용 칩은 citations 데이터가 실제로 있을 때만 클릭 가능 — 없으면 플레인 텍스트(죽은 버튼 방지) */}
+                {m.role === 'assistant' && !streaming && m.content && m.citations?.length ? (
                   <AnswerText
                     text={m.content}
+                    citationIndices={m.citations.map((c) => c.index)}
                     onCitationClick={(idx) => handleCitationClick(m.id, idx)}
                   />
                 ) : (
                   <p
-                    className="whitespace-pre-wrap text-[15px] leading-relaxed"
+                    className="max-w-[75ch] whitespace-pre-wrap text-[16px] leading-[1.8]"
                     style={{
                       color:
                         m.role === 'user' ? 'var(--color-fg-strong)' : 'var(--color-fg-default)',
@@ -346,6 +358,7 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
                 )}
                 {m.citations && m.citations.length > 0 && (
                   <CitationGrid
+                    idPrefix={m.id}
                     citations={m.citations}
                     highlightIndex={highlightCite?.msgId === m.id ? highlightCite.index : null}
                   />
@@ -356,7 +369,7 @@ export const InlineChat = forwardRef<InlineChatHandle, Props>(function InlineCha
               <button
                 type="button"
                 onClick={() => setMessages([])}
-                className="text-[11px] transition-colors"
+                className="min-h-11 px-3 text-[14px] border border-(--color-line) rounded-md transition-colors hover:bg-(--color-bg-sunken)"
                 style={{ color: 'var(--color-fg-subtle)' }}
               >
                 <span className="hover:text-(--color-fg-default)">대화 지우기</span>

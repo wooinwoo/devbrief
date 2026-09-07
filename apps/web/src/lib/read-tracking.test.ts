@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { readTracking } from './read-tracking';
 
+const KEY = 'devbrief.read.v1';
+const LEGACY_KEY = 'pulse.read.v1';
+
+function persisted(key = KEY): string[] {
+  return JSON.parse(localStorage.getItem(key) ?? '[]') as string[];
+}
+
 describe('readTracking', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -38,9 +45,61 @@ describe('readTracking', () => {
     expect(readTracking.has('other', set)).toBe(false);
   });
 
-  it('localStorage 손상 시 빈 Set', () => {
-    localStorage.setItem('pulse.read.v1', 'invalid-json');
+  it('localStorage 손상 시 빈 Set + 키 리셋', () => {
+    localStorage.setItem(KEY, 'invalid-json');
     expect(readTracking.load().size).toBe(0);
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('비배열 JSON(문자열)은 글자 단위 Set 이 되지 않고 빈 Set + 키 리셋', () => {
+    localStorage.setItem(KEY, JSON.stringify('abc'));
+    expect(readTracking.load().size).toBe(0);
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('배열이어도 string 이 아닌 원소는 걸러낸다', () => {
+    localStorage.setItem(KEY, JSON.stringify([1, 'ok', null]));
+    const set = readTracking.load();
+    expect(set.size).toBe(1);
+    expect(set.has('ok')).toBe(true);
+  });
+
+  it('add 는 새 키(devbrief.read.v1)에 저장하고 구 키는 만들지 않는다', () => {
+    readTracking.add('art-1');
+    expect(persisted()).toContain('art-1');
+    expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+  });
+
+  it('구 키(pulse.read.v1)만 있으면 새 키로 1회 이관 후 구 키 삭제', () => {
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(['old-1', 'old-2']));
+
+    const set = readTracking.load();
+    expect(set.has('old-1')).toBe(true);
+    expect(set.has('old-2')).toBe(true);
+    // 새 키에 저장되고 구 키는 지워진다
+    expect(persisted()).toEqual(expect.arrayContaining(['old-1', 'old-2']));
+    expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+  });
+
+  it('구 키와 새 키가 둘 다 있으면 병합 이관', () => {
+    localStorage.setItem(KEY, JSON.stringify(['new-1']));
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(['old-1']));
+
+    const set = readTracking.load();
+    expect(set.has('new-1')).toBe(true);
+    expect(set.has('old-1')).toBe(true);
+    expect(persisted()).toEqual(expect.arrayContaining(['new-1', 'old-1']));
+    expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+  });
+
+  it('손상된 구 키는 이관 없이 삭제만 하고 새 키 데이터는 보존', () => {
+    localStorage.setItem(KEY, JSON.stringify(['new-1']));
+    localStorage.setItem(LEGACY_KEY, 'invalid-json');
+
+    const set = readTracking.load();
+    expect(set.size).toBe(1);
+    expect(set.has('new-1')).toBe(true);
+    expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
   });
 
   it('remove — 읽음 표시 해제 후 persist', () => {

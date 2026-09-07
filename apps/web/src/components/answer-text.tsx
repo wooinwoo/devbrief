@@ -2,11 +2,12 @@
 
 interface Props {
   text: string;
+  citationIndices: number[];
   onCitationClick?: (index: number) => void;
 }
 
 // 답변 텍스트에서 [1] [2] [10] 같은 패턴을 찾아 인터랙티브 chip 으로 치환.
-export function AnswerText({ text, onCitationClick }: Props) {
+export function AnswerText({ text, citationIndices, onCitationClick }: Props) {
   const parts: Array<string | { index: number; raw: string }> = [];
   const re = /\[(\d+)\]/g;
   let last = 0;
@@ -20,25 +21,26 @@ export function AnswerText({ text, onCitationClick }: Props) {
 
   return (
     <p
-      className="whitespace-pre-wrap break-words text-[15px] leading-relaxed"
+      className="max-w-[75ch] whitespace-pre-wrap break-words text-[16px] leading-[1.8]"
       style={{ color: 'var(--color-fg-default)', overflowWrap: 'anywhere' }}
     >
       {parts.map((p, i) =>
-        typeof p === 'string' ? (
-          <span key={i}>{p}</span>
+        typeof p === 'string' || !citationIndices.includes(p.index) ? (
+          <span key={i}>{typeof p === 'string' ? p : p.raw}</span>
         ) : (
           <button
             key={i}
             type="button"
             onClick={() => onCitationClick?.(p.index)}
-            className="inline-flex items-center justify-center mx-0.5 align-baseline tabular-nums text-[11px] rounded-md transition-all"
+            aria-label={`출처 ${p.index} 보기`}
+            className="inline-flex items-center justify-center mx-0.5 align-baseline tabular-nums text-[12px] rounded transition-colors hover:bg-(--color-accent-soft)"
             style={{
-              minWidth: 22,
+              minWidth: 24,
               padding: '0 6px',
-              height: 18,
+              height: 24,
               color: 'var(--color-accent)',
               border: '1px solid var(--color-line-strong)',
-              background: 'oklch(78% 0.13 195 / 0.06)',
+              background: 'var(--color-accent-soft)',
             }}
           >
             {p.index}

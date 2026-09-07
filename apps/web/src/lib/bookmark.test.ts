@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { bookmarks } from './bookmark';
+import { BATCH_MAX_IDS, bookmarks } from './bookmark';
+
+const KEY = 'devbrief.bookmarks.v1';
 
 describe('bookmarks', () => {
   beforeEach(() => {
@@ -45,8 +47,40 @@ describe('bookmarks', () => {
     expect(bookmarks.has('saved', cached)).toBe(false);
   });
 
-  it('손상된 localStorage는 빈 Set으로 복구', () => {
-    localStorage.setItem('devbrief.bookmarks.v1', 'not-json');
+  it('손상된 localStorage는 빈 Set으로 복구 + 키 리셋', () => {
+    localStorage.setItem(KEY, 'not-json');
     expect(bookmarks.load().size).toBe(0);
+    // 오염 키는 리셋되어 다음 load 가 깨끗하게 시작한다
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('비배열 JSON(문자열)은 글자 단위 Set 이 되지 않고 빈 Set + 키 리셋', () => {
+    // '"abc"' 는 JSON.parse 성공 + iterable 이라 검증 없으면 Set{'a','b','c'} 가 된다
+    localStorage.setItem(KEY, JSON.stringify('abc'));
+    const set = bookmarks.load();
+    expect(set.size).toBe(0);
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('비배열 JSON(객체·숫자)도 빈 Set + 키 리셋', () => {
+    localStorage.setItem(KEY, JSON.stringify({ a: 1 }));
+    expect(bookmarks.load().size).toBe(0);
+    expect(localStorage.getItem(KEY)).toBeNull();
+
+    localStorage.setItem(KEY, '42');
+    expect(bookmarks.load().size).toBe(0);
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('배열이어도 string 이 아닌 원소는 걸러낸다', () => {
+    localStorage.setItem(KEY, JSON.stringify([1, 2, 'ok', null]));
+    const set = bookmarks.load();
+    expect(set.size).toBe(1);
+    expect(set.has('ok')).toBe(true);
+  });
+
+  it('BATCH_MAX_IDS — 서버 배치 캡(100)과 일치해야 한다', () => {
+    // apps/api/src/articles/articles.controller.ts 의 BATCH_MAX_IDS 와 동기
+    expect(BATCH_MAX_IDS).toBe(100);
   });
 });

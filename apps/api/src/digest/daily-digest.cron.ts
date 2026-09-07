@@ -12,6 +12,12 @@ export class DailyDigestCron {
   @Cron('30 9 * * *', { timeZone: 'Asia/Seoul' })
   async daily() {
     this.logger.log('Daily digest 생성 시작');
-    await this.digest.generateForToday();
+    try {
+      await this.digest.generateForToday();
+    } catch (e) {
+      // 다른 크론들과 동일 패턴 — 미처리 시 @nestjs/schedule 기본 로거(Scheduler)로 찍혀
+      // digest 실패임을 식별하기 어렵다. 스택까지 남겨 원인 추적 가능하게.
+      this.logger.error(`Digest cron failed: ${(e as Error).message}`, (e as Error).stack);
+    }
   }
 }

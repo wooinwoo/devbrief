@@ -5,20 +5,20 @@
 :root {
   /* 라이트 — 중립 연회색 베이스 + 인디고 시그니처.
      순흑/순백 안 씀. base 와 카드(elevated) 대비로 면이 떠 보이게. */
-  --bg-base: oklch(99.2% 0.003 265);
+  --bg-base: oklch(99% 0.002 265);
   --bg-elevated: oklch(100% 0.001 265);
-  --bg-sunken: oklch(96.5% 0.006 265);
+  --bg-sunken: oklch(96% 0.003 265);
   /* 대비 강화 — 본문 또렷하게 (중립 회색, 미세 블루) */
   --fg-strong: oklch(22% 0.02 265);
   --fg-default: oklch(34% 0.018 265);
   --fg-muted: oklch(48% 0.016 265);
-  --fg-subtle: oklch(54% 0.014 265); /* AA 대비 확보 */
+  --fg-subtle: oklch(50% 0.012 265); /* AA 대비 확보 */
   --line: oklch(90% 0.006 265);
   --line-strong: oklch(82% 0.01 265);
   /* 시그니처 — 인디고 블루 (라이트 배경 위 충분히 진하게) */
   --accent: oklch(50% 0.19 265);
   --accent-strong: oklch(43% 0.21 265);
-  --accent-soft: oklch(95% 0.035 265); /* 색 면 (digest/featured 배경 틴트) */
+  --accent-soft: oklch(96% 0.012 265); /* 색 면 (digest/featured 배경 틴트) */
   --accent-glow: oklch(50% 0.19 265 / 0.1);
   --warm: oklch(58% 0.17 45);
   --bg-tint: oklch(95% 0.02 265);
@@ -28,12 +28,10 @@
   --bar-fg-muted: oklch(72% 0.022 265);
   --bar-line: oklch(36% 0.025 265);
   --bar-accent: oklch(72% 0.15 265);
-  /* 카드 그림자 (중립, 은은하게) */
-  --shadow-card: 0 1px 2px oklch(40% 0.02 265 / 0.06), 0 6px 20px -6px oklch(40% 0.04 265 / 0.1);
-  --shadow-card-hover: 0 2px 4px oklch(40% 0.02 265 / 0.08), 0 14px 32px -8px
-    oklch(40% 0.05 265 / 0.14);
-  /* 큰 콘텐츠 지면 패널용 */
-  --shadow-panel: 0 1px 2px oklch(40% 0.02 265 / 0.05), 0 10px 34px -10px oklch(38% 0.04 265 / 0.12);
+  /* 작은 컨트롤에만 사용할 낮은 그림자. 콘텐츠 구분은 여백과 선을 사용한다. */
+  --shadow-card: 0 2px 6px -2px oklch(22% 0.02 265 / 0.08);
+  --shadow-card-hover: 0 4px 12px -5px oklch(22% 0.02 265 / 0.12);
+  --shadow-panel: 0 3px 10px -5px oklch(22% 0.02 265 / 0.08);
 }
 
 @theme inline {
@@ -66,37 +64,23 @@ body {
   overflow-wrap: anywhere;
   text-wrap: pretty;
   font-feature-settings: "ss01", "ss02", "cv01", "cv11";
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 html {
-  overflow-x: hidden;
+  overflow-x: clip;
   /* 스크롤바 공간을 항상 예약 — 페이지마다 스크롤바 유무로 가로 점프(레이아웃 시프트) 방지 */
   scrollbar-gutter: stable;
 }
 
-/* 미세한 색감 배경 (상단 인디고 한 톤만 은은하게) */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -10;
-  pointer-events: none;
-  background-image: radial-gradient(
-    ellipse 85% 45% at 50% -10%,
-    oklch(68% 0.13 265 / 0.06),
-    transparent 62%
-  );
+::selection {
+  background: var(--accent-soft);
+  color: var(--fg-strong);
 }
 
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -9;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.2 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+input,
+textarea {
+  caret-color: var(--accent);
 }
 
 /* Tailwind v4 가 button/select/summary 의 cursor:pointer 기본값을 제거 — 복원 */
@@ -246,7 +230,7 @@ button:disabled,
 .article-prose blockquote {
   margin: 1.4em 0;
   padding: 0.2em 0 0.2em 1.1em;
-  border-left: 3px solid var(--line-strong);
+  border-left: 1px solid var(--line-strong);
   color: var(--fg-muted);
 }
 

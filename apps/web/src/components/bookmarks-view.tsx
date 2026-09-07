@@ -1,26 +1,25 @@
 'use client';
 
 import { API_BASE } from '@/lib/api';
-import { bookmarks } from '@/lib/bookmark';
+import { BATCH_MAX_IDS, bookmarks } from '@/lib/bookmark';
+import { filterArticles } from '@/lib/filter-articles';
 import { readTracking } from '@/lib/read-tracking';
+import type { ArticleListItem, ArticleSourceRef } from '@devbrief/shared';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import type { ArticleDto } from './article-card';
 import { ArticleRow } from './article-row';
+import { SearchField } from './filter-sidebar';
+import { Pagination } from './pagination';
 
-interface DbArticle {
-  id: string;
-  title: string;
-  titleKo: string | null;
-  url: string;
-  summaryOneLine: string | null;
-  summaryThreeLine: string | null;
-  publishedAt: string;
+/**
+ * GET /articles/batch 의 와이어 계약(@devbrief/shared ArticleListItem)이 단일 소스 —
+ * 다만 과거 수집분의 tags/source 누락(null)에 대비해 그 두 필드만 느슨하게 받는다 (감사 c58).
+ */
+type DbArticle = Omit<ArticleListItem, 'tags' | 'source'> & {
   tags: string[] | null;
-  imageUrl: string | null;
-  language?: string;
-  source: { name: string; provider: string } | null;
-}
+  source: ArticleSourceRef | null;
+};
 
 function mapDbToDto(d: DbArticle): ArticleDto {
   return {
@@ -39,9 +38,8 @@ function mapDbToDto(d: DbArticle): ArticleDto {
 }
 
 type Status = 'idle' | 'loading' | 'error';
-
-/** 배치 조회 API 의 ids 상한 (서버와 동일). 초과 시 청크로 나눠 호출. */
-const BATCH_CHUNK = 100;
+type Sort = 'newest' | 'oldest' | 'saved';
+const PER_PAGE = 20;
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -60,8 +58,14 @@ export function BookmarksView() {
   const [status, setStatus] = useState<Status>('loading');
   const [articles, setArticles] = useState<ArticleDto[]>([]);
   const [readSet, setReadSet] = useState<Set<string>>(new Set());
-  // 조회 실패해 본문은 못 채웠지만 북마크엔 남아있는 id (해제만 가능하게 노출)
+  // 서버가 "없다"고 확인해 준 id — 삭제된 글로 보고 해제만 가능하게 노출
   const [missingIds, setMissingIds] = useState<string[]>([]);
+  // 청크 조회 자체가 실패(네트워크/5xx)한 id 개수 — 해제 유도 없이 재시도만 안내
+  const [failedCount, setFailedCount] = useState(0);
+  const [query, setQuery] = useState('');
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [sort, setSort] = useState<Sort>('newest');
+  const [page, setPage] = useState(1);
 
   const fetchBookmarked = useCallback(async () => {
     const ids = [...bookmarks.load()];
@@ -70,15 +74,16 @@ export function BookmarksView() {
     if (ids.length === 0) {
       setArticles([]);
       setMissingIds([]);
+      setFailedCount(0);
       setStatus('idle');
       return;
     }
 
     setStatus('loading');
-    // 상한(BATCH_CHUNK) 단위로 나눠 배치 엔드포인트를 호출한다.
+    // 상한(BATCH_MAX_IDS, 서버 캡과 동일) 단위로 나눠 배치 엔드포인트를 호출한다.
     // 단건 N회 → 청크 1회로 줄여 N+1 호출을 피한다.
     // allSettled 로 일부 청크가 실패해도 성공분은 렌더하고, 전부 실패할 때만 에러.
-    const chunks = chunk(ids, BATCH_CHUNK);
+    const chunks = chunk(ids, BATCH_MAX_IDS);
     const settled = await Promise.allSettled(
       chunks.map(async (group) => {
         const qs = group.map(encodeURIComponent).join(',');
@@ -95,18 +100,31 @@ export function BookmarksView() {
       return;
     }
 
-    const fetched = settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+    // missing(삭제 추정) 판정은 해당 청크 조회가 성공했을 때만 내린다.
+    // 실패한 청크의 id 를 missing 으로 섞으면 일시 장애가 '해제' 유도로 이어져
+    // 유효한 북마크를 영구 삭제하게 만든다 — 실패분은 개수만 세서 재시도 배너로.
+    const fetched: DbArticle[] = [];
+    const missing: string[] = [];
+    let failed = 0;
+    settled.forEach((result, i) => {
+      if (result.status === 'fulfilled') {
+        fetched.push(...result.value);
+        const returnedIds = new Set(result.value.map((d) => d.id));
+        missing.push(...chunks[i].filter((id) => !returnedIds.has(id)));
+      } else {
+        failed += chunks[i].length;
+      }
+    });
+
+    // Set의 삽입 순서가 저장 순서다. API 반환 순서와 무관하게 최근 저장부터 보관한다.
+    const savedOrder = new Map(ids.map((id, index) => [id, index]));
     const found = fetched
       .map(mapDbToDto)
-      .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-
-    // 조회된 id 집합에 없는 북마크 id 는 "해제만 가능"으로 노출.
-    // 실패한 청크의 id 도 found 에 없으므로 자연스럽게 missing 으로 처리된다.
-    const foundIds = new Set(fetched.map((d) => d.id));
-    const missing = ids.filter((id) => !foundIds.has(id));
+      .sort((a, b) => (savedOrder.get(b.id) ?? 0) - (savedOrder.get(a.id) ?? 0));
 
     setArticles(found);
     setMissingIds(missing);
+    setFailedCount(failed);
     setStatus('idle');
   }, []);
 
@@ -125,12 +143,28 @@ export function BookmarksView() {
   }, []);
 
   const total = articles.length + missingIds.length;
+  const filtered = filterArticles(articles, { query, hideRead: unreadOnly }, readSet);
+  if (sort !== 'saved') {
+    filtered.sort((a, b) =>
+      sort === 'oldest'
+        ? a.publishedAt.localeCompare(b.publishedAt)
+        : b.publishedAt.localeCompare(a.publishedAt),
+    );
+  }
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const visible = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+
+  const search = (value: string) => {
+    setQuery(value);
+    setPage(1);
+  };
 
   return (
     <section aria-busy={status === 'loading'}>
-      <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
+      <div className="flex items-end justify-between gap-4 flex-wrap mb-7 border-b border-(--color-line-strong) pb-6">
         <h1
-          className="text-[1.625rem] sm:text-[2rem] leading-none tracking-[-0.03em] break-keep"
+          className="text-[1.75rem] sm:text-[2.25rem] leading-tight tracking-[-0.025em] break-keep"
           style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
         >
           저장한 글
@@ -140,11 +174,52 @@ export function BookmarksView() {
             className="text-[12.5px] tabular-nums pb-0.5"
             style={{ color: 'var(--color-fg-muted)' }}
           >
-            저장{' '}
-            <span style={{ color: 'var(--color-accent-strong)', fontWeight: 700 }}>{total}</span>
+            저장 <span style={{ color: 'var(--color-fg-strong)', fontWeight: 600 }}>{total}</span>
           </p>
         )}
       </div>
+
+      {status === 'idle' && articles.length > 0 && (
+        <div className="mb-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] items-center">
+            <div className="col-span-2 sm:col-span-1">
+              <SearchField value={query} onChange={search} placeholder="저장한 글 검색" />
+            </div>
+            <button
+              type="button"
+              aria-pressed={unreadOnly}
+              onClick={() => {
+                setUnreadOnly((value) => !value);
+                setPage(1);
+              }}
+              className="min-h-11 px-2 sm:px-3 rounded-md border border-(--color-line-strong) text-[13px] hover:bg-(--color-bg-sunken)"
+              style={{
+                color: unreadOnly ? 'var(--color-accent-strong)' : 'var(--color-fg-default)',
+                background: unreadOnly ? 'var(--color-bg-sunken)' : undefined,
+                borderColor: unreadOnly ? 'var(--color-accent)' : undefined,
+              }}
+            >
+              안 읽은 글만
+            </button>
+            <select
+              aria-label="저장한 글 정렬"
+              value={sort}
+              onChange={(e) => {
+                setSort(e.target.value as Sort);
+                setPage(1);
+              }}
+              className="min-w-0 min-h-11 px-2 sm:px-3 rounded-md border border-(--color-line-strong) bg-(--color-bg-base) text-base"
+            >
+              <option value="newest">최신 발행순</option>
+              <option value="oldest">오래된 발행순</option>
+              <option value="saved">최근 저장순</option>
+            </select>
+          </div>
+          <p role="status" className="mt-4 text-[12px] tabular-nums text-(--color-fg-muted)">
+            불러온 {articles.length}개 중 {filtered.length}개
+          </p>
+        </div>
+      )}
 
       {status === 'loading' && (
         <p className="py-16 text-[14px]" style={{ color: 'var(--color-fg-muted)' }}>
@@ -172,7 +247,31 @@ export function BookmarksView() {
         </div>
       )}
 
-      {status === 'idle' && total === 0 && (
+      {status === 'idle' && failedCount > 0 && (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 flex-wrap mb-4 px-4 py-3 rounded-lg"
+          style={{ border: '1px solid var(--color-line-strong)' }}
+        >
+          <p className="text-[13.5px]" style={{ color: 'var(--color-fg-default)' }}>
+            북마크 {failedCount}개를 불러오지 못했어요. 저장은 그대로 남아 있어요.
+          </p>
+          <button
+            type="button"
+            onClick={() => void fetchBookmarked()}
+            className="min-h-[44px] px-4 rounded-lg text-[13px] transition-colors hover:bg-(--color-bg-elevated)"
+            style={{
+              border: '1px solid var(--color-line-strong)',
+              color: 'var(--color-fg-strong)',
+              fontWeight: 600,
+            }}
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
+      {status === 'idle' && total === 0 && failedCount === 0 && (
         <div className="py-20 text-center">
           <p
             className="text-[16px] mb-2"
@@ -198,39 +297,67 @@ export function BookmarksView() {
       )}
 
       {status === 'idle' && total > 0 && (
-        <ul className="flex flex-col">
-          {articles.map((a) => (
-            <ArticleRow
-              key={a.id}
-              article={a}
-              read={readSet.has(a.id)}
-              bookmarked
-              onBookmark={handleUnbookmark}
-              onToggleRead={handleToggleRead}
-            />
-          ))}
-          {missingIds.length > 0 &&
-            missingIds.map((id) => (
-              <li
-                key={id}
-                className="flex items-center justify-between gap-3 py-3.5 border-b"
-                style={{ borderColor: 'var(--color-line)' }}
+        <>
+          {articles.length > 0 && filtered.length === 0 && (
+            <div className="py-12 text-center">
+              <p className="text-base text-(--color-fg-default)">조건에 맞는 저장 글이 없어요.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  search('');
+                  setUnreadOnly(false);
+                }}
+                className="mt-3 min-h-11 px-4 rounded-lg border border-(--color-line-strong) text-sm hover:bg-(--color-bg-sunken)"
               >
-                <span className="text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
-                  더 이상 불러올 수 없는 글이에요.
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleUnbookmark(id)}
-                  aria-label="북마크 해제"
-                  className="min-h-[44px] px-3 text-[12px] transition-colors hover:text-(--color-fg-strong)"
-                  style={{ color: 'var(--color-fg-subtle)', fontWeight: 600 }}
-                >
-                  해제
-                </button>
-              </li>
+                검색·필터 초기화
+              </button>
+            </div>
+          )}
+          <ul className="flex flex-col" aria-label="저장한 글 목록">
+            {visible.map((a) => (
+              <ArticleRow
+                key={a.id}
+                article={a}
+                read={readSet.has(a.id)}
+                bookmarked
+                onBookmark={handleUnbookmark}
+                onToggleRead={handleToggleRead}
+                onTagClick={search}
+              />
             ))}
-        </ul>
+          </ul>
+          <Pagination
+            page={safePage}
+            totalPages={totalPages}
+            onChange={(next) => {
+              setPage(next);
+              window.scrollTo({ top: 0 });
+            }}
+          />
+          <ul className="flex flex-col" aria-label="불러올 수 없는 저장 글">
+            {missingIds.length > 0 &&
+              missingIds.map((id) => (
+                <li
+                  key={id}
+                  className="flex items-center justify-between gap-3 py-3.5 border-b"
+                  style={{ borderColor: 'var(--color-line)' }}
+                >
+                  <span className="text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
+                    더 이상 불러올 수 없는 글이에요.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleUnbookmark(id)}
+                    aria-label="북마크 해제"
+                    className="min-h-[44px] px-3 text-[12px] transition-colors hover:text-(--color-fg-strong)"
+                    style={{ color: 'var(--color-fg-subtle)', fontWeight: 600 }}
+                  >
+                    해제
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </>
       )}
     </section>
   );
