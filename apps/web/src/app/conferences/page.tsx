@@ -68,7 +68,7 @@ export default async function ConferencesPage() {
           행사
         </h1>
         <p className="mt-2 text-sm" style={{ color: 'var(--color-fg-muted)' }}>
-          {today} · 국내외 컨퍼런스·해커톤 일정
+          {today} · 국내외 컨퍼런스·해커톤·밋업·세미나 일정
         </p>
       </header>
 

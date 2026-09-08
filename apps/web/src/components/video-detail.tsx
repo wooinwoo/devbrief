@@ -87,7 +87,7 @@ export function VideoDetail({ video, related }: Props) {
               className="relative aspect-video overflow-hidden mb-5"
               style={{
                 borderRadius: 6,
-                background: 'var(--bar-bg)',
+                background: '#20242b',
                 minHeight: isReal ? undefined : 208,
               }}
             >
@@ -290,37 +290,12 @@ export function VideoDetail({ video, related }: Props) {
               </ol>
             </section>
           ) : (
-            <section className="mb-10">
-              <SectionHeader label="타임라인" />
-              <div
-                className="flex flex-col items-start gap-3 py-6"
-                style={{
-                  borderTop: '1px solid var(--color-line)',
-                }}
-              >
-                <p
-                  className="text-[14px] leading-relaxed"
-                  style={{ color: 'var(--color-fg-muted)' }}
-                >
-                  아직 이 영상의 타임라인을 분석하지 못했어요.
-                  <br />
-                  전체 영상은 YouTube 에서 볼 수 있어요.
-                </p>
-                <a
-                  href={video.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center min-h-11 text-[12.5px] px-3.5 py-1.5 rounded-md transition-opacity hover:opacity-90"
-                  style={{
-                    background: 'var(--color-accent)',
-                    color: 'oklch(99% 0 0)',
-                    fontWeight: 600,
-                  }}
-                >
-                  YouTube 에서 전체 보기 ↗
-                </a>
-              </div>
-            </section>
+            <p
+              className="mb-6 text-[14px] leading-relaxed"
+              style={{ color: 'var(--color-fg-muted)' }}
+            >
+              아직 이 영상의 타임라인이 없어요.
+            </p>
           )}
 
           {/* === Description 원문 =========================== */}

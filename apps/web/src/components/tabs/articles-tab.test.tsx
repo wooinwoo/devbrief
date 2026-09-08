@@ -36,6 +36,7 @@ afterEach(() => {
 
 beforeEach(() => {
   replace.mockClear();
+  window.history.replaceState(null, '', '/');
   currentSearch = '';
   window.scrollTo = vi.fn();
 });
@@ -158,7 +159,8 @@ describe('카테고리 필터 = 칩과 같은 진실', () => {
 
     fireEvent.click(getByRole('button', { name: '#rust' }));
 
-    expect(replace).toHaveBeenCalledWith('/?tab=articles&q=rust', { scroll: false });
+    expect(window.location.search).toBe('?tab=articles&q=rust');
+    expect(replace).not.toHaveBeenCalled();
   });
 });
 
@@ -201,4 +203,26 @@ describe('더 불러오기 (c62)', () => {
     );
     expect(queryByText('이전 글 더 불러오기')).toBeNull();
   });
+});
+
+it('머리기사도 읽음 처리 없이 저장하고 저장 상태를 표시한다', () => {
+  const onBookmark = vi.fn();
+  const onOpen = vi.fn();
+  const articles = [makeArticle({ id: 'feature', title: '오늘의 머리기사' })];
+  const view = render(
+    <ArticlesTab articles={articles} readSet={new Set()} onOpen={onOpen} onBookmark={onBookmark} />,
+  );
+  fireEvent.click(view.getByRole('button', { name: '저장' }));
+  expect(onBookmark).toHaveBeenCalledWith('feature');
+  expect(onOpen).not.toHaveBeenCalled();
+  view.rerender(
+    <ArticlesTab
+      articles={articles}
+      readSet={new Set()}
+      bookmarkSet={new Set(['feature'])}
+      onOpen={onOpen}
+      onBookmark={onBookmark}
+    />,
+  );
+  expect(view.getByRole('button', { name: '저장됨' }).getAttribute('aria-pressed')).toBe('true');
 });

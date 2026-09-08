@@ -3,6 +3,7 @@ import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConferenceDiscoveryService } from './conference-discovery.service';
 import { ConferenceFeedService } from './conference-feed.service';
+import { VERIFIED_KOREAN_EVENTS } from './verified-korean-events';
 
 describe('ConferenceDiscoveryService', () => {
   let service: ConferenceDiscoveryService;
@@ -85,13 +86,105 @@ describe('ConferenceDiscoveryService', () => {
       },
       { source: 'Agenda', candidates: [], skipped: 0, error: 'timeout' },
     ]);
-    prisma.conference.createMany.mockResolvedValue({ count: 1 });
+    prisma.conference.createMany.mockImplementation(({ data }) =>
+      Promise.resolve({ count: data.length }),
+    );
     const result = await service.discover();
-    expect(result).toEqual(expect.objectContaining({ proposed: 1, failedSources: 1, llmCalls: 0 }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        proposed: VERIFIED_KOREAN_EVENTS.length + 1,
+        failedSources: 1,
+        llmCalls: 0,
+      }),
+    );
     expect(prisma.conference.createMany.mock.calls[0][0].data[0]).toEqual(
       expect.objectContaining({ status: 'PROPOSED', discoveredFromArticleId: null }),
     );
     expect(prisma.article.findMany).not.toHaveBeenCalled();
+  });
+
+  it('공식 확인 일정도 검토 대기로 저장하고 해커톤과 학술대회 URL을 구분한다', async () => {
+    await service.collectPublicEvents();
+    const rows = prisma.conference.createMany.mock.calls[0][0].data;
+    expect(rows).toHaveLength(VERIFIED_KOREAN_EVENTS.length);
+    expect(rows.every((row: { status: string }) => row.status === 'PROPOSED')).toBe(true);
+    expect(new Set(rows.map((row: { url: string }) => row.url)).size).toBe(rows.length);
+    expect(rows.find((row: { name: string }) => row.name.includes('NAIS'))).toEqual(
+      expect.objectContaining({
+        startDate: new Date('2026-09-30'),
+        topics: expect.arrayContaining(['Hackathon']),
+        url: expect.stringContaining('nttNo=51734'),
+      }),
+    );
+    expect(rows.find((row: { name: string }) => row.name.includes('Builders & Brews'))).toEqual(
+      expect.objectContaining({ topics: expect.arrayContaining(['Meetup']) }),
+    );
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Daytona HackSprint Seoul 해커톤',
+          startDate: new Date('2026-09-19'),
+          topics: expect.arrayContaining(['Hackathon']),
+        }),
+        expect.objectContaining({
+          name: 'Midnight Korea Hackathon 2026',
+          startDate: new Date('2026-09-01'),
+          endDate: new Date('2026-09-27'),
+        }),
+        expect.objectContaining({
+          name: 'GWDC Hackathon 2026 Korea',
+          startDate: new Date('2026-09-28'),
+          endDate: new Date('2026-09-30'),
+        }),
+      ]),
+    );
+  });
+
+  it('확인 일정이 종료되면 이후 수집에서 제외한다', async () => {
+    jest.setSystemTime(new Date('2027-01-01T00:00:00Z'));
+    await service.collectPublicEvents();
+    expect(prisma.conference.createMany).not.toHaveBeenCalled();
+  });
+
+  it('공식 확인 일정은 같은 URL의 축약 피드 정보보다 먼저 저장한다', async () => {
+    const url = 'https://luma.com/daytonaseoul';
+    const stored = new Map();
+    prisma.conference.createMany.mockImplementation(({ data }) => {
+      for (const row of data) stored.set(row.url, row);
+      return Promise.resolve({ count: data.length });
+    });
+    prisma.conference.findMany.mockImplementation(({ where }) =>
+      Promise.resolve(
+        where.url ? [...stored.values()].filter((row) => where.url.in.includes(row.url)) : [],
+      ),
+    );
+    feeds.collect.mockResolvedValue([
+      {
+        source: '요약 목록',
+        candidates: [
+          {
+            name: 'Daytona Seoul',
+            url,
+            startDate: '2026-09-19',
+            endDate: null,
+            location: '대한민국',
+            topics: ['Meetup'],
+            kind: 'meetup',
+          },
+        ],
+        skipped: 0,
+      },
+    ]);
+    const result = await service.collectPublicEvents();
+    expect(stored.get(url)).toEqual(
+      expect.objectContaining({
+        name: 'Daytona HackSprint Seoul 해커톤',
+        topics: expect.arrayContaining(['Hackathon']),
+      }),
+    );
+    expect(result.sources.find((source) => source.source === '요약 목록')).toEqual(
+      expect.objectContaining({ saved: 0, skipped: 1 }),
+    );
   });
 
   describe('extractFromArticle', () => {

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConferencesTab } from './conferences-tab';
 
@@ -32,8 +32,11 @@ describe('ConferencesTab', () => {
     fireEvent.change(getByRole('searchbox'), { target: { value: 'hackathon' } });
     expect(getAllByRole('listitem')).toHaveLength(1);
     expect(getByRole('link', { name: /행사 25/ })).toBeTruthy();
+    expect(getByRole('button', { name: '전체 1' })).toBeTruthy();
+    expect(getByRole('button', { name: '컨퍼런스 0' })).toBeTruthy();
+    expect(getByRole('button', { name: '해커톤 1' })).toBeTruthy();
   });
-  it('행사 유형은 배타적으로 분류하고 전환 시 주제와 페이지를 초기화한다', () => {
+  it('유형 전환에도 주제를 유지해 표시 건수와 결과를 일치시키고 0건에서도 해제할 수 있다', () => {
     vi.useFakeTimers().setSystemTime(new Date('2026-09-07T04:00:00Z'));
     const events = [
       { id: 'conf', name: 'Python Summit', topics: ['Python'], startDate: '2026-10-01' },
@@ -49,7 +52,15 @@ describe('ConferencesTab', () => {
     expect(getByRole('button', { name: '컨퍼런스 1' }).getAttribute('aria-pressed')).toBe('true');
     expect(getAllByRole('listitem')).toHaveLength(1);
     fireEvent.change(getByRole('combobox', { name: '행사 주제' }), { target: { value: 'Python' } });
-    fireEvent.click(getByRole('button', { name: '해커톤 2' }));
+    expect(getByRole('button', { name: '전체 1' })).toBeTruthy();
+    fireEvent.click(getByRole('button', { name: '해커톤 0' }));
+    expect(getByRole('button', { name: '해커톤 0' }).getAttribute('aria-pressed')).toBe('true');
+    expect(queryByRole('listitem')).toBeNull();
+    expect((getByRole('combobox', { name: '행사 주제' }) as HTMLSelectElement).value).toBe(
+      'Python',
+    );
+    fireEvent.change(getByRole('combobox', { name: '행사 주제' }), { target: { value: '' } });
+    expect(getByRole('button', { name: '해커톤 2' })).toBeTruthy();
     expect(getAllByRole('listitem')).toHaveLength(2);
     expect(queryByRole('link', { name: /Python Summit/ })).toBeNull();
     expect(queryByRole('link', { name: /지난 해커톤/ })).toBeNull();
@@ -63,22 +74,85 @@ describe('ConferencesTab', () => {
 });
 
 it('filters domestic and online events and restores all regions on reset', () => {
+  vi.useFakeTimers().setSystemTime(new Date('2026-09-07T04:00:00Z'));
   const events = [
     { id: 'kr', name: 'Seoul JS', location: 'Seoul (South Korea)' },
     { id: 'online', name: 'Remote Summit', location: 'Online' },
     { id: 'overseas', name: 'Paris Days', location: 'Paris (France)' },
-  ].map((c) => ({ ...c, url: `https://example.com/${c.id}`, startDate: '2099-01-01', topics: [] }));
+    { id: 'hack', name: 'Remote Build', location: '온라인', topics: ['Hackathon'] },
+  ].map((c) => ({ topics: [], ...c, url: `https://example.com/${c.id}`, startDate: '2099-01-01' }));
   const view = render(<ConferencesTab conferences={events} />);
-  fireEvent.change(view.getByRole('combobox', { name: '행사 지역' }), {
-    target: { value: 'korea' },
-  });
+  expect(view.getByRole('button', { name: '전체 지역' }).getAttribute('aria-pressed')).toBe('true');
+  expect(view.getAllByRole('listitem')).toHaveLength(4);
+  fireEvent.click(view.getByRole('button', { name: '국내 행사' }));
   expect(view.getAllByRole('listitem')).toHaveLength(1);
   expect(view.getByRole('link', { name: 'Seoul JS' })).toBeTruthy();
-  fireEvent.change(view.getByRole('combobox', { name: '행사 지역' }), {
-    target: { value: 'online' },
-  });
-  expect(view.getAllByRole('listitem')).toHaveLength(1);
+  fireEvent.click(view.getByRole('button', { name: '전체 지역' }));
+  expect(view.getAllByRole('listitem')).toHaveLength(4);
+  fireEvent.click(view.getByRole('button', { name: '국내 행사' }));
+  expect(view.getByRole('button', { name: '전체 1' })).toBeTruthy();
+  expect(view.getByRole('button', { name: '해커톤 0' })).toBeTruthy();
+  fireEvent.click(view.getByRole('button', { name: '온라인' }));
+  expect(view.getAllByRole('listitem')).toHaveLength(2);
   expect(view.getByRole('link', { name: 'Remote Summit' })).toBeTruthy();
+  expect(view.getByRole('button', { name: '전체 2' })).toBeTruthy();
+  fireEvent.click(view.getByRole('button', { name: '해커톤 1' }));
+  expect(view.getAllByRole('listitem')).toHaveLength(1);
+  expect(view.getByRole('link', { name: 'Remote Build' })).toBeTruthy();
+  fireEvent.change(view.getByRole('combobox', { name: '개최 시기' }), {
+    target: { value: 'soon' },
+  });
+  expect(view.getByRole('button', { name: '전체 0' })).toBeTruthy();
+  expect(view.getByRole('button', { name: '해커톤 0' }).getAttribute('aria-pressed')).toBe('true');
+  expect(view.queryByRole('listitem')).toBeNull();
+  fireEvent.change(view.getByRole('combobox', { name: '개최 시기' }), {
+    target: { value: 'later' },
+  });
+  expect(view.getByRole('button', { name: '해커톤 1' })).toBeTruthy();
   fireEvent.click(view.getByRole('button', { name: '초기화' }));
-  expect(view.getAllByRole('listitem')).toHaveLength(3);
+  expect(view.getAllByRole('listitem')).toHaveLength(4);
+});
+
+it('국내 밋업·세미나를 별도 집계하고 검색·지역 조건과 함께 선택·해제한다', () => {
+  vi.useFakeTimers().setSystemTime(new Date('2026-09-08T04:00:00Z'));
+  const events = [
+    {
+      id: 'meetup',
+      name: 'Cloud Community Day',
+      location: '경기도 용인시',
+      topics: ['Meetup', 'Cloud'],
+    },
+    { id: 'conf', name: 'Cloud Conference', location: '서울', topics: ['Cloud'] },
+    { id: 'hack', name: 'Cloud Hackathon', location: '부산', topics: ['Hackathon', 'Cloud'] },
+    {
+      id: 'foreign',
+      name: 'Cloud Meetup',
+      location: 'Cambridge (UK)',
+      topics: ['Meetup', 'Cloud'],
+    },
+  ].map((event) => ({ ...event, url: `https://example.com/${event.id}`, startDate: '2026-10-01' }));
+  const view = render(<ConferencesTab conferences={events} />);
+  expect(view.getByRole('button', { name: '밋업·세미나 2' })).toBeTruthy();
+  expect(view.getByRole('button', { name: '전체 지역' }).getAttribute('aria-pressed')).toBe('true');
+  expect(view.getAllByRole('listitem')).toHaveLength(4);
+  fireEvent.click(view.getByRole('button', { name: '국내 행사' }));
+  expect(view.getByRole('button', { name: '전체 3' })).toBeTruthy();
+  expect(view.getByRole('button', { name: '컨퍼런스 1' })).toBeTruthy();
+  expect(view.getByRole('button', { name: '해커톤 1' })).toBeTruthy();
+  fireEvent.click(view.getByRole('button', { name: '밋업·세미나 1' }));
+  const meetup = within(view.getByRole('listitem'));
+  expect(meetup.getByText('밋업·세미나')).toBeTruthy();
+  expect(meetup.getByRole('link', { name: 'Cloud Community Day' })).toBeTruthy();
+  expect(meetup.queryByText('Meetup')).toBeNull();
+  expect(view.queryByRole('option', { name: 'Meetup' })).toBeNull();
+  fireEvent.change(view.getByRole('searchbox'), { target: { value: 'missing' } });
+  expect(view.getByRole('button', { name: '밋업·세미나 0' }).getAttribute('aria-pressed')).toBe(
+    'true',
+  );
+  expect(view.queryByRole('listitem')).toBeNull();
+  fireEvent.click(view.getByRole('button', { name: '전체 행사 보기' }));
+  expect(view.getAllByRole('listitem')).toHaveLength(4);
+  expect(view.getByRole('button', { name: '밋업·세미나 2' }).getAttribute('aria-pressed')).toBe(
+    'false',
+  );
 });

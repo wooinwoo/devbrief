@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import type { ArticleDto } from './article-card';
 import { ArticleRow } from './article-row';
+import { CoverImage } from './cover-image';
 import { RelativeTimeText } from './relative-time-text';
 import { SectionHeader } from './section-header';
 
@@ -48,11 +49,11 @@ export function ArticleDetail({ article, related }: Props) {
   return (
     <article className="detail-reading pb-12 sm:pb-16">
       <Link
-        href="/"
+        href="/?tab=articles"
         className="inline-flex min-h-11 items-center gap-2 text-[13px] mb-5 transition-colors hover:text-(--color-fg-default)"
         style={{ color: 'var(--color-fg-muted)' }}
       >
-        <span aria-hidden>←</span> 오늘의 흐름
+        <span aria-hidden>←</span> 개발 뉴스로
       </Link>
 
       {/* 헤더 */}
@@ -105,18 +106,9 @@ export function ArticleDetail({ article, related }: Props) {
         )}
       </header>
 
-      {/* 대표 이미지 */}
       {article.imageUrl && (
-        <div
-          className="relative aspect-[16/9] overflow-hidden rounded-md mb-10"
-          style={{ background: 'var(--color-bg-sunken)' }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={article.imageUrl}
-            alt={`${heading} 대표 이미지`}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+        <div className="detail-article-cover" role="img" aria-label={`${heading} 대표 이미지`}>
+          <CoverImage src={article.imageUrl} label={heading} priority />
         </div>
       )}
 

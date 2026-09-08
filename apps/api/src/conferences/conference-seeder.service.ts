@@ -15,15 +15,15 @@ interface ConfSeed {
   youtubeChannelId?: string;
 }
 
-// 시드용 한국 컨퍼런스 5개. 이미지는 운영자가 수동 등록한다는 전제.
+// 기존 컨퍼런스 메타데이터. 신규 수집 후보는 discovery 경로에서 검토 대기로 저장한다.
 // 키비주얼 URL은 각 컨퍼런스 공식 사이트의 og:image / 헤더 이미지 기준.
 const SEEDS: ConfSeed[] = [
   {
     name: 'FECONF 2026',
-    // 2026 서브도메인 미개설 → 공식 메인(차기 안내 리다이렉트). 2026.feconf.kr 열리면 교체
+    // 날짜·장소: https://www.linkedin.com/company/feconf/ (2026-09-08 확인)
     url: 'https://feconf.kr',
-    startDate: '2026-10-25',
-    location: '서울 / 광운대학교',
+    startDate: '2026-10-24',
+    location: '서울 롯데월드타워',
     topics: ['Frontend', 'React', 'TypeScript'],
     brandColor: 'oklch(48% 0.18 250)',
     description: '국내 최대 프론트엔드 컨퍼런스',
@@ -31,9 +31,9 @@ const SEEDS: ConfSeed[] = [
   {
     name: 'if(kakao)dev 2026',
     url: 'https://if.kakao.com',
-    startDate: '2026-11-12',
-    endDate: '2026-11-14',
-    location: '판교 / 카카오 본사',
+    startDate: '2026-10-13',
+    endDate: '2026-10-14',
+    location: '경기도 용인시 카카오 AI 캠퍼스',
     topics: ['Backend', 'AI', 'Infra'],
     brandColor: 'oklch(60% 0.18 90)',
     description: '카카오 기술 컨퍼런스',
@@ -48,17 +48,6 @@ const SEEDS: ConfSeed[] = [
     brandColor: 'oklch(50% 0.16 240)',
     description: '토스 기술 컨퍼런스',
     youtubeChannelId: 'UCeg5g-vWgtgzQ0cYNV2Cyow',
-  },
-  {
-    name: 'DEVIEW 2026',
-    url: 'https://deview.kr',
-    startDate: '2026-11-26',
-    endDate: '2026-11-27',
-    location: '서울 / 코엑스',
-    topics: ['AI', 'Search', 'Cloud'],
-    brandColor: 'oklch(52% 0.18 145)',
-    description: 'NAVER 개발자 컨퍼런스',
-    youtubeChannelId: 'UCNrehnUq7Il-J7HQxrzp7CA',
   },
   {
     name: 'PyCon Korea 2026',
@@ -83,6 +72,7 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     try {
+      await this.correctLegacySeeds();
       for (const seed of SEEDS) {
         await this.applySeed(seed);
       }
@@ -104,6 +94,47 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
       .catch((e) => this.logger.warn(`Conference image sync 실패: ${(e as Error).message}`));
   }
 
+  /** 잘못 배포된 시드와 모든 식별 필드가 일치할 때만 정정한다. 운영자 수정과 거절은 보존한다. */
+  private async correctLegacySeeds() {
+    const corrections = [
+      {
+        name: 'FECONF 2026',
+        url: 'https://feconf.kr',
+        startDate: new Date('2026-10-25'),
+        endDate: null,
+        location: '서울 / 광운대학교',
+        data: { startDate: new Date('2026-10-24'), location: '서울 롯데월드타워' },
+      },
+      {
+        name: 'if(kakao)dev 2026',
+        url: 'https://if.kakao.com',
+        startDate: new Date('2026-11-12'),
+        endDate: new Date('2026-11-14'),
+        location: '판교 / 카카오 본사',
+        data: {
+          startDate: new Date('2026-10-13'),
+          endDate: new Date('2026-10-14'),
+          location: '경기도 용인시 카카오 AI 캠퍼스',
+        },
+      },
+      {
+        // DEVIEW 공식 사이트는 DAN 2025로 이동한다. 미확인 2026 일정은 재검토한다.
+        name: 'DEVIEW 2026',
+        url: 'https://deview.kr',
+        startDate: new Date('2026-11-26'),
+        endDate: new Date('2026-11-27'),
+        location: '서울 / 코엑스',
+        data: { status: 'PROPOSED' as const },
+      },
+    ];
+    for (const { data, ...legacy } of corrections) {
+      await this.prisma.conference.updateMany({
+        where: { ...legacy, status: 'ACTIVE', discoveredAt: null },
+        data,
+      });
+    }
+  }
+
   /**
    * 시드 1건 반영. url 또는 name+startDate 로 기존 행을 찾고,
    * - 있으면 비어 있는(null) 필드만 시드값으로 채움 — 운영자 편집·자동 image sync 결과 보존
@@ -113,9 +144,13 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
    */
   private async applySeed(seed: ConfSeed) {
     const startDate = new Date(seed.startDate);
+    const knownDates = [startDate];
+    // URL을 운영자가 변경한 행도 날짜 정정 전 시드로 재매칭해 중복 생성을 막는다.
+    if (seed.name === 'FECONF 2026') knownDates.push(new Date('2026-10-25'));
+    if (seed.name === 'if(kakao)dev 2026') knownDates.push(new Date('2026-11-12'));
     const existing = await this.prisma.conference.findFirst({
       where: {
-        OR: [{ url: seed.url }, { AND: [{ name: seed.name }, { startDate }] }],
+        OR: [{ url: seed.url }, { AND: [{ name: seed.name }, { startDate: { in: knownDates } }] }],
       },
     });
 

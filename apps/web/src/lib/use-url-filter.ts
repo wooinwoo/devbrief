@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 
 /**
@@ -9,7 +9,6 @@ import { useCallback, useEffect, useRef } from 'react';
  */
 export function useUrlFilters() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   // 현재 쿼리스트링을 복제해 한 키만 갱신한 뒤 history 를 교체한다(tab 등 다른 키 보존).
   const setParam = useCallback(
@@ -18,9 +17,11 @@ export function useUrlFilters() {
       if (value === null || value === '') next.delete(key);
       else next.set(key, value);
       const qs = next.toString();
-      router.replace(qs ? `/?${qs}` : '/', { scroll: false });
+      // 같은 화면의 상태만 바꾼다. Next/vinext가 useSearchParams를 동기화하므로
+      // 서버 페이지와 이미 받은 목록을 다시 요청할 필요가 없다.
+      window.history.replaceState(null, '', qs ? `/?${qs}` : '/');
     },
-    [searchParams, router],
+    [searchParams],
   );
 
   // 키워드는 타이핑마다 URL 을 갈아끼우면 history 가 시끄러워지니 살짝 디바운스.

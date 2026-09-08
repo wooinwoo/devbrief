@@ -23,11 +23,13 @@ export function SavedArticleRow({
   return (
     <li className="saved-article">
       <div className="saved-article-main">
-        <div className="saved-article-cover">
-          <CoverImage src={article.imageUrl} label={article.source.name} />
-        </div>
+        {article.imageUrl && (
+          <div className="saved-article-cover">
+            <CoverImage src={article.imageUrl} label={article.source.name} />
+          </div>
+        )}
         <div className="saved-article-copy">
-          <div className="saved-article-meta">
+          <div className="saved-article-meta text-[13px]">
             <span>{article.source.name}</span>
             <span>
               <RelativeTimeText iso={article.publishedAt} />
@@ -37,9 +39,11 @@ export function SavedArticleRow({
             </span>
           </div>
           <Link href={`/articles/${article.id}`}>
-            <h2>{primary}</h2>
+            <h2 className="text-[20px]">{primary}</h2>
           </Link>
-          {(article.summaryOneLine || secondary) && <p>{article.summaryOneLine || secondary}</p>}
+          {(article.summaryOneLine || secondary) && (
+            <p className="text-[16px]">{article.summaryOneLine || secondary}</p>
+          )}
         </div>
       </div>
       <div className="saved-article-bottom">
@@ -51,15 +55,11 @@ export function SavedArticleRow({
           ))}
         </div>
         <div className="saved-actions">
-          <button
-            type="button"
-            aria-label={read ? '안읽음으로 표시' : '읽음으로 표시'}
-            onClick={() => onToggleRead(article.id)}
-          >
+          <button type="button" onClick={() => onToggleRead(article.id)}>
             <BriefIcon name={read ? 'undo' : 'check'} size={17} />
-            {read ? '안 읽음으로' : '읽음으로 표시'}
+            {read ? '안 읽음으로 표시' : '읽음으로 표시'}
           </button>
-          <button type="button" aria-label="북마크 해제" onClick={() => onBookmark(article.id)}>
+          <button type="button" onClick={() => onBookmark(article.id)}>
             <BriefIcon name="bookmark" size={17} />
             저장 해제
           </button>

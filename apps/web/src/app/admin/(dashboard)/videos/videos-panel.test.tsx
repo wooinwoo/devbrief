@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type AdminVideo, VideosPanel } from './videos-panel';
 
@@ -45,19 +45,32 @@ describe('VideosPanel', () => {
     expect(queryByText(/오류:/)).toBeNull();
   });
 
-  it('삭제 실패(404) 시 에러를 표시하고 refresh 하지 않는다', async () => {
+  it('삭제 실패 안내는 해당 영상 옆에 표시하고 재시도 성공 시 지운다', async () => {
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({}) }),
+      vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) }),
     );
-    const { getByText, findByText } = render(<VideosPanel initialVideos={[VIDEO]} />);
+    const { getAllByRole, findByRole, queryByRole } = render(
+      <VideosPanel initialVideos={[VIDEO, { ...VIDEO, id: 'v2', title: '두 번째 발표 영상' }]} />,
+    );
+    const [firstVideo, secondVideo] = getAllByRole('listitem');
 
-    fireEvent.click(getByText('삭제'));
+    fireEvent.click(within(secondVideo).getByRole('button', { name: '삭제' }));
 
-    const err = await findByText(/영상 삭제 실패 \(404\)/);
-    expect(err).toBeTruthy();
+    const err = await findByRole('alert');
+    expect(err.textContent).toContain('영상 삭제 실패 (404)');
+    expect(secondVideo.contains(err)).toBe(true);
+    expect(firstVideo.contains(err)).toBe(false);
     expect(refresh).not.toHaveBeenCalled();
+
+    fireEvent.click(within(secondVideo).getByRole('button', { name: '삭제' }));
+
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(queryByRole('alert')).toBeNull();
   });
 
   it('추가 실패 시 서버 메시지를 표시한다', async () => {

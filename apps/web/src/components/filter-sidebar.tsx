@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
+import { BriefIcon } from './brief-icon';
 
 interface FilterOption {
   value: string;
@@ -29,14 +30,14 @@ interface Props {
 
 /**
  * 각 탭 좌측에 붙는 필터 사이드바.
- * 모바일에선 가로 스크롤 칩으로 fallback.
+ * 모바일에서는 옵션을 접어두고 선택한 조건과 추가 토글을 따로 보여준다.
  */
 export function FilterSidebar({ groups, search, extra, footer }: Props) {
   // 모바일에선 접힌 상태가 기본 — 필터가 본문을 한참 밀어내지 않게.
   const filterId = useId();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const activeCount =
-    groups.filter((g) => g.active !== null).length + (search?.value.trim() ? 1 : 0);
+  const activeGroups = groups.filter((g) => g.active !== null);
+  const activeCount = activeGroups.length + (search?.value.trim() ? 1 : 0);
 
   return (
     <aside className="lg:w-[200px] lg:shrink-0">
@@ -52,7 +53,7 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
           onClick={() => setMobileOpen((o) => !o)}
           aria-expanded={mobileOpen}
           aria-controls={filterId}
-          className="lg:hidden w-full flex items-center justify-between min-h-11 px-3.5 py-2.5 mb-3 rounded-lg border text-[13.5px]"
+          className="lg:hidden w-full flex items-center justify-between min-h-11 px-3.5 py-2.5 mb-3 rounded-lg border text-[16px]"
           style={{
             borderColor: 'var(--color-line-strong)',
             background: 'var(--color-bg-elevated)',
@@ -94,6 +95,35 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
           </svg>
         </button>
 
+        {activeGroups.length > 0 && (
+          <ul aria-label="적용된 필터" className="lg:hidden flex flex-wrap gap-2 mb-4">
+            {activeGroups.map((g) => {
+              const label = g.options.find((opt) => opt.value === g.active)?.label ?? g.active;
+              return (
+                <li key={g.key} className="min-w-0 max-w-full">
+                  <button
+                    type="button"
+                    onClick={() => g.onSelect(null)}
+                    aria-label={`${g.label}: ${label} 필터 해제`}
+                    className="flex min-h-11 max-w-full items-center gap-2 rounded-md border px-3 py-2 text-[16px] text-left"
+                    style={{
+                      borderColor: 'var(--color-line-strong)',
+                      background: 'var(--color-bg-elevated)',
+                      color: 'var(--color-accent)',
+                    }}
+                  >
+                    <span className="min-w-0 break-words">
+                      {g.label}: {label}
+                    </span>
+                    <BriefIcon name="close" size={14} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {extra && <div className="mb-6">{extra}</div>}
+
         {/* 모바일: 토글로 열림 / 데스크탑: 항상 세로 sticky */}
         <div id={filterId} className={`${mobileOpen ? 'flex' : 'hidden'} lg:flex flex-col gap-6`}>
           {groups
@@ -112,7 +142,7 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
                     <button
                       type="button"
                       onClick={() => g.onSelect(null)}
-                      className="shrink-0 min-h-11 px-1 text-[12px] hover:underline underline-offset-2"
+                      className="shrink-0 min-h-11 px-1 text-[16px] lg:text-[12px] hover:underline underline-offset-2"
                       style={{ color: 'var(--color-accent)', fontWeight: 600 }}
                     >
                       전체 보기
@@ -134,7 +164,6 @@ export function FilterSidebar({ groups, search, extra, footer }: Props) {
               </div>
             ))}
 
-          {extra && <div>{extra}</div>}
           {footer}
         </div>
       </div>
@@ -245,7 +274,7 @@ function FilterButton({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="group flex items-center gap-2 min-h-11 px-2.5 py-1.5 rounded-md text-sm transition-colors lg:w-full hover:bg-(--color-bg-sunken)"
+      className="group flex items-center gap-2 min-h-11 px-2.5 py-1.5 rounded-md text-[16px] lg:text-sm transition-colors lg:w-full hover:bg-(--color-bg-sunken)"
       style={{
         color: active ? 'var(--color-fg-strong)' : 'var(--color-fg-muted)',
         fontWeight: active ? 700 : 500,

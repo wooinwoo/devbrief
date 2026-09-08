@@ -33,6 +33,38 @@ const hack = {
   formatType: 'digital',
   status: 'pending',
 };
+const awskrug = [
+  'BEGIN:VCALENDAR',
+  'VERSION:2.0',
+  'BEGIN:VEVENT',
+  'SUMMARY:AWSKRUG Meetup',
+  'URL;VALUE=URI:https://www.meetup.com/awskrug/events/123/',
+  'DTSTART;TZID=Asia/Seoul:20260910T183000',
+  'DTEND;TZID=Asia/Seoul:20260910T213000',
+  'END:VEVENT',
+  'END:VCALENDAR',
+].join('\r\n');
+const devKorea =
+  '<ul><li><time datetime="2026-09-21T07:00:00Z"></time><a href="/events/shipaton">Shipaton 2026: Seoul</a></li></ul>';
+const gdgIncheon = `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+  props: {
+    pageProps: {
+      chapterSlug: 'gdg-incheon',
+      chapterData: { country: 'KR' },
+      prerenderData: {
+        upcomingEvents: {
+          results: [
+            {
+              title: 'Incheon Hackathon',
+              url: 'https://gdg.community.dev/events/details/incheon-hackathon/',
+              start_date: '2026-09-12T04:00:00Z',
+            },
+          ],
+        },
+      },
+    },
+  },
+})}</script>`;
 
 describe('행사 저장 경계', () => {
   it('이름에 해커톤이 없어도 피드의 소문자 태그로 유형을 구분한다', () => {
@@ -91,7 +123,7 @@ describe('행사 저장 경계', () => {
 describe('공개 행사 피드', () => {
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(NOW);
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
   afterEach(() => jest.useRealTimers());
   it('Agenda 날짜 범위·주제·출처를 매핑한다', () => {
@@ -123,21 +155,70 @@ describe('공개 행사 피드', () => {
   it('한 소스가 실패해도 다른 소스 수집은 유지한다', async () => {
     (axios.get as jest.Mock)
       .mockRejectedValueOnce(new Error('timeout'))
-      .mockResolvedValueOnce({ data: mlh([hack]) });
+      .mockResolvedValueOnce({ data: mlh([hack]) })
+      .mockResolvedValueOnce({ data: awskrug })
+      .mockResolvedValueOnce({ data: devKorea })
+      .mockResolvedValueOnce({ data: gdgIncheon });
     const result = await new ConferenceFeedService().collect();
     expect(result[0].error).toBe('timeout');
     expect(result[1].candidates).toHaveLength(1);
     expect(result[1].error).toBeUndefined();
+    expect(result.slice(2)).toEqual([
+      expect.objectContaining({
+        source: 'AWSKRUG',
+        candidates: [expect.objectContaining({ kind: 'meetup', topics: ['Meetup', 'AWS'] })],
+      }),
+      expect.objectContaining({
+        source: 'Dev Korea',
+        candidates: [expect.objectContaining({ kind: 'meetup', startDate: '2026-09-21' })],
+      }),
+      expect.objectContaining({
+        source: 'GDG Incheon',
+        candidates: [expect.objectContaining({ kind: 'hackathon', startDate: '2026-09-12' })],
+      }),
+    ]);
+    expect(result.slice(1).every((source) => source.error === undefined)).toBe(true);
+    expect((axios.get as jest.Mock).mock.calls.map(([url]) => url)).toEqual([
+      'https://developers.events/all-events.json',
+      'https://www.mlh.com/events',
+      'https://www.meetup.com/awskrug/events/ical/',
+      'https://dev-korea.com/events',
+      'https://gdg.community.dev/gdg-incheon/',
+    ]);
   });
   it('현실에 없는 날짜·불명확한 종료일이 파서를 거쳐도 저장되지 않는다', async () => {
-    (axios.get as jest.Mock).mockResolvedValueOnce({ data: '[]' }).mockResolvedValueOnce({
-      data: mlh([
-        { ...hack, startsAt: '2026-02-30T12:00:00Z' },
-        { ...hack, endsAt: 'invalid' },
-      ]),
-    });
+    (axios.get as jest.Mock)
+      .mockResolvedValueOnce({ data: '[]' })
+      .mockResolvedValueOnce({
+        data: mlh([
+          { ...hack, startsAt: '2026-02-30T12:00:00Z' },
+          { ...hack, endsAt: 'invalid' },
+        ]),
+      })
+      .mockResolvedValueOnce({ data: awskrug })
+      .mockResolvedValueOnce({ data: devKorea })
+      .mockResolvedValueOnce({ data: gdgIncheon });
     const result = await new ConferenceFeedService().collect();
     expect(result[1].candidates).toEqual([]);
     expect(result[1].skipped).toBe(2);
+  });
+  it('국내 소스의 구조 변경도 개별 오류로 남기고 정상 소스는 유지한다', async () => {
+    (axios.get as jest.Mock)
+      .mockResolvedValueOnce({ data: agenda })
+      .mockResolvedValueOnce({ data: mlh([hack]) })
+      .mockResolvedValueOnce({ data: '<html>maintenance</html>' })
+      .mockResolvedValueOnce({ data: devKorea })
+      .mockResolvedValueOnce({ data: '<html>maintenance</html>' });
+    const result = await new ConferenceFeedService().collect();
+    expect(result[2]).toEqual({
+      source: 'AWSKRUG',
+      candidates: [],
+      skipped: 0,
+      error: 'AWSKRUG calendar missing',
+    });
+    expect(result[0].candidates).toHaveLength(1);
+    expect(result[1].candidates).toHaveLength(1);
+    expect(result[3].candidates).toHaveLength(1);
+    expect(result[4].error).toBe('GDG Incheon upcoming events missing');
   });
 });

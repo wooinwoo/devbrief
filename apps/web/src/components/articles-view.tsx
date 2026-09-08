@@ -7,12 +7,13 @@ import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { RepoDto } from '@/lib/mock-repos';
 import type { VideoDto } from '@/lib/mock-videos';
 import { readTracking } from '@/lib/read-tracking';
+import { useUrlFilters } from '@/lib/use-url-filter';
 import { useVisibleNavigation } from '@/lib/use-visible-navigation';
 import type { ArticleListItem } from '@devbrief/shared';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ArticleDto } from './article-card';
+import { BriefIcon } from './brief-icon';
 import type { DigestDto } from './daily-digest';
 import { GlobalSearch } from './global-search';
 import { LangToggle } from './lang-toggle';
@@ -42,7 +43,7 @@ const TABS: Array<{ id: Tab; label: string; title: string }> = [
   { id: 'all', label: '오늘', title: '오늘의 개발 브리핑' },
   { id: 'ai', label: 'AI', title: 'AI 트렌드 레이더' },
   { id: 'articles', label: '개발 뉴스', title: '개발 뉴스' },
-  { id: 'conferences', label: '행사', title: '개발 행사·해커톤' },
+  { id: 'conferences', label: '행사', title: '개발 행사' },
   { id: 'videos', label: '발표 영상', title: '개발자 발표 영상' },
   { id: 'repos', label: '오픈소스', title: '급성장 오픈소스' },
 ];
@@ -59,8 +60,7 @@ export function ArticlesView({
   digest = null,
   repos = [],
 }: Props) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const { searchParams, setParam } = useUrlFilters();
   // 탭은 URL 쿼리에서 파생 — 새로고침/뒤로가기/링크 공유 시 그대로 복원됨.
   const tabParam = (searchParams.get('tab') as Tab) ?? 'all';
   const tab: Tab = TABS.some((t) => t.id === tabParam) ? tabParam : 'all';
@@ -70,13 +70,10 @@ export function ArticlesView({
   // 필터가 통째로 날아가던 문제 방지.
   const setTab = useCallback(
     (t: Tab) => {
-      const next = new URLSearchParams(searchParams.toString());
-      if (t === 'all') next.delete('tab');
-      else next.set('tab', t);
-      const qs = next.toString();
-      router.replace(qs ? `/?${qs}` : '/', { scroll: true });
+      setParam('tab', t === 'all' ? null : t);
+      window.scrollTo({ top: 0, behavior: 'instant' });
     },
-    [searchParams, router],
+    [setParam],
   );
   const [conferenceCatalog, setConferenceCatalog] = useState(conferences);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
@@ -116,6 +113,7 @@ export function ArticlesView({
   // NEXT_PUBLIC_API_BASE 직접 호출(서버가 CORS exposedHeaders 처리 완료).
   const [moreArticles, setMoreArticles] = useState<ArticleDto[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   // 서버 응답이 비면 total 과의 드리프트(삭제 등)로 판단하고 버튼을 접는다.
   const [drained, setDrained] = useState(false);
 
@@ -137,12 +135,13 @@ export function ArticlesView({
   const handleLoadMore = useCallback(async () => {
     if (loadingMore) return;
     setLoadingMore(true);
+    setLoadMoreError(null);
     try {
       const res = await fetch(
         `${API_BASE}/articles?limit=${LOAD_MORE_LIMIT}&offset=${allArticles.length}`,
         { cache: 'no-store' },
       );
-      if (!res.ok) return;
+      if (!res.ok) throw new Error('Articles unavailable');
       const data = (await res.json()) as ArticleListItem[];
       if (data.length === 0) {
         setDrained(true);
@@ -158,7 +157,9 @@ export function ArticlesView({
         })),
       ]);
     } catch {
-      // 네트워크 실패 — 버튼이 남아 있어 다시 시도할 수 있다.
+      setLoadMoreError(
+        '이전 글을 불러오지 못했어요. 현재 목록은 그대로이며 다시 시도할 수 있어요.',
+      );
     } finally {
       setLoadingMore(false);
     }
@@ -266,12 +267,12 @@ export function ArticlesView({
           {/* 탭 nav — WAI-ARIA tabs 패턴. 좌우 화살표로 탭 간 이동(roving tabindex). */}
           <nav
             aria-label="콘텐츠 탐색"
-            className="no-scrollbar order-3 col-span-2 lg:order-none lg:col-span-1 flex items-center gap-1 min-w-0 overflow-x-auto pb-2 lg:py-0"
+            className="header-navigation order-3 col-span-2 lg:order-none lg:col-span-1 flex items-center gap-1 min-w-0 pb-2 lg:py-0"
           >
             <div
               role="tablist"
               aria-label="콘텐츠 탭"
-              className="flex shrink-0 items-center gap-0.5 sm:gap-1"
+              className="header-tabs no-scrollbar flex min-w-0 flex-1 items-center gap-0.5 sm:gap-1 overflow-x-auto"
             >
               {TABS.map((t, i) => {
                 const isActive = tab === t.id;
@@ -314,23 +315,34 @@ export function ArticlesView({
             {/* 저장: 메인 목록에 의존하지 않는 전용 페이지(/bookmarks)로 분리 */}
             <Link
               href="/bookmarks"
-              className="shrink-0 px-3 sm:px-3.5 min-h-11 py-2 rounded-sm text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors relative hover:bg-[oklch(100%_0_0/0.1)]"
+              aria-label="저장"
+              className="header-saved-link shrink-0 inline-flex items-center justify-center gap-1 w-[60px] lg:w-auto lg:px-3.5 min-h-11 py-2 rounded-sm text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors relative hover:bg-[oklch(100%_0_0/0.1)]"
               style={{ color: 'var(--bar-fg-muted)', fontWeight: 500 }}
+              aria-describedby={bookmarkSet.size > 0 ? 'header-saved-count' : undefined}
             >
+              <span className="inline-flex lg:hidden" aria-hidden="true">
+                <BriefIcon name="bookmark" size={16} />
+              </span>
               저장
               {/* 배지는 로드된 목록(최신 100건)과의 교집합이 아닌 북마크 저장소 전체 크기 —
                   /bookmarks 총계와 항상 일치한다(둘 다 localStorage 기준). */}
               {bookmarkSet.size > 0 && (
-                <span
-                  className="ml-1 tabular-nums text-[11px] px-1.5 py-px rounded-full align-middle"
-                  style={{
-                    background: 'oklch(100% 0 0 / 0.12)',
-                    color: 'var(--bar-fg-muted)',
-                    fontWeight: 700,
-                  }}
-                >
-                  {bookmarkSet.size}
-                </span>
+                <>
+                  <span id="header-saved-count" className="sr-only">
+                    저장한 글 {bookmarkSet.size}개
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="hidden lg:inline ml-1 tabular-nums text-[11px] px-1.5 py-px rounded-full align-middle"
+                    style={{
+                      background: 'oklch(100% 0 0 / 0.12)',
+                      color: 'var(--bar-fg-muted)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {bookmarkSet.size}
+                  </span>
+                </>
               )}
             </Link>
           </nav>
@@ -369,7 +381,7 @@ export function ArticlesView({
                   all: '개발 뉴스와 발표 영상, 다가오는 행사를 한곳에서.',
                   ai: '모델과 도구, 그리고 개발의 다음 가능성.',
                   articles: '개발자의 시야를 넓히는 새로운 이야기.',
-                  conferences: '일정과 지역, 관심 기술로 컨퍼런스와 해커톤을 찾아보세요.',
+                  conferences: '국내외 컨퍼런스, 해커톤, 밋업 일정을 찾아보세요.',
                   videos: '현업 개발자의 고민과 해결 과정을 만나보세요.',
                   repos: '전 세계 개발자들이 주목하는 오픈소스 프로젝트.',
                 }[tab]
@@ -424,7 +436,7 @@ export function ArticlesView({
             onNavigate={setTab}
             loadMore={
               hasMore && total !== null
-                ? { total, loading: loadingMore, onLoadMore: handleLoadMore }
+                ? { total, loading: loadingMore, error: loadMoreError, onLoadMore: handleLoadMore }
                 : undefined
             }
           />

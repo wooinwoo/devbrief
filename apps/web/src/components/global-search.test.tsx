@@ -23,6 +23,31 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('GlobalSearch', () => {
+  it('실패한 검색어를 그대로 재시도하고 로딩과 결과 상태를 알린다', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'recovered', title: 'React guide', source: { name: 'Docs' } }],
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(<GlobalSearch />);
+    fireEvent.click(view.getByRole('button', { name: '개발 글 검색' }));
+    const input = view.getByRole('textbox') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'React' } });
+    fireEvent.click(await view.findByRole('button', { name: '다시 검색' }));
+    expect(input.value).toBe('React');
+    expect(view.container.querySelector('.search-results')?.getAttribute('aria-busy')).toBe('true');
+    expect(await view.findByRole('link', { name: /React guide/ })).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][0]).toBe(fetchMock.mock.calls[0][0]);
+    expect(view.container.querySelector('.search-results')?.getAttribute('aria-busy')).toBe(
+      'false',
+    );
+    expect(view.getByRole('list', { name: '1개의 검색 결과' })).toBeTruthy();
+  });
+
   it('opens with the keyboard, searches beyond loaded articles and closes with Escape', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

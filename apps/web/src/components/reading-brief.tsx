@@ -6,9 +6,16 @@ import { selectReadingBrief } from '@/lib/reading-brief';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { ArticleDto } from './article-card';
+import { BriefIcon } from './brief-icon';
+import { CoverImage } from './cover-image';
 import { RelativeTimeText } from './relative-time-text';
 
 const INTERESTS_KEY = 'devbrief.interests.v1';
+
+function readableSummary(text: string | null) {
+  const summary = text?.trim();
+  return summary && !/^(?:기사|Article) URL:/i.test(summary) ? summary : null;
+}
 
 interface Props {
   articles: ArticleDto[];
@@ -31,6 +38,7 @@ export function ReadingBrief({
   const [interests, setInterests] = useState<string[]>([]);
   const [now, setNow] = useState<number | null>(null);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     try {
@@ -61,204 +69,178 @@ export function ReadingBrief({
     }
   };
 
-  const { items, candidateCount } =
-    now === null
-      ? { items: [], candidateCount: 0 }
-      : selectReadingBrief(articles, interests, readSet, now);
+  const { items } =
+    now === null ? { items: [] } : selectReadingBrief(articles, interests, readSet, now);
 
   return (
-    <section
-      aria-labelledby="reading-brief-title"
-      className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12"
-    >
-      <div className="min-w-0">
-        <fieldset>
-          <legend className="mb-3 text-base font-semibold text-(--color-fg-strong)">
-            관심 분야
-          </legend>
-          <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
-            {[{ key: '', label: '전체' }, ...Object.values(CATEGORIES)].map(({ key, label }) => {
-              const active = key ? interests.includes(key) : interests.length === 0;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() =>
-                    choose(
-                      key
-                        ? active
-                          ? interests.filter((item) => item !== key)
-                          : [...interests, key]
-                        : [],
-                    )
-                  }
-                  className="shrink-0 min-h-11 rounded-md border px-3 text-sm transition-colors hover:border-(--color-accent)"
-                  style={{
-                    borderColor: active ? 'var(--color-fg-strong)' : 'var(--color-line-strong)',
-                    background: active ? 'var(--color-fg-strong)' : 'transparent',
-                    color: active ? 'var(--color-bg-elevated)' : 'var(--color-fg-default)',
-                    fontWeight: active ? 700 : 500,
-                  }}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-        <p className="hidden lg:block mt-4 text-sm leading-relaxed text-(--color-fg-muted)">
-          여러 분야를 골라도 좋아요. 선택은 이 브라우저에 기억해 둘게요.
-        </p>
-        {storageUnavailable && (
-          <p role="status" className="mt-2 text-sm text-(--color-fg-default)">
-            설정을 저장하지 못했어요. 이번 화면에서만 적용됩니다.
-          </p>
-        )}
-        <details className="mt-2 lg:mt-4 border-t border-(--color-line) pt-2">
-          <summary className="min-h-11 cursor-pointer py-3 text-sm text-(--color-fg-muted)">
-            어떤 기준으로 골랐나요?
+    <section aria-labelledby="reading-brief-title" className="reading-brief">
+      <div className="reading-brief-toolbar">
+        <h2 id="reading-brief-title">지금 읽을 글</h2>
+        <details className="reading-preferences">
+          <summary>
+            <span>관심 분야</span>
+            <span className="reading-interest-value">
+              {interests.length === 1
+                ? CATEGORIES[interests[0]].label
+                : interests.length
+                  ? `${interests.length}개 선택`
+                  : '전체'}
+            </span>
           </summary>
-          <p className="pb-3 text-sm leading-relaxed text-(--color-fg-muted)">
-            불러온 글 중 최근 7일에 발행된 안 읽은 글을 고릅니다. 관심 분야에 맞는 글을 최신순으로
-            살피고, 서로 다른 출처를 먼저 보여줘요.
-          </p>
-        </details>
-        <button
-          type="button"
-          onClick={onBrowse}
-          className="hidden lg:inline-flex lg:items-center mt-2 min-h-11 text-sm font-semibold text-(--color-accent) hover:underline underline-offset-4"
-        >
-          개발 뉴스 모두 보기
-        </button>
-      </div>
-
-      <div className="min-w-0">
-        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-          <h2
-            id="reading-brief-title"
-            className="text-xl font-bold tracking-[-0.02em] text-(--color-fg-strong)"
-          >
-            지금 읽을 글
-          </h2>
-          <p role="status" className="text-sm text-(--color-fg-muted)">
-            {now !== null && `조건에 맞는 ${candidateCount}편 중 ${items.length}편`}
-          </p>
-        </div>
-        {now === null ? (
-          <p className="py-12 text-base text-(--color-fg-muted)">읽을 글을 고르고 있어요.</p>
-        ) : items.length === 0 ? (
-          <div className="border-y border-(--color-line) py-8">
-            <h3 className="text-xl font-bold text-(--color-fg-strong)">
-              {interests.length
-                ? '이 분야에서 새로 읽을 글이 없어요.'
-                : '지금 추천할 새 글이 없어요.'}
-            </h3>
-            <p className="mt-3 text-base leading-relaxed text-(--color-fg-default)">
-              불러온 최근 7일 글에서 조건에 맞는 안 읽은 글을 찾지 못했어요. 다른 분야나 이전 글도
-              둘러보세요.
+          <div className="reading-preferences-panel">
+            <fieldset>
+              <legend className="sr-only">관심 분야 선택</legend>
+              <div className="reading-interest-options">
+                {[{ key: '', label: '전체' }, ...Object.values(CATEGORIES)].map(
+                  ({ key, label }) => {
+                    const active = key ? interests.includes(key) : interests.length === 0;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() =>
+                          choose(
+                            key
+                              ? active
+                                ? interests.filter((item) => item !== key)
+                                : [...interests, key]
+                              : [],
+                          )
+                        }
+                      >
+                        {label}
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+            </fieldset>
+            <p>여러 분야를 골라도 좋아요. 선택은 이 브라우저에 기억해 둘게요.</p>
+            <p>
+              최근 7일의 안 읽은 글 중 관심 분야에 맞는 최신 글을 고르고, 서로 다른 출처를 먼저
+              보여줘요.
             </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              {interests.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => choose([])}
-                  className="min-h-11 rounded-md bg-(--color-fg-strong) px-4 text-sm font-semibold text-white"
-                >
-                  모든 분야 보기
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={onBrowse}
-                className="min-h-11 px-3 text-sm font-semibold text-(--color-accent-strong)"
-              >
-                이전 글 둘러보기
-              </button>
-            </div>
+            {storageUnavailable && (
+              <p role="status">설정을 저장하지 못했어요. 이번 화면에서만 적용됩니다.</p>
+            )}
           </div>
-        ) : (
-          <ol className="flex flex-col gap-2">
-            {items.map((article, index) => {
-              const title = pickTitle(article, lang).primary;
-              const category = categoryOf(article);
-              const saved = bookmarkSet?.has(article.id) ?? false;
-              return (
-                <li
-                  key={article.id}
-                  className={
-                    index === 0
-                      ? 'border-b border-(--color-line-strong) pb-8 pt-2'
-                      : 'border-b border-(--color-line) py-6'
-                  }
-                >
-                  <article aria-label={title}>
-                    <div className="mb-3 flex flex-wrap gap-x-2 gap-y-1 text-sm text-(--color-fg-muted)">
-                      <span className="font-semibold text-(--color-accent-strong)">
-                        {category.label}
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span>{article.source.name}</span>
-                      <span aria-hidden="true">·</span>
-                      <RelativeTimeText iso={article.publishedAt} />
+        </details>
+      </div>
+      {now === null ? (
+        <p className="reading-brief-empty" role="status">
+          읽을 글을 고르고 있어요.
+        </p>
+      ) : items.length === 0 ? (
+        <div className="reading-brief-empty">
+          <h3>
+            {interests.length
+              ? '이 분야에서 새로 읽을 글이 없어요.'
+              : '지금 추천할 새 글이 없어요.'}
+          </h3>
+          <p>
+            최근 7일 글에서 조건에 맞는 안 읽은 글을 찾지 못했어요. 다른 분야나 이전 글도
+            둘러보세요.
+          </p>
+          {interests.length > 0 && (
+            <button type="button" onClick={() => choose([])} className="text-link">
+              모든 분야 보기
+            </button>
+          )}
+        </div>
+      ) : (
+        <ol className="reading-brief-list">
+          {items.map((article, index) => {
+            const title = pickTitle(article, lang).primary;
+            const category = categoryOf(article);
+            const saved = bookmarkSet?.has(article.id) ?? false;
+            const excerpt = readableSummary(article.summaryOneLine);
+            const fullSummary = readableSummary(article.summaryThreeLine);
+            const isExpanded = expanded.has(article.id);
+            const summaryId = `reading-summary-${article.id}`;
+            return (
+              <li key={article.id}>
+                <article aria-label={title}>
+                  <div className="reading-story-heading">
+                    <div className="reading-story-copy">
+                      <div className="reading-story-meta">
+                        <span>{category.label}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>{article.source.name}</span>
+                        <span aria-hidden="true">·</span>
+                        <RelativeTimeText iso={article.publishedAt} />
+                      </div>
+                      <h3>
+                        <Link href={`/articles/${article.id}`} onClick={() => onOpen(article.id)}>
+                          {title}
+                        </Link>
+                      </h3>
                     </div>
-                    <h3
-                      className={`${index === 0 ? 'text-2xl sm:text-3xl' : 'text-xl'} font-semibold leading-snug tracking-[-0.02em] text-(--color-fg-strong)`}
-                    >
+                    {article.imageUrl && (
                       <Link
                         href={`/articles/${article.id}`}
                         onClick={() => onOpen(article.id)}
-                        className="hover:underline underline-offset-4"
+                        className="reading-story-cover"
+                        tabIndex={-1}
+                        aria-hidden="true"
                       >
-                        {title}
+                        <CoverImage
+                          src={article.imageUrl}
+                          label={article.source.name}
+                          priority={index === 0}
+                        />
                       </Link>
-                    </h3>
-                    <p className="mt-3 max-w-[68ch] text-base leading-relaxed text-(--color-fg-default)">
-                      {article.summaryOneLine || '아직 요약이 없어요. 글을 열어 내용을 확인하세요.'}
-                    </p>
-                    {article.summaryThreeLine && (
-                      <details className="mt-3">
-                        <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-(--color-accent-strong)">
-                          요약 더 읽기
-                        </summary>
-                        <p className="max-w-[68ch] whitespace-pre-line pb-3 text-base leading-relaxed text-(--color-fg-default)">
-                          {article.summaryThreeLine}
-                        </p>
-                      </details>
                     )}
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <Link
-                        href={`/articles/${article.id}`}
-                        onClick={() => onOpen(article.id)}
-                        className="inline-flex min-h-11 items-center rounded-md bg-(--color-fg-strong) px-4 text-sm font-semibold text-white"
-                      >
-                        글 읽기
-                      </Link>
-                      {onBookmark && (
-                        <button
-                          type="button"
-                          aria-pressed={saved}
-                          onClick={() => onBookmark(article.id)}
-                          className="min-h-11 rounded-md border border-(--color-line-strong) px-4 text-sm font-semibold text-(--color-fg-strong) hover:bg-(--color-bg-elevated)"
-                        >
-                          {saved ? '저장됨' : '나중에 읽기'}
-                        </button>
-                      )}
+                  </div>
+                  {excerpt && <p className="reading-story-excerpt">{excerpt}</p>}
+                  <div className="reading-story-actions">
+                    {fullSummary && (
                       <button
                         type="button"
-                        onClick={() => onOpen(article.id)}
-                        className="min-h-11 px-3 text-sm text-(--color-fg-muted) hover:underline underline-offset-4"
+                        aria-expanded={isExpanded}
+                        aria-controls={summaryId}
+                        className="reading-summary-toggle"
+                        onClick={() =>
+                          setExpanded((current) => {
+                            const next = new Set(current);
+                            if (next.has(article.id)) next.delete(article.id);
+                            else next.add(article.id);
+                            return next;
+                          })
+                        }
                       >
-                        읽음으로 표시
+                        {isExpanded ? '요약 접기' : '요약 더 읽기'}
                       </button>
-                    </div>
-                  </article>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-      </div>
+                    )}
+                    {onBookmark && (
+                      <button
+                        type="button"
+                        aria-pressed={saved}
+                        onClick={() => onBookmark(article.id)}
+                      >
+                        <BriefIcon name={saved ? 'check' : 'bookmark'} size={16} />
+                        {saved ? '저장됨' : '저장'}
+                      </button>
+                    )}
+                    <button type="button" onClick={() => onOpen(article.id)}>
+                      읽음으로 표시
+                    </button>
+                  </div>
+                  {fullSummary && (
+                    <p id={summaryId} hidden={!isExpanded} className="reading-story-expanded">
+                      {fullSummary}
+                    </p>
+                  )}
+                </article>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      <button type="button" onClick={onBrowse} className="text-link reading-browse">
+        개발 뉴스 모두 보기
+        <BriefIcon name="arrow" size={16} />
+      </button>
     </section>
   );
 }

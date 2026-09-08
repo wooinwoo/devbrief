@@ -1,7 +1,8 @@
 'use client';
 
 import { daysUntil, isUpcomingEvent } from '@/lib/date-utils';
-import { type EventType, eventType } from '@/lib/event-type';
+import { isKoreanLocation } from '@/lib/event-region';
+import { EVENT_TYPE_LABELS, type EventType, eventType } from '@/lib/event-type';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import { useMemo, useState } from 'react';
 import { ConferenceCard } from '../conference-card';
@@ -12,8 +13,9 @@ type Period = 'soon' | 'month1' | 'month2' | 'later';
 type Kind = 'all' | EventType;
 const KINDS: { value: Kind; label: string }[] = [
   { value: 'all', label: '전체' },
-  { value: 'conference', label: '컨퍼런스' },
-  { value: 'hackathon', label: '해커톤' },
+  { value: 'conference', label: EVENT_TYPE_LABELS.conference },
+  { value: 'hackathon', label: EVENT_TYPE_LABELS.hackathon },
+  { value: 'meetup', label: EVENT_TYPE_LABELS.meetup },
 ];
 const PERIOD_LABEL: Record<Period, string> = {
   soon: '한 달 내',
@@ -44,31 +46,34 @@ export function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }
   );
   const topicOptions = useMemo(
     () =>
-      [...new Set(typed.flatMap((c) => c.topics))]
-        .filter((t) => !/^hackathon$/i.test(t))
+      [...new Set([...typed.flatMap((c) => c.topics), ...(topic ? [topic] : [])])]
+        .filter((t) => !/^(hackathon|meetup)$/i.test(t.trim()))
         .sort((a, b) => a.localeCompare(b)),
-    [typed],
+    [typed, topic],
   );
-  const filtered = useMemo(() => {
+  const matching = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
-    return typed
-      .filter(
-        (c) =>
-          (!needle ||
-            [c.name, c.location, ...c.topics].join(' ').toLocaleLowerCase().includes(needle)) &&
-          (!period || periodOf(c.startDate) === period) &&
-          (!topic || c.topics.includes(topic)) &&
-          (!region ||
-            (region === 'online'
-              ? /online|virtual|온라인/i.test(c.location)
-              : /korea|대한민국|한국|서울|성남|부산|제주|대전|판교|seoul/i.test(c.location))),
-      )
+    return upcoming.filter(
+      (c) =>
+        (!needle ||
+          [c.name, c.location, ...c.topics].join(' ').toLocaleLowerCase().includes(needle)) &&
+        (!period || periodOf(c.startDate) === period) &&
+        (!topic || c.topics.includes(topic)) &&
+        (!region ||
+          (region === 'online'
+            ? /online|virtual|온라인/i.test(c.location)
+            : isKoreanLocation(c.location))),
+    );
+  }, [upcoming, period, topic, query, region]);
+  const filtered = useMemo(() => {
+    return matching
+      .filter((c) => kind === 'all' || eventType(c) === kind)
       .sort((a, b) =>
         sort === 'soonest'
           ? a.startDate.localeCompare(b.startDate)
           : b.startDate.localeCompare(a.startDate),
       );
-  }, [typed, period, topic, sort, query, region]);
+  }, [matching, kind, sort]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / 24));
   const currentPage = Math.min(page, totalPages);
   const activeFilters = kind !== 'all' || !!(period || topic || query || region);
@@ -83,21 +88,40 @@ export function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }
 
   return (
     <div>
-      <div role="group" aria-label="행사 유형" className="event-kind-tabs">
+      <div role="group" aria-label="행사 지역" className="event-region-tabs">
+        {[
+          { value: '', label: '전체 지역' },
+          { value: 'korea', label: '국내 행사' },
+          { value: 'online', label: '온라인' },
+        ].map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={region === value}
+            onClick={() => {
+              setRegion(value);
+              setPage(1);
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div role="group" aria-label="행사 유형" className="event-kind-tabs max-w-full flex-wrap">
         {KINDS.map(({ value, label }) => {
           const count =
             value === 'all'
-              ? upcoming.length
-              : upcoming.filter((c) => eventType(c) === value).length;
+              ? matching.length
+              : matching.filter((c) => eventType(c) === value).length;
           const active = kind === value;
           return (
             <button
               key={value}
               type="button"
+              className="whitespace-nowrap"
               aria-pressed={active}
               onClick={() => {
                 setKind(value);
-                setTopic('');
                 setPage(1);
               }}
             >
@@ -118,21 +142,6 @@ export function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }
             placeholder="행사명, 지역, 주제로 검색"
           />
         </div>
-        <label>
-          <span className="sr-only">행사 지역</span>
-          <select
-            value={region}
-            onChange={(e) => {
-              setRegion(e.target.value);
-              setPage(1);
-            }}
-            className={SELECT_CLASS}
-          >
-            <option value="">모든 지역</option>
-            <option value="korea">국내 행사</option>
-            <option value="online">온라인</option>
-          </select>
-        </label>
         <label>
           <span className="sr-only">개최 시기</span>
           <select
@@ -212,7 +221,7 @@ export function ConferencesTab({ conferences }: { conferences: ConferenceDto[] }
         <div className="py-16 text-center">
           <p className="text-base font-medium text-(--color-fg-strong)">
             {typed.length === 0 && kind !== 'all'
-              ? `아직 공개된 ${kind === 'hackathon' ? '해커톤이' : '컨퍼런스가'} 없어요.`
+              ? `아직 공개된 ${EVENT_TYPE_LABELS[kind]} 일정이 없어요.`
               : '조건에 맞는 행사가 없어요.'}
           </p>
           <p className="mt-2 text-sm text-(--color-fg-muted)">

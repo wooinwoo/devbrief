@@ -34,6 +34,7 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null);
 
   const onAdd = async () => {
     if (!url.trim()) return;
@@ -58,14 +59,14 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
   const onDelete = async (id: string) => {
     if (!confirm('이 영상을 삭제할까요?')) return;
     setBusy(id);
-    setError(null);
+    setDeleteError(null);
     try {
       const res = await adminFetch(`/videos/${id}`, { method: 'DELETE' });
       // 실패(401/404/500)를 무피드백 refresh 로 삼키지 않게 검사한다.
       await ensureOk(res, '영상 삭제');
       startTransition(() => router.refresh());
     } catch (e) {
-      setError((e as Error).message);
+      setDeleteError({ id, message: (e as Error).message });
     } finally {
       setBusy(null);
     }
@@ -136,11 +137,11 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
           {initialVideos.map((v) => (
             <li
               key={v.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto] sm:flex gap-4 items-start py-5 border-b"
+              className="grid grid-cols-[112px_minmax(0,1fr)] sm:flex gap-x-4 gap-y-2 items-start py-5 border-b"
               style={{ borderColor: 'var(--color-line)' }}
             >
               <div
-                className="col-span-2 sm:col-span-1 relative shrink-0 w-full sm:w-32 aspect-video overflow-hidden rounded"
+                className="relative shrink-0 w-28 sm:w-32 aspect-video overflow-hidden rounded"
                 style={{ background: 'oklch(92% 0.01 290)' }}
               >
                 {v.thumbnailUrl && (
@@ -197,15 +198,26 @@ export function VideosPanel({ initialVideos }: { initialVideos: AdminVideo[] }) 
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => onDelete(v.id)}
-                disabled={busy === v.id || isPending}
-                className="shrink-0 min-h-11 min-w-11 text-[12px] transition-opacity disabled:opacity-50"
-                style={{ color: 'oklch(55% 0.2 25)' }}
-              >
-                삭제
-              </button>
+              <div className="col-start-2 min-w-0 flex flex-col items-start sm:items-end sm:shrink-0 sm:max-w-56">
+                <button
+                  type="button"
+                  onClick={() => onDelete(v.id)}
+                  disabled={busy === v.id || isPending}
+                  className="shrink-0 min-h-11 min-w-11 text-[14px] transition-opacity disabled:opacity-50"
+                  style={{ color: 'oklch(55% 0.2 25)' }}
+                >
+                  삭제
+                </button>
+                {deleteError?.id === v.id && (
+                  <p
+                    role="alert"
+                    className="text-[14px] leading-relaxed break-words"
+                    style={{ color: 'oklch(50% 0.21 15)' }}
+                  >
+                    오류: {deleteError.message}
+                  </p>
+                )}
+              </div>
             </li>
           ))}
         </ul>

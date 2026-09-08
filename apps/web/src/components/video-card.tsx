@@ -56,16 +56,18 @@ export function VideoCard({ video: v }: Props) {
               <span className="text-[13px] text-center break-words">{v.channel}</span>
             </div>
           )}
-          <span
-            className="absolute bottom-2 right-2 tabular-nums text-[11px] px-1.5 py-0.5 rounded-sm"
-            style={{
-              background: 'oklch(18% 0.02 265 / 0.92)',
-              color: 'oklch(99% 0 0)',
-              fontWeight: 600,
-            }}
-          >
-            {formatVideoDuration(v.durationSec)}
-          </span>
+          {Number.isFinite(v.durationSec) && v.durationSec > 0 && (
+            <span
+              className="absolute bottom-2 right-2 tabular-nums text-[11px] px-1.5 py-0.5 rounded-sm"
+              style={{
+                background: 'oklch(18% 0.02 265 / 0.92)',
+                color: 'oklch(99% 0 0)',
+                fontWeight: 600,
+              }}
+            >
+              {formatVideoDuration(v.durationSec)}
+            </span>
+          )}
         </div>
 
         {/* 제목 */}

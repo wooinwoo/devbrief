@@ -2,16 +2,19 @@ import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ArticleDto } from './article-card';
 
-// next/navigation 모킹 — 탭/필터는 URL 쿼리에서 파생되므로 router.replace 와 searchParams 를 제어한다.
+// URL 쿼리를 제어하되, 같은 화면의 이동이 서버 라우터를 호출하지 않는지 확인한다.
 const replace = vi.fn();
 let currentSearch = '';
+let currentPath = '/';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
   useSearchParams: () => new URLSearchParams(currentSearch),
+  usePathname: () => currentPath,
 }));
 
 import { ArticlesView } from './articles-view';
+import { SiteNav } from './site-nav';
 
 function makeArticle(partial: Partial<ArticleDto> & { id: string }): ArticleDto {
   return {
@@ -38,7 +41,10 @@ afterEach(() => {
 
 beforeEach(() => {
   replace.mockClear();
+  window.history.replaceState(null, '', '/');
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
   currentSearch = '';
+  currentPath = '/';
 });
 
 describe('ArticlesView 탭 키보드 접근성', () => {
@@ -61,12 +67,14 @@ describe('ArticlesView 탭 키보드 접근성', () => {
     expect(inactive.every((t) => t.getAttribute('tabindex') === '-1')).toBe(true);
   });
 
-  it('ArrowRight 로 다음 탭으로 이동(router.replace 호출)', () => {
+  it('ArrowRight 로 다음 탭의 URL을 갱신하고 서버 라우터는 호출하지 않는다', () => {
     const { getAllByRole } = render(<ArticlesView articles={[]} />);
     const tabs = getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
     // 두 번째 탭은 'ai' → /?tab=ai
-    expect(replace).toHaveBeenCalledWith('/?tab=ai', { scroll: true });
+    expect(window.location.search).toBe('?tab=ai');
+    expect(replace).not.toHaveBeenCalled();
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
   });
 
   it('ArrowLeft 는 첫 탭에서 마지막 탭으로 순환', () => {
@@ -74,7 +82,8 @@ describe('ArticlesView 탭 키보드 접근성', () => {
     const tabs = getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'ArrowLeft' });
     // 마지막 탭은 'repos'
-    expect(replace).toHaveBeenCalledWith('/?tab=repos', { scroll: true });
+    expect(window.location.search).toBe('?tab=repos');
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('콘텐츠 영역은 role=tabpanel 로 활성 탭과 연결된다', () => {
@@ -97,7 +106,8 @@ describe('setTab 쿼리 보존', () => {
     fireEvent.keyDown(active as HTMLElement, { key: 'ArrowRight' });
 
     // 다음 탭은 conferences — tab 키만 바뀌고 cat/unread 는 남는다.
-    expect(replace).toHaveBeenCalledWith('/?tab=conferences&cat=ai&unread=1', { scroll: true });
+    expect(window.location.search).toBe('?tab=conferences&cat=ai&unread=1');
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('현재 활성 탭을 재클릭해도 필터 쿼리가 초기화되지 않는다', () => {
@@ -107,7 +117,8 @@ describe('setTab 쿼리 보존', () => {
 
     fireEvent.click(active as HTMLElement);
 
-    expect(replace).toHaveBeenCalledWith('/?tab=articles&q=react', { scroll: true });
+    expect(window.location.search).toBe('?tab=articles&q=react');
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("'오늘' 탭 전환은 tab 키만 지우고 나머지 쿼리는 유지", () => {
@@ -117,7 +128,8 @@ describe('setTab 쿼리 보존', () => {
 
     fireEvent.click(today as HTMLElement);
 
-    expect(replace).toHaveBeenCalledWith('/?q=react', { scroll: true });
+    expect(window.location.search).toBe('?q=react');
+    expect(replace).not.toHaveBeenCalled();
   });
 });
 
@@ -125,14 +137,41 @@ describe('저장 배지', () => {
   it('배지는 로드된 목록 교집합이 아닌 북마크 저장소 전체 크기를 표시한다', () => {
     // 목록(articles=[])에 없는 과거 글 2건 — 저장소 기준이면 2, 교집합 기준이면 배지 없음.
     localStorage.setItem('devbrief.bookmarks.v1', JSON.stringify(['old-1', 'old-2']));
-    const { getByText } = render(<ArticlesView articles={[]} />);
+    const { getByText, getByRole } = render(<ArticlesView articles={[]} />);
     const badge = getByText('2');
     expect(badge.closest('a')?.getAttribute('href')).toBe('/bookmarks');
+    const saved = getByRole('link', { name: '저장' });
+    expect(document.getElementById(saved.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+      '저장한 글 2개',
+    );
   });
 
   it('북마크가 없으면 배지를 그리지 않는다', () => {
-    const { queryByText } = render(<ArticlesView articles={[]} />);
-    expect(queryByText('저장')?.querySelector('span')).toBeFalsy();
+    const { container } = render(<ArticlesView articles={[]} />);
+    expect(container.querySelector('#header-saved-count')).toBeNull();
+  });
+});
+
+describe('상세 페이지 내비게이션', () => {
+  it.each([
+    ['/articles/a1', '개발 뉴스', '/?tab=articles'],
+    ['/videos/v1', '발표 영상', '/?tab=videos'],
+    ['/conferences', '행사', '/?tab=conferences'],
+    ['/bookmarks', '저장', '/bookmarks'],
+  ])('%s에서 연결된 메뉴의 현재 위치를 표시한다', (path, label, href) => {
+    currentPath = path;
+    const { getByRole, container } = render(<SiteNav />);
+    const current = getByRole('link', { name: label });
+    expect(current.getAttribute('aria-current')).toBe('page');
+    expect(current.getAttribute('href')).toBe(href);
+    expect(container.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    expect(getByRole('link', { name: '저장' }).getAttribute('href')).toBe('/bookmarks');
+  });
+
+  it('유사한 경로 이름을 상세 페이지로 오인하지 않는다', () => {
+    currentPath = '/articles-other';
+    const { container } = render(<SiteNav />);
+    expect(container.querySelector('[aria-current="page"]')).toBeNull();
   });
 });
 
@@ -251,4 +290,27 @@ describe('event catalog loading', () => {
     expect(await view.findByRole('link', { name: 'Future Community' })).toBeTruthy();
     expect(view.queryByRole('alert')).toBeNull();
   });
+});
+
+it('이전 글 조회 실패를 알리고 재시도할 때 현재 목록을 보존한다', async () => {
+  currentSearch = 'tab=articles';
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce({ ok: false, status: 503 })
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => [makeArticle({ id: 'a2', title: '다음 글' })],
+    });
+  vi.stubGlobal('fetch', fetchMock);
+  const view = render(
+    <ArticlesView articles={[makeArticle({ id: 'a1', title: '현재 글' })]} total={2} />,
+  );
+  fireEvent.click(view.getByText('이전 글 더 불러오기'));
+  await view.findByRole('alert');
+  expect(view.getByText('현재 글')).toBeTruthy();
+  fireEvent.click(view.getByText('이전 글 다시 불러오기'));
+  await view.findByText('다음 글');
+  expect(view.getByText('현재 글')).toBeTruthy();
+  expect(view.queryByRole('alert')).toBeNull();
+  expect(fetchMock).toHaveBeenCalledTimes(2);
 });

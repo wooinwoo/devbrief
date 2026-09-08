@@ -10,6 +10,7 @@ export function GlobalSearch() {
   const input = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [retry, setRetry] = useState(0);
   const [items, setItems] = useState<ArticleDto[]>([]);
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const { lang } = useLang();
@@ -63,7 +64,7 @@ export function GlobalSearch() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, open]);
+  }, [query, open, retry]);
   return (
     <>
       <button
@@ -107,15 +108,27 @@ export function GlobalSearch() {
               aria-label="전체 개발 글 검색"
             />
           </label>
-          <div className="search-results" aria-live="polite">
+          <div className="search-results" aria-live="polite" aria-busy={state === 'loading'}>
             {state === 'idle' ? (
               <p className="search-hint">두 글자 이상 입력하면 전체 개발 글에서 찾아드려요.</p>
             ) : state === 'loading' ? (
               <p className="search-hint">관련 글을 찾고 있어요…</p>
             ) : state === 'error' ? (
-              <p className="search-hint">검색을 불러오지 못했어요. 잠시 후 다시 입력해 주세요.</p>
+              <div>
+                <p className="search-hint">
+                  검색을 불러오지 못했어요. 같은 검색어로 다시 시도해 보세요.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setRetry((value) => value + 1)}
+                  className="mt-2 min-h-11 rounded-md border px-4 py-2 text-[16px] sm:text-[14px]"
+                  style={{ color: 'var(--color-accent)', borderColor: 'var(--color-line-strong)' }}
+                >
+                  다시 검색
+                </button>
+              </div>
             ) : items.length ? (
-              <ul>
+              <ul aria-label={`${items.length}개의 검색 결과`}>
                 {items.map((a) => (
                   <li key={a.id}>
                     <Link href={`/articles/${a.id}`} onClick={close}>

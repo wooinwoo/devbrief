@@ -81,7 +81,7 @@ export function BenchmarkDashboard() {
       </div>
 
       {view === 'value' ? (
-        <ScatterValue />
+        <ValueTable />
       ) : (
         <BarMetric metric={view as 'intelligence' | 'speed' | 'coding'} />
       )}
@@ -95,24 +95,26 @@ export function BenchmarkDashboard() {
       </p>
 
       {/* 범례 */}
-      <div
-        className="flex items-center gap-4 flex-wrap mt-5 pt-4 border-t text-[12px]"
-        style={{ borderColor: 'var(--color-line)' }}
-      >
-        {VENDORS.map((v) => (
-          <span
-            key={v}
-            className="flex items-center gap-1.5"
-            style={{ color: 'var(--color-fg-muted)' }}
-          >
+      {view !== 'value' && (
+        <div
+          className="flex items-center gap-4 flex-wrap mt-5 pt-4 border-t text-[12px]"
+          style={{ borderColor: 'var(--color-line)' }}
+        >
+          {VENDORS.map((v) => (
             <span
-              className="inline-block w-2.5 h-2.5 rounded-sm"
-              style={{ background: vendorColor(v) }}
-            />
-            {vendorLabel(v)}
-          </span>
-        ))}
-      </div>
+              key={v}
+              className="flex items-center gap-1.5"
+              style={{ color: 'var(--color-fg-muted)' }}
+            >
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-sm"
+                style={{ background: vendorColor(v) }}
+              />
+              {vendorLabel(v)}
+            </span>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -164,77 +166,15 @@ function BarMetric({ metric }: { metric: 'intelligence' | 'speed' | 'coding' }) 
   );
 }
 
-function ScatterValue() {
+function ValueTable() {
   const data = BENCHMARK_MODELS.filter((m) => m.price != null && m.intelligence != null);
-  const W = 640;
-  const H = 320;
-  const pad = { l: 44, r: 16, t: 16, b: 36 };
-  const prices = data.map((m) => m.price as number);
-  const ints = data.map((m) => m.intelligence);
-  const maxP = Math.max(...prices) * 1.1;
-  const minI = Math.min(...ints) - 2;
-  const maxI = Math.max(...ints) + 2;
-  const x = (p: number) => pad.l + (p / maxP) * (W - pad.l - pad.r);
-  const y = (i: number) => H - pad.b - ((i - minI) / (maxI - minI)) * (H - pad.t - pad.b);
 
   return (
     <div>
       <p className="text-[11.5px] mb-2" style={{ color: 'var(--color-fg-muted)' }}>
         가격은 낮을수록, 지능 지수는 높을수록 좋습니다.
       </p>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="hidden sm:block w-full"
-        style={{ maxHeight: 340 }}
-        role="img"
-        aria-label="LLM 가격 대비 성능 산점도. 왼쪽·위일수록 가성비가 좋습니다."
-      >
-        <title>LLM 가격 대비 성능 산점도</title>
-        {/* 축 */}
-        <line
-          x1={pad.l}
-          y1={H - pad.b}
-          x2={W - pad.r}
-          y2={H - pad.b}
-          stroke="var(--color-line-strong)"
-          strokeWidth="1"
-        />
-        <line
-          x1={pad.l}
-          y1={pad.t}
-          x2={pad.l}
-          y2={H - pad.b}
-          stroke="var(--color-line-strong)"
-          strokeWidth="1"
-        />
-        <text x={W / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="var(--color-fg-subtle)">
-          가격 ($/1M tokens)
-        </text>
-        <text x={12} y={pad.t + 4} fontSize="11" fill="var(--color-fg-subtle)">
-          지능
-        </text>
-        {data.map((m) => (
-          <g key={m.name}>
-            <circle
-              cx={x(m.price as number)}
-              cy={y(m.intelligence)}
-              r="6"
-              fill={vendorColor(m.vendor)}
-              opacity="0.85"
-            />
-            <text
-              x={x(m.price as number) + 9}
-              y={y(m.intelligence) + 4}
-              fontSize="11"
-              fill="var(--color-fg-default)"
-              fontWeight="600"
-            >
-              {m.name}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <table className="w-full table-fixed text-[13px] sm:sr-only">
+      <table className="w-full table-fixed text-[13px]">
         <caption className="sr-only">모델별 가격과 지능 지수</caption>
         <thead>
           <tr className="border-b border-(--color-line)">

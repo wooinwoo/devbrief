@@ -210,7 +210,10 @@ export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Pr
           </>
         ) : (
           <div className="flex flex-col gap-12">
-            <BenchmarkDashboard />
+            <details className="benchmark-disclosure">
+              <summary>모델 성능 비교</summary>
+              <BenchmarkDashboard />
+            </details>
             {themeGroups.map((g) => (
               <section key={g.theme.key}>
                 <SectionHeader label={g.theme.label} count={g.articles.length} />

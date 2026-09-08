@@ -4,25 +4,26 @@ import { GeminiService } from '../ai/gemini.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConferenceFeedService } from './conference-feed.service';
 import { type DiscoveredConference, normalizeEventCandidate } from './event-candidate';
+import { VERIFIED_KOREAN_EVENTS } from './verified-korean-events';
 export type { DiscoveredConference } from './event-candidate';
 
 const SYSTEM_PROMPT = `당신은 한국어 / 영어 기술 글에서 컨퍼런스 이벤트 정보를 추출하는 NER 전문가입니다.
 
-주어진 글 (제목 + 본문) 안에서 개발자 컨퍼런스 / 해커톤 / 개발 경진대회 정보를 식별해 JSON으로만 응답합니다.
+주어진 글 (제목 + 본문) 안에서 개발자 컨퍼런스 / 해커톤 / 개발 경진대회 / 기술 밋업·세미나 정보를 식별해 JSON으로만 응답합니다.
 
 규칙:
 - 단순 언급(예: "지난 FECONF에서 본..." 같은 회고)은 제외
 - 미래 일정이 명시된 것만 (예: "2026년 10월 22일 개최", "다음 달에 열립니다")
 - 글 안에 공식 URL이 있으면 url 필드에 포함, 없으면 url=null
-- 컨퍼런스·해커톤·개발 경진대회가 아니면 빈 배열 반환 (밋업 / 1회성 토크 / 라이브 스트림은 제외)
+- 개발자 대상 기술 행사가 아니면 빈 배열 반환 (채용 공고 / 상시 강의 / 제품 홍보 방송은 제외)
 - 신청·접수 기간을 행사 개최일로 쓰지 말 것
 - 상대 날짜는 글 발행일을 기준으로만 해석하고, 발행일이나 정확한 행사 날짜가 불명확하면 null
-- kind는 conference 또는 hackathon. 개발 경진대회는 hackathon으로 분류
+- kind는 conference, hackathon, meetup. 개발 경진대회는 hackathon, 기술 밋업·세미나·워크숍은 meetup으로 분류
 - 같은 글에서 여러 컨퍼런스가 발견되면 모두 포함
 - date 는 ISO yyyy-mm-dd. 정확한 날짜 모르면 null
 
 JSON 스키마:
-{ "conferences": [{ "kind": "conference"|"hackathon", "name": string, "url": string|null, "startDate": string|null, "endDate": string|null, "location": string|null, "topics": string[] }] }
+{ "conferences": [{ "kind": "conference"|"hackathon"|"meetup", "name": string, "url": string|null, "startDate": string|null, "endDate": string|null, "location": string|null, "topics": string[] }] }
 
 회고 / 과거 / 컨퍼런스 아님이면: { "conferences": [] }`;
 
@@ -202,7 +203,18 @@ export class ConferenceDiscoveryService {
       failed: number;
       error?: string;
     }> = [];
-    for (const feed of await this.feeds.collect()) {
+    const feeds = [...(await this.feeds.collect())];
+    const verified = VERIFIED_KOREAN_EVENTS.flatMap((row) => {
+      const candidate = normalizeEventCandidate(row);
+      return candidate ? [candidate] : [];
+    });
+    // 공식 공지에서 확인한 개최일·유형이 목록의 축약 정보보다 먼저 저장되도록 한다.
+    feeds.unshift({
+      source: '국내 주최자 공식 공지 (2026-09-08 확인)',
+      candidates: verified,
+      skipped: VERIFIED_KOREAN_EVENTS.length - verified.length,
+    });
+    for (const feed of feeds) {
       if (feed.error) {
         sources.push({
           source: feed.source,
@@ -277,6 +289,9 @@ export class ConferenceDiscoveryService {
       'summit',
       '개최',
       'meetup',
+      '밋업',
+      '세미나',
+      '워크숍',
       'devcon',
       'devfest',
       'feconf',

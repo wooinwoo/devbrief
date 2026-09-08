@@ -100,6 +100,50 @@ describe('SearchField 외부 value 동기화 (디바운스 에코)', () => {
 });
 
 describe('FilterSidebar 필터 버튼 키보드', () => {
+  it('접힌 상태에서도 선택 조건을 확인하고 해당 그룹만 해제할 수 있다', () => {
+    const onSource = vi.fn();
+    const onTopic = vi.fn();
+    const view = render(
+      <FilterSidebar
+        groups={[
+          {
+            key: 'source',
+            label: '소스',
+            active: 'hn',
+            onSelect: onSource,
+            options: [{ value: 'hn', label: 'Hacker News' }],
+          },
+          {
+            key: 'topic',
+            label: '주제',
+            active: 'react',
+            onSelect: onTopic,
+            options: [{ value: 'react', label: 'React' }],
+          },
+        ]}
+        extra={<button type="button">본 글 가리기</button>}
+      />,
+    );
+    const toggle = view.getByRole('button', { name: /^필터/ });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    const options = document.getElementById(toggle.getAttribute('aria-controls')!);
+    const remove = view.getByRole('button', { name: '소스: Hacker News 필터 해제' });
+    expect(options?.contains(remove)).toBe(false);
+    expect(options?.contains(view.getByRole('button', { name: '본 글 가리기' }))).toBe(false);
+    fireEvent.click(remove);
+    expect(onSource).toHaveBeenCalledExactlyOnceWith(null);
+    expect(onTopic).not.toHaveBeenCalled();
+    expect(view.getByRole('button', { name: '주제: React 필터 해제' })).toBeTruthy();
+  });
+
+  it('보이는 검색창 값은 선택 조건 목록에 중복 표시하지 않는다', () => {
+    const view = render(
+      <FilterSidebar groups={[]} search={{ value: 'React', onChange: vi.fn() }} />,
+    );
+    expect((view.getByLabelText('검색') as HTMLInputElement).value).toBe('React');
+    expect(view.queryByRole('list', { name: '적용된 필터' })).toBeNull();
+  });
+
   it('필터 옵션은 표준 button(aria-pressed) 으로 키보드 도달 가능하다', () => {
     const onSelect = vi.fn();
     const { getByRole } = render(

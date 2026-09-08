@@ -28,15 +28,15 @@ interface Message {
 const QUICK_PROMPTS: Array<{ label: string; hint: string }> = [
   {
     label: '이번 주 AI 모델 출시 소식만',
-    hint: 'GPT-5 / Opus 4.8 / Gemini',
+    hint: '수집된 모델 출시 글',
   },
   {
     label: 'Anthropic 관련 최근 글',
     hint: '최근 7일',
   },
   {
-    label: '내가 안 본 글 중 핵심만',
-    hint: 'unread 우선 큐레이션',
+    label: '수집된 글 중 핵심만',
+    hint: '주요 내용을 출처와 함께',
   },
   {
     label: '한국 개발 블로그 핫이슈',

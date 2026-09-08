@@ -82,7 +82,7 @@ describe('BookmarksView (배치 조회)', () => {
     fireEvent.click(view.getByRole('button', { name: '검색·필터 초기화' }));
     expect(view.getByText('Title a')).toBeTruthy();
     expect(view.getByText('Title b')).toBeTruthy();
-    expect(view.getAllByRole('button', { name: '안읽음으로 표시' })).toHaveLength(2);
+    expect(view.getAllByRole('button', { name: '안 읽음으로 표시' })).toHaveLength(2);
   });
 
   it('발행순과 저장순을 구분하며 API 반환 순서에 의존하지 않는다', async () => {
@@ -133,7 +133,7 @@ describe('BookmarksView (배치 조회)', () => {
     expect(view.getByText('Title a20')).toBeTruthy();
     expect(view.queryByText('Title a0')).toBeNull();
     fireEvent.click(view.getByRole('button', { name: '다음 페이지' }));
-    fireEvent.click(view.getByRole('button', { name: '북마크 해제' }));
+    fireEvent.click(view.getByRole('button', { name: '저장 해제' }));
     expect(view.getByText('Title a20')).toBeTruthy();
     expect(view.queryByRole('navigation', { name: '페이지' })).toBeNull();
     expect(JSON.parse(localStorage.getItem(BOOKMARK_KEY)!)).toHaveLength(20);

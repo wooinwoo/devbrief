@@ -100,6 +100,7 @@ describe('ReadingBrief', () => {
       JSON.stringify(['frontend', '__proto__', 12, 'frontend']),
     );
     const view = renderBrief();
+    fireEvent.click(view.getByText('관심 분야'));
     expect(view.getByRole('button', { name: 'Frontend' }).getAttribute('aria-pressed')).toBe(
       'true',
     );
@@ -112,18 +113,35 @@ describe('ReadingBrief', () => {
   });
   it('요약은 읽음 표시 없이 확인하고 저장·읽음 버튼은 해당 글 ID로 동작한다', () => {
     const view = renderBrief();
+    fireEvent.click(view.getByText('관심 분야'));
     const story = within(view.getByRole('article', { name: '글 web' }));
     fireEvent.click(story.getByText('요약 더 읽기'));
-    expect(story.getByText(/첫 번째 근거/)).toBeTruthy();
+    expect(story.getByText(/첫 번째 근거/).hidden).toBe(false);
+    expect(story.getByRole('button', { name: '요약 접기' }).getAttribute('aria-expanded')).toBe(
+      'true',
+    );
     expect(view.onOpen).not.toHaveBeenCalled();
-    fireEvent.click(story.getByRole('button', { name: '나중에 읽기' }));
+    fireEvent.click(story.getByRole('button', { name: '저장' }));
     expect(view.onBookmark).toHaveBeenCalledWith('web');
     fireEvent.click(story.getByRole('button', { name: '읽음으로 표시' }));
     expect(view.onOpen).toHaveBeenCalledWith('web');
   });
+  it('수집 메타데이터를 기사 요약처럼 노출하지 않는다', () => {
+    const view = renderBrief([
+      {
+        ...article('metadata'),
+        summaryOneLine: '기사 URL: 댓글 URL: 포인트: 53 # 댓글: 5',
+        summaryThreeLine: 'Article URL: https://example.com Comments URL: https://example.com',
+      },
+    ]);
+    expect(view.getByRole('link', { name: '글 metadata' })).toBeTruthy();
+    expect(view.queryByText(/댓글 URL/)).toBeNull();
+    expect(view.queryByRole('button', { name: '요약 더 읽기' })).toBeNull();
+  });
   it('추천 결과가 없으면 관심 분야 초기화와 전체 탐색으로 복구한다', () => {
     localStorage.setItem('devbrief.interests.v1', JSON.stringify(['mobile']));
     const view = renderBrief();
+    fireEvent.click(view.getByText('관심 분야'));
     expect(view.getByText('이 분야에서 새로 읽을 글이 없어요.')).toBeTruthy();
     fireEvent.click(view.getByRole('button', { name: '모든 분야 보기' }));
     expect(view.getByRole('article', { name: '글 web' })).toBeTruthy();
@@ -133,6 +151,7 @@ describe('ReadingBrief', () => {
   it('오염된 설정이나 저장 실패가 글 탐색을 막지 않는다', () => {
     localStorage.setItem('devbrief.interests.v1', '{invalid');
     const view = renderBrief();
+    fireEvent.click(view.getByText('관심 분야'));
     expect(view.getByRole('article', { name: '글 web' })).toBeTruthy();
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('quota');

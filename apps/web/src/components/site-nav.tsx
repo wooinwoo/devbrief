@@ -3,6 +3,7 @@
 import { useVisibleNavigation } from '@/lib/use-visible-navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { BriefIcon } from './brief-icon';
 import { GlobalSearch } from './global-search';
 import { LangToggle } from './lang-toggle';
 
@@ -13,12 +14,20 @@ const TABS = [
   { href: '/?tab=conferences', label: '행사' },
   { href: '/?tab=videos', label: '발표 영상' },
   { href: '/?tab=repos', label: '오픈소스' },
-  { href: '/bookmarks', label: '저장' },
 ];
 
 /** 글/영상 상세 상단 네비 — 메인 헤더와 동일한 비주얼 언어. */
 export function SiteNav() {
   const pathname = usePathname();
+  const section = pathname.split('/')[1];
+  const activeHref =
+    section === 'bookmarks'
+      ? '/bookmarks'
+      : ['articles', 'videos', 'conferences'].includes(section)
+        ? `/?tab=${section}`
+        : pathname === '/'
+          ? '/?tab=all'
+          : undefined;
   useVisibleNavigation(pathname);
   return (
     <nav
@@ -35,22 +44,38 @@ export function SiteNav() {
         >
           devbrief<span>.</span>
         </Link>
-        <div className="no-scrollbar order-3 col-span-2 lg:order-none lg:col-span-1 flex min-w-0 items-center gap-1 overflow-x-auto pb-2 lg:py-0">
-          {TABS.map((t) => (
-            <Link
-              key={t.href}
-              href={t.href}
-              aria-current={pathname === t.href ? 'page' : undefined}
-              className="shrink-0 inline-flex items-center min-h-11 px-3 sm:px-3.5 py-2 rounded-sm text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors hover:bg-[oklch(100%_0_0/0.1)]"
-              style={{
-                color: pathname === t.href ? 'var(--accent)' : 'var(--bar-fg-muted)',
-                background: pathname === t.href ? 'var(--accent-soft)' : undefined,
-                fontWeight: pathname === t.href ? 700 : 500,
-              }}
-            >
-              {t.label}
-            </Link>
-          ))}
+        <div className="header-navigation order-3 col-span-2 lg:order-none lg:col-span-1 flex min-w-0 items-center gap-1 pb-2 lg:py-0">
+          <div className="header-tabs no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+            {TABS.map((t) => (
+              <Link
+                key={t.href}
+                href={t.href}
+                aria-current={activeHref === t.href ? 'page' : undefined}
+                className="shrink-0 inline-flex items-center min-h-11 px-3 sm:px-3.5 py-2 rounded-sm text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors hover:bg-[oklch(100%_0_0/0.1)]"
+                style={{
+                  color: activeHref === t.href ? 'var(--accent)' : 'var(--bar-fg-muted)',
+                  background: activeHref === t.href ? 'var(--accent-soft)' : undefined,
+                  fontWeight: activeHref === t.href ? 700 : 500,
+                }}
+              >
+                {t.label}
+              </Link>
+            ))}
+          </div>
+          <Link
+            href="/bookmarks"
+            aria-current={activeHref === '/bookmarks' ? 'page' : undefined}
+            className="header-saved-link shrink-0 inline-flex items-center justify-center gap-1 w-[60px] lg:w-auto lg:px-3.5 min-h-11 py-2 rounded-sm text-[14px] sm:text-[14.5px] tracking-[-0.005em] transition-colors hover:bg-[oklch(100%_0_0/0.1)]"
+            style={{
+              color: activeHref === '/bookmarks' ? 'var(--accent)' : 'var(--bar-fg-muted)',
+              fontWeight: activeHref === '/bookmarks' ? 700 : 500,
+            }}
+          >
+            <span className="inline-flex lg:hidden" aria-hidden="true">
+              <BriefIcon name="bookmark" size={16} />
+            </span>
+            저장
+          </Link>
         </div>
         <div className="justify-self-end flex items-center gap-3">
           <GlobalSearch />

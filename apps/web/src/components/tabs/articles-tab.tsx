@@ -33,7 +33,7 @@ interface Props {
    * c62 — 서버에 로드분(articles) 이후의 이전 글이 남았을 때만 내려온다.
    * total 은 X-Total-Count 의 전체 건수, onLoadMore 는 offset 페치 append.
    */
-  loadMore?: { total: number; loading: boolean; onLoadMore: () => void };
+  loadMore?: { total: number; loading: boolean; error?: string | null; onLoadMore: () => void };
 }
 
 export function ArticlesTab({
@@ -229,6 +229,8 @@ export function ArticlesTab({
               <FeaturedArticle
                 article={featured}
                 read={readSet.has(featured.id)}
+                bookmarked={bookmarkSet?.has(featured.id)}
+                onBookmark={onBookmark}
                 onOpen={() => handleOpen(featured.id)}
               />
             )}
@@ -270,8 +272,17 @@ export function ArticlesTab({
                 fontWeight: 600,
               }}
             >
-              {loadMore.loading ? '이전 글 불러오는 중' : '이전 글 더 불러오기'}
+              {loadMore.loading
+                ? '이전 글 불러오는 중'
+                : loadMore.error
+                  ? '이전 글 다시 불러오기'
+                  : '이전 글 더 불러오기'}
             </button>
+            {loadMore.error && (
+              <p role="alert" className="text-sm text-(--color-fg-default)">
+                {loadMore.error}
+              </p>
+            )}
             <p className="text-[12px] tabular-nums" style={{ color: 'var(--color-fg-muted)' }}>
               최근 {articles.length}건 로드됨 · 전체 {loadMore.total}건
             </p>

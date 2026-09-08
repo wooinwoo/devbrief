@@ -8,7 +8,7 @@ export interface DiscoveredConference {
   endDate: string | null;
   location: string | null;
   topics: string[];
-  kind?: 'conference' | 'hackathon';
+  kind?: 'conference' | 'hackathon' | 'meetup';
   description?: string;
 }
 
@@ -68,15 +68,22 @@ export function normalizeEventCandidate(
         ...new Set(
           row.topics
             .filter((t): t is string => typeof t === 'string' && !!t.trim())
-            .map((t) => (/^hackathon$/i.test(t.trim()) ? 'Hackathon' : t.trim().slice(0, 64))),
+            .map((t) => {
+              if (/^hackathon$/i.test(t.trim())) return 'Hackathon';
+              if (/^meetup$/i.test(t.trim())) return 'Meetup';
+              return t.trim().slice(0, 64);
+            }),
         ),
       ].slice(0, 12)
     : [];
   const kind =
-    row.kind === 'hackathon' || topics.includes('Hackathon') || /hackathon|해커톤/i.test(name)
-      ? 'hackathon'
-      : 'conference';
-  if (kind === 'hackathon' && !topics.includes('Hackathon')) topics.unshift('Hackathon');
+    row.kind === 'meetup' || topics.includes('Meetup')
+      ? 'meetup'
+      : row.kind === 'hackathon' || topics.includes('Hackathon') || /hackathon|해커톤/i.test(name)
+        ? 'hackathon'
+        : 'conference';
+  const kindTag = kind === 'meetup' ? 'Meetup' : kind === 'hackathon' ? 'Hackathon' : null;
+  if (kindTag && !topics.includes(kindTag)) topics.unshift(kindTag);
   return {
     name,
     url,

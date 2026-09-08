@@ -52,7 +52,7 @@ export function ArticleRow({
         {/* 제목과 요약을 먼저 읽고 출처와 분류를 확인한다. */}
         <div>
           <Link href={`/articles/${article.id}`} onClick={onOpen} className="min-w-0">
-            <h3 className="text-[17px] leading-[1.5] tracking-[-0.015em] break-keep text-(--color-fg-strong) transition-colors hover:text-(--color-accent-strong) line-clamp-3 font-semibold">
+            <h3 className="text-[20px] leading-[1.5] tracking-[-0.015em] break-keep text-(--color-fg-strong) transition-colors hover:text-(--color-accent-strong) line-clamp-3 font-semibold">
               {primary}
             </h3>
           </Link>
@@ -116,7 +116,7 @@ export function ArticleRow({
               type="button"
               onClick={() => onToggleRead(article.id)}
               aria-label={read ? '안읽음으로 표시' : '읽음으로 표시'}
-              className="min-h-[44px] rounded-md px-3 text-[12px] transition-colors hover:bg-(--color-bg-sunken) hover:text-(--color-fg-strong)"
+              className="min-h-[44px] rounded-md px-3 text-[13px] transition-colors hover:bg-(--color-bg-sunken) hover:text-(--color-fg-strong)"
               style={{ color: 'var(--color-fg-subtle)', fontWeight: 600 }}
             >
               {read ? '안읽음' : '읽음'}
@@ -126,9 +126,8 @@ export function ArticleRow({
             <button
               type="button"
               onClick={() => onBookmark(article.id)}
-              aria-label={bookmarked ? '북마크 해제' : '북마크'}
               aria-pressed={bookmarked}
-              className="grid place-items-center min-h-[44px] min-w-[44px] rounded-md transition-colors hover:bg-(--color-bg-sunken)"
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] rounded-md px-3 text-[13px] whitespace-nowrap transition-colors hover:bg-(--color-bg-sunken)"
               style={{
                 color: bookmarked ? 'var(--color-accent)' : 'var(--color-fg-muted)',
               }}
@@ -141,6 +140,7 @@ export function ArticleRow({
                   strokeWidth="1.6"
                 />
               </svg>
+              <span>{bookmarked ? '저장됨' : '저장'}</span>
             </button>
           )}
         </div>

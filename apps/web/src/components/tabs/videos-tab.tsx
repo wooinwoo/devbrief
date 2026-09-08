@@ -6,6 +6,7 @@ import { type FilterGroup, FilterSidebar } from '../filter-sidebar';
 import { VideoCard } from '../video-card';
 
 export function VideosTab({ videos }: { videos: VideoDto[] }) {
+  const [query, setQuery] = useState('');
   const [channel, setChannel] = useState<string | null>(null);
   const [topic, setTopic] = useState<string | null>(null);
   const [sort, setSort] = useState<'recent' | 'views'>('recent');
@@ -27,7 +28,10 @@ export function VideosTab({ videos }: { videos: VideoDto[] }) {
   }, [videos]);
 
   const filtered = useMemo(() => {
-    let list = videos;
+    const needle = query.trim().toLocaleLowerCase();
+    let list = videos.filter((v) =>
+      [v.title, v.channel, ...v.topics].join(' ').toLocaleLowerCase().includes(needle),
+    );
     if (channel) list = list.filter((v) => v.channel === channel);
     if (topic) list = list.filter((v) => v.topics.includes(topic));
     return [...list].sort((a, b) =>
@@ -35,7 +39,13 @@ export function VideosTab({ videos }: { videos: VideoDto[] }) {
         ? b.views - a.views
         : new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
     );
-  }, [videos, channel, topic, sort]);
+  }, [videos, query, channel, topic, sort]);
+
+  const resetFilters = () => {
+    setQuery('');
+    setChannel(null);
+    setTopic(null);
+  };
 
   const groups: FilterGroup[] = [
     {
@@ -56,7 +66,10 @@ export function VideosTab({ videos }: { videos: VideoDto[] }) {
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 xl:gap-10">
-      <FilterSidebar groups={groups} />
+      <FilterSidebar
+        groups={groups}
+        search={{ value: query, onChange: setQuery, placeholder: '발표 제목, 채널, 주제로 검색' }}
+      />
 
       <div className="flex-1 min-w-0">
         <div
@@ -79,11 +92,20 @@ export function VideosTab({ videos }: { videos: VideoDto[] }) {
         </div>
 
         {filtered.length === 0 ? (
-          <p className="py-12 text-center text-[13px]" style={{ color: 'var(--color-fg-muted)' }}>
-            조건에 맞는 영상이 없어요.
-          </p>
+          <div className="py-12 text-center" style={{ color: 'var(--color-fg-muted)' }}>
+            <p className="text-[16px]">조건에 맞는 영상이 없어요.</p>
+            {(query.trim() || channel || topic) && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="mt-3 min-h-11 px-3 text-[16px] text-(--color-accent) underline underline-offset-4"
+              >
+                검색·필터 초기화
+              </button>
+            )}
+          </div>
         ) : (
-          <ul className="grid gap-x-6 gap-y-9 sm:grid-cols-2">
+          <ul className="grid gap-x-6 gap-y-9 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((v) => (
               <VideoCard key={v.id} video={v} />
             ))}

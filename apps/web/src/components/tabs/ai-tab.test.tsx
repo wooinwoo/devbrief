@@ -44,6 +44,7 @@ afterEach(() => {
 
 beforeEach(() => {
   replace.mockClear();
+  window.history.replaceState(null, '', '/');
   currentSearch = 'tab=ai';
   window.scrollTo = vi.fn();
 });
@@ -84,7 +85,8 @@ describe('AI 탭 필터 URL 동기화', () => {
 
     fireEvent.click(getByRole('button', { name: /Claude/ }));
 
-    expect(replace).toHaveBeenCalledWith('/?tab=ai&model=claude', { scroll: false });
+    expect(window.location.search).toBe('?tab=ai&model=claude');
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('활성 필터 해제(전체 보기)는 키를 지운다', () => {
@@ -95,7 +97,8 @@ describe('AI 탭 필터 URL 동기화', () => {
 
     fireEvent.click(getByText('전체 보기'));
 
-    expect(replace).toHaveBeenCalledWith('/?tab=ai', { scroll: false });
+    expect(window.location.search).toBe('?tab=ai');
+    expect(replace).not.toHaveBeenCalled();
   });
 });
 

@@ -5,15 +5,25 @@ import { pickTitle, useLang } from '@/lib/lang-context';
 import Link from 'next/link';
 import { Fragment } from 'react';
 import type { ArticleDto } from './article-card';
+import { BriefIcon } from './brief-icon';
+import { CoverImage } from './cover-image';
 import { RelativeTimeText } from './relative-time-text';
 
 interface Props {
   article: ArticleDto;
   read?: boolean;
+  bookmarked?: boolean;
+  onBookmark?: (id: string) => void;
   onOpen?: () => void;
 }
 
-export function FeaturedArticle({ article, read = false, onOpen }: Props) {
+export function FeaturedArticle({
+  article,
+  read = false,
+  bookmarked = false,
+  onBookmark,
+  onOpen,
+}: Props) {
   const { lang } = useLang();
   const cat = categoryOf(article);
   const { primary } = pickTitle(article, lang);
@@ -28,10 +38,8 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
         onClick={onOpen}
         className="group block focus-visible:outline-offset-4"
       >
-        <div
-          className={`grid gap-x-8 gap-y-6 ${article.imageUrl ? 'md:grid-cols-[1.55fr_1fr] items-center' : ''}`}
-        >
-          <div>
+        <div className="featured-reading-layout grid items-center gap-x-8 gap-y-6">
+          <div className="min-w-0">
             <h2
               className="text-[1.625rem] sm:text-[2rem] lg:text-[2.25rem] leading-[1.35] tracking-[-0.025em] break-keep mb-2"
               style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
@@ -53,7 +61,7 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
               </p>
             )}
 
-            <div className="flex items-center gap-2 text-[12.5px] flex-wrap">
+            <div className="flex items-center gap-2 text-[13px] flex-wrap">
               <span className="font-medium" style={{ color: 'var(--color-fg-muted)' }}>
                 {cat.label}
               </span>
@@ -79,22 +87,23 @@ export function FeaturedArticle({ article, read = false, onOpen }: Props) {
           </div>
 
           {article.imageUrl && (
-            <div
-              className="relative aspect-[16/10] overflow-hidden rounded-md"
-              style={{
-                background: 'var(--color-bg-sunken)',
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={article.imageUrl}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+            <div className="featured-reading-cover w-full max-w-[240px] justify-self-center [&_img]:object-contain">
+              <CoverImage src={article.imageUrl} label={article.source.name} priority />
             </div>
           )}
         </div>
       </Link>
+      {onBookmark && (
+        <button
+          type="button"
+          aria-pressed={bookmarked}
+          onClick={() => onBookmark(article.id)}
+          className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-md border border-(--color-line-strong) px-3 text-sm text-(--color-accent-strong) hover:bg-(--color-accent-soft)"
+        >
+          <BriefIcon name={bookmarked ? 'check' : 'bookmark'} size={16} />
+          {bookmarked ? '저장됨' : '저장'}
+        </button>
+      )}
     </article>
   );
 }

@@ -84,7 +84,7 @@ export default async function AdminDashboard() {
       </section>
 
       {/* 통계 카드 */}
-      <div className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3 mb-10">
+      <div className="grid grid-cols-2 gap-x-5 sm:gap-x-8 xl:grid-cols-3 mb-10">
         <StatCard label="수집된 글" value={total} sub={`요약 ${summarized}건`} />
         <StatCard
           label="행사 후보"

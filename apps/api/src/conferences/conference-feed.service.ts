@@ -3,6 +3,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { isBlockedHostname } from '../common/url-guard';
 import { type DiscoveredConference, normalizeEventCandidate } from './event-candidate';
+import { parseAwskrug, parseDevKorea, parseGdgIncheon } from './korean-event-feeds';
 
 const SOURCES = [
   {
@@ -11,6 +12,13 @@ const SOURCES = [
     parse: parseAgenda,
   },
   { name: 'Major League Hacking', url: 'https://www.mlh.com/events', parse: parseMlh },
+  {
+    name: 'AWSKRUG',
+    url: 'https://www.meetup.com/awskrug/events/ical/',
+    parse: parseAwskrug,
+  },
+  { name: 'Dev Korea', url: 'https://dev-korea.com/events', parse: parseDevKorea },
+  { name: 'GDG Incheon', url: 'https://gdg.community.dev/gdg-incheon/', parse: parseGdgIncheon },
 ];
 
 function datePart(value: unknown): string | null {
