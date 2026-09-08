@@ -1,0 +1,127 @@
+{
+  "codeCommit": "48ac1630bda6aa559273d9478786f7322998dc5f",
+  "ci": {
+    "url": "https://github.com/wooinwoo/devbrief/actions/runs/34191766832",
+    "conclusion": "success",
+    "checks": ["typecheck", "lint", "api test", "web test", "build"]
+  },
+  "localRegression": {
+    "api": {
+      "command": "corepack pnpm --filter @devbrief/api test --runInBand",
+      "suites": 44,
+      "passed": 469
+    },
+    "web": {
+      "command": "corepack pnpm --filter @devbrief/web test --maxWorkers=2",
+      "files": 48,
+      "passed": 394
+    },
+    "limitation": "웹 테스트를 Pages 빌드와 동시에 기본 병렬도로 실행했을 때 5건이 시간 제한에 걸렸습니다. 빌드 종료 후 워커 2개로 재실행해 전체 통과했습니다. 테스트 코드와 제한 시간은 변경하지 않았습니다."
+  },
+  "productionEvents": {
+    "checkedAt": "2026-09-08T05:48:24.897Z",
+    "api": "https://devbrief-api-8lyo.onrender.com/api/v1",
+    "healthStatus": 200,
+    "eventsStatus": 200,
+    "upcomingOrOngoing": 915,
+    "domestic": 31,
+    "domesticHackathons": 17,
+    "allHackathons": 89,
+    "existingForeignOrUnlocatedPreserved": 884,
+    "newlyPublishedFound": 27,
+    "limitation": "검사 시점의 운영 데이터 건수입니다. 지역 미분류 행사를 해외로 확정하지 않습니다."
+  },
+  "navigation": {
+    "checkedAt": "2026-09-08T06:10:15.051Z",
+    "codeCommit": "48ac1630bda6aa559273d9478786f7322998dc5f",
+    "environment": "운영 API를 연결한 로컬 Cloudflare Pages 배포 후보",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "interactions": [
+      {
+        "action": "tab",
+        "value": "articles"
+      },
+      {
+        "action": "tab",
+        "value": "ai"
+      },
+      {
+        "action": "tab",
+        "value": "repos"
+      },
+      {
+        "action": "tab",
+        "value": "articles"
+      },
+      {
+        "action": "article-search",
+        "value": "React"
+      }
+    ],
+    "rootRscRequests": 0,
+    "errors": [],
+    "limitations": [
+      "하이드레이션 이후 요청만 검사합니다. 초기 로딩과 운영 API 콜드 스타트는 제외합니다.",
+      "운영 응답 속도나 사용자 참여도 측정 결과가 아닙니다."
+    ]
+  },
+  "responsive": {
+    "environment": "운영 API를 연결한 로컬 Cloudflare Pages 배포 후보",
+    "browser": "Chromium",
+    "results": [
+      {
+        "route": "/?tab=conferences",
+        "width": 320,
+        "hackathons": 17,
+        "overflow": false
+      },
+      {
+        "route": "/?tab=conferences",
+        "width": 390,
+        "hackathons": 17,
+        "overflow": false
+      },
+      {
+        "route": "/?tab=conferences",
+        "width": 768,
+        "hackathons": 17,
+        "overflow": false
+      },
+      {
+        "route": "/?tab=conferences",
+        "width": 1440,
+        "hackathons": 17,
+        "overflow": false
+      },
+      {
+        "route": "/conferences",
+        "width": 320,
+        "hackathons": 17,
+        "overflow": false
+      },
+      {
+        "route": "/conferences",
+        "width": 390,
+        "hackathons": 17,
+        "overflow": false
+      },
+      {
+        "route": "/conferences",
+        "width": 768,
+        "hackathons": 17,
+        "overflow": false
+      },
+      {
+        "route": "/conferences",
+        "width": 1440,
+        "hackathons": 17,
+        "overflow": false
+      }
+    ],
+    "pageErrors": [],
+    "limitation": "가로 넘침, 행사 필터와 실행 오류 검사입니다. 실기기 Safari와 모든 화면 상태를 검증한 결과는 아닙니다."
+  }
+}
