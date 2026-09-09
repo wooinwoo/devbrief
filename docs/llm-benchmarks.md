@@ -2,8 +2,12 @@
 
 The AI tab uses Artificial Analysis's public LLM leaderboard. The bundled
 snapshot provides immediate rendering and an offline fallback. On mount, the
-browser checks a small JSON feed on the public repository's dedicated
-benchmark-data branch. A successful, validated newer snapshot replaces the
+browser checks /api/benchmarks on the same origin. This lightweight Pages
+route reads a small JSON feed on the public repository's dedicated benchmark-data
+branch, so browsers that block raw.githubusercontent.com still receive updates.
+The route validates responses, times out after four seconds and preserves the
+bundled snapshot on failure. Successful responses cache for five minutes;
+fallback responses retry after 30 seconds. A successful, validated newer snapshot replaces the
 fallback. No Render request, API key, or Pages deployment is required for daily
 updates.
 

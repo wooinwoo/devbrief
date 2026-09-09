@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  BENCHMARK_FEED_URL,
   BENCHMARK_SNAPSHOT,
   type BenchModel,
   type BenchmarkMetric,
@@ -28,7 +27,7 @@ export function BenchmarkDashboard() {
   useEffect(() => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8_000);
-    fetch(BENCHMARK_FEED_URL, { signal: controller.signal, credentials: 'omit' })
+    fetch('/api/benchmarks', { signal: controller.signal, credentials: 'omit' })
       .then(async (response) => {
         if (!response.ok) throw new Error('Benchmark feed unavailable');
         const next = parseBenchmarkSnapshot(await response.json());
