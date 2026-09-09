@@ -1,8 +1,11 @@
 import type { ArticleDto } from '@/components/article-card';
 import { ArticleDetail } from '@/components/article-detail';
+import { LoadFailure } from '@/components/load-failure';
 import { SiteNav } from '@/components/site-nav';
+import { parseArticleRows } from '@/lib/article-response';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
 import { MOCKS_ENABLED } from '@/lib/mocks-enabled';
+import { publicRead } from '@/lib/public-read';
 import { pickRelated } from '@/lib/related-articles';
 import type { ArticleDetail as ArticleDetailDto, ArticleListItem } from '@devbrief/shared';
 import { notFound } from 'next/navigation';
@@ -32,31 +35,31 @@ function mapDbToDto(d: DbArticle): ArticleDto {
     imageUrl: d.imageUrl,
     language: d.language,
     contentHtml: d.contentHtml ?? null,
-    source: { name: d.source.name, provider: d.source.provider },
+    source: d.source ?? { name: '출처 미상', provider: 'rss_generic' },
   };
 }
 
-async function getOne(id: string): Promise<ArticleDto | null> {
+async function getOne(id: string): Promise<ArticleDto | null | undefined> {
   try {
-    const res = await fetch(`${API_BASE}/articles/${id}`, {
+    const res = await publicRead(`${API_BASE}/articles/${id}`, {
       cache: 'no-store',
     });
-    if (res.ok) return mapDbToDto((await res.json()) as DbArticle);
-    if (res.status < 500) return null;
+    if (res.ok) return mapDbToDto(parseArticleRows([await res.json()])[0]);
+    if (res.status === 404) return null;
   } catch {
     // A failed detail endpoint must not turn an existing article into a false 404.
   }
   try {
-    const res = await fetch(`${API_BASE}/articles/batch?ids=${encodeURIComponent(id)}`, {
+    const res = await publicRead(`${API_BASE}/articles/batch?ids=${encodeURIComponent(id)}`, {
       cache: 'no-store',
     });
-    if (!res.ok) return null;
-    const articles = (await res.json()) as DbArticle[];
+    if (!res.ok) return undefined;
+    const articles = parseArticleRows(await res.json());
     const article = articles.find((candidate) => candidate.id === id);
     // The list payload retains the real summary and original link; no article body is fabricated.
     return article ? mapDbToDto(article) : null;
   } catch {
-    return null;
+    return undefined;
   }
 }
 
@@ -67,7 +70,7 @@ async function getOne(id: string): Promise<ArticleDto | null> {
  */
 async function getRelated(article: ArticleDto, limit = 5): Promise<ArticleDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/articles/${article.id}/related?limit=${limit}`, {
+    const res = await publicRead(`${API_BASE}/articles/${article.id}/related?limit=${limit}`, {
       cache: 'no-store',
     });
     if (res.ok) {
@@ -102,6 +105,13 @@ export default async function ArticleDetailPage({ params }: Props) {
   const { id } = await params;
   const fromApi = await getOne(id);
   const article = fromApi ?? findMockArticle(id) ?? null;
+  if (!article && fromApi === undefined)
+    return (
+      <main id="main-content" className="mx-auto max-w-4xl px-5">
+        <SiteNav />
+        <LoadFailure />
+      </main>
+    );
   if (!article) notFound();
 
   const related = await getRelated(article);

@@ -10,6 +10,7 @@ import {
 } from '@devbrief/shared';
 import { Controller, Get, NotFoundException, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { queryLimit, queryText } from '../common/public-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { ArticlesService } from './articles.service';
 
@@ -61,15 +62,19 @@ export class ArticlesController {
     @Query('offset') offsetStr?: string,
     @Query('q') query?: string,
   ) {
-    const limit = Math.min(Number(limitStr) || 30, 100);
+    const provider = queryText(source);
+    const limit = queryLimit(limitStr, 30, 100);
     // offset — NaN/음수/Infinity 는 전부 기본 0 으로 방어
-    const parsedOffset = Math.trunc(Number(offsetStr));
-    const offset = Number.isFinite(parsedOffset) && parsedOffset > 0 ? parsedOffset : 0;
-    const term = query?.trim().slice(0, 120);
+    const parsedOffset = Math.trunc(Number(queryText(offsetStr)));
+    const offset =
+      Number.isSafeInteger(parsedOffset) && parsedOffset > 0 && parsedOffset <= 2_147_483_647
+        ? parsedOffset
+        : 0;
+    const term = queryText(query)?.trim().slice(0, 120);
     const where: Prisma.ArticleWhereInput | undefined =
-      source || term
+      provider || term
         ? {
-            ...(source ? { source: { provider: source } } : {}),
+            ...(provider ? { source: { provider } } : {}),
             ...(term
               ? {
                   OR: [
@@ -106,7 +111,7 @@ export class ArticlesController {
   @Get('batch')
   async batch(@Query('ids') idsStr?: string) {
     // 중복 id 를 먼저 제거한 뒤 상한을 적용한다(상한이 고유 id 기준이 되도록).
-    const parsed = (idsStr ?? '')
+    const parsed = (queryText(idsStr) ?? '')
       .split(',')
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
@@ -128,7 +133,7 @@ export class ArticlesController {
    */
   @Get(':id/related')
   async related(@Param('id') id: string, @Query('limit') limitStr?: string) {
-    const limit = Number(limitStr);
+    const limit = Number(queryText(limitStr));
     return this.articles.findRelated(id, Number.isFinite(limit) ? limit : undefined);
   }
 

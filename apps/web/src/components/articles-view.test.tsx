@@ -327,3 +327,25 @@ it('이전 글 조회 실패를 알리고 재시도할 때 현재 목록을 보�
   expect(view.queryByRole('alert')).toBeNull();
   expect(fetchMock).toHaveBeenCalledTimes(2);
 });
+
+it.each([null, { error: 'bad response' }, [null]])(
+  'keeps the current articles when more returns %j',
+  async (payload) => {
+    currentSearch = 'tab=articles';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => payload }));
+    const view = render(
+      <ArticlesView articles={[makeArticle({ id: 'a1', title: '현재 글' })]} total={2} />,
+    );
+    fireEvent.click(view.getByText('이전 글 더 불러오기'));
+    await view.findByRole('alert');
+    expect(view.getByText('현재 글')).toBeTruthy();
+    expect(view.getByText('이전 글 다시 불러오기')).toBeTruthy();
+  },
+);
+it('shows failed feed names with a retry control on the home view', () => {
+  const view = render(
+    <ArticlesView articles={[]} initialLoadErrors={['개발 뉴스', '발표 영상']} />,
+  );
+  expect(view.getByRole('alert').textContent).toContain('개발 뉴스 · 발표 영상');
+  expect(view.getByRole('button', { name: '다시 시도' })).toBeTruthy();
+});

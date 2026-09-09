@@ -282,3 +282,40 @@ describe('BookmarksView (배치 조회)', () => {
     expect(await findByText(/글을 불러오지 못했어요/)).toBeTruthy();
   });
 });
+
+describe('BookmarksView invalid responses', () => {
+  it('cancels an in-flight batch when leaving the saved page', async () => {
+    localStorage.setItem(BOOKMARK_KEY, JSON.stringify(['a']));
+    let signal: AbortSignal | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url, options) => {
+        signal = options.signal;
+        return new Promise((_resolve, reject) =>
+          signal?.addEventListener('abort', () => reject(new Error('aborted'))),
+        );
+      }),
+    );
+    const view = render(<BookmarksView />);
+    await waitFor(() => expect(signal).toBeDefined());
+    view.unmount();
+    expect(signal?.aborted).toBe(true);
+  });
+  it.each([null, { error: 'upstream' }, [null], [{ id: 'a' }]])(
+    'allows retry without deleting saved IDs for %j',
+    async (payload) => {
+      const saved = JSON.stringify(['a']);
+      localStorage.setItem(BOOKMARK_KEY, saved);
+      const fetcher = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => payload })
+        .mockResolvedValueOnce({ ok: true, json: async () => [dbArticle('a', '2026-01-01')] });
+      vi.stubGlobal('fetch', fetcher);
+      const view = render(<BookmarksView />);
+      fireEvent.click(await view.findByRole('button', { name: '다시 시도' }));
+      await view.findByText('Title a');
+      expect(localStorage.getItem(BOOKMARK_KEY)).toBe(saved);
+      expect(view.queryByText('더 이상 불러올 수 없는 글이에요.')).toBeNull();
+    },
+  );
+});

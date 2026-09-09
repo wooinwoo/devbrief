@@ -42,11 +42,11 @@ beforeEach(() => {
 });
 
 describe('ConferencesPage mock 격리 (c10)', () => {
-  it('프로덕션: API 실패 시 mock 대신 빈 상태 UI 를 렌더한다', async () => {
+  it('프로덕션: API 실패 시 mock 대신 재시도 안내를 렌더한다', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('down')));
     const { queryByTestId, getByText } = render(await ConferencesPage());
     expect(queryByTestId('conf-view')).toBeNull();
-    expect(getByText('아직 보여드릴 행사 일정이 없어요.')).toBeTruthy();
+    expect(getByText(/불러오지 못했어요/)).toBeTruthy();
   });
 
   it('프로덕션: 정상 빈 응답에도 mock 을 노출하지 않는다', async () => {
@@ -79,4 +79,11 @@ describe('ConferencesPage 오늘 라벨 KST 고정 (c19)', () => {
     expect(container.textContent).toContain('7월 16일');
     expect(container.textContent).not.toContain('7월 15일');
   });
+});
+
+it('shows retry rather than an empty calendar on API failure', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 502 }));
+  const view = render(await ConferencesPage());
+  expect(view.getByRole('alert').textContent).toContain('불러오지 못했어요');
+  expect(view.queryByText('아직 보여드릴 행사 일정이 없어요.')).toBeNull();
 });

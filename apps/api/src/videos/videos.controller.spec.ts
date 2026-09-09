@@ -40,6 +40,14 @@ describe('VideosController', () => {
     controller = moduleRef.get(VideosController);
   });
 
+  it.each(['-1', '1.5', 'Infinity', 'NaN'])(
+    'normalizes invalid limit %s before Prisma',
+    async (limit) => {
+      await controller.list(limit);
+      expect(prisma.video.findMany.mock.calls[0][0].take).toBe(20);
+    },
+  );
+
   // c16: 컨트롤러 sync 도 크론과 동일한 enqueueUnanalyzed 공유 경로를 탄다
   it('POST /videos/sync — sync 후 enqueueUnanalyzed 로 미분석 영상 적재', async () => {
     const res = await controller.sync();
