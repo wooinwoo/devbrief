@@ -135,7 +135,7 @@ export function BenchmarkDashboard() {
               setQuery(event.target.value);
               setLimit(10);
             }}
-            className="min-h-11 w-full rounded-lg border border-(--color-line-strong) bg-(--color-bg-surface) px-3 text-sm text-(--color-fg-default)"
+            className="min-h-11 w-full rounded-lg border border-(--color-line-strong) bg-(--color-bg-elevated) px-3 text-sm text-(--color-fg-default)"
           />
         </label>
         <p className="text-[13px] text-(--color-fg-muted)">
@@ -263,8 +263,16 @@ function CostTable({ models }: { models: BenchModel[] }) {
               <ModelLabel model={model} />
             </th>
             <td className="text-right tabular-nums text-(--color-fg-strong)">
-              {'$'}
-              {model.costPerTask?.toFixed(2)}
+              {model.costPerTask === 0 ? '< $0.01' : '
+            </td>
+            <td className="text-right tabular-nums">{model.intelligence}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+ + model.costPerTask?.toFixed(2)}
             </td>
             <td className="text-right tabular-nums">{model.intelligence}</td>
           </tr>

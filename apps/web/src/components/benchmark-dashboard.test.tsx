@@ -31,9 +31,14 @@ describe('BenchmarkDashboard', () => {
     });
     expect(screen.getAllByText(/Gemini/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: '작업당 비용' }));
+    expect(screen.getByText('< $0.01')).toBeTruthy();
     const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1);
     const prices = rows.map((row) =>
-      Number(within(row).getAllByRole('cell')[0].textContent?.replace('$', '')),
+      Number(
+        within(row)
+          .getAllByRole('cell')[0]
+          .textContent?.replace(/[^0-9.]/g, ''),
+      ),
     );
     expect(prices).toEqual([...prices].sort((a, b) => a - b));
     fireEvent.change(screen.getByRole('searchbox', { name: '벤치마크 모델 검색' }), {
