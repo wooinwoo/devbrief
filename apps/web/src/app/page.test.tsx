@@ -17,12 +17,14 @@ vi.mock('@/components/articles-view', () => ({
     videos?: unknown[];
     conferences?: unknown[];
     repos?: unknown[];
+    initialLoadErrors?: string[];
   }) => (
     <>
       <div data-testid="counts">
         {props.articles.length}-{props.videos?.length ?? 0}-{props.conferences?.length ?? 0}-
         {props.repos?.length ?? 0}
       </div>
+      <div data-testid="errors">{props.initialLoadErrors?.join(',')}</div>
       <div data-testid="total">{String(props.total ?? null)}</div>
     </>
   ),
@@ -107,5 +109,40 @@ describe('Home X-Total-Count → total 전달 (c62)', () => {
     vi.stubGlobal('fetch', fetchWithArticleHeaders({ 'X-Total-Count': 'abc' }));
     const { getByTestId } = render(await Home());
     expect(getByTestId('total').textContent).toBe('null');
+  });
+});
+
+describe('Home partial outages', () => {
+  it('labels failed feeds without presenting them as empty content', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    const view = render(await Home());
+    expect(view.getByTestId('errors').textContent).toContain('개발 뉴스');
+    expect(view.getByTestId('errors').textContent).toContain('발표 영상');
+  });
+  it('keeps weekly repos when the daily request rejects', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('period=daily')) throw new Error('offline');
+        return {
+          ok: true,
+          json: async () => (url.includes('period=weekly') ? [{ id: 'repo1', name: 'repo' }] : []),
+        };
+      }),
+    );
+    const view = render(await Home());
+    expect(view.getByTestId('counts').textContent).toBe('0-0-0-1');
+    expect(view.getByTestId('errors').textContent).toContain('오픈소스');
+  });
+  it('does not flag valid empty feeds as outages', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => ({
+        ok: true,
+        json: async () => (url.includes('/digest') ? null : []),
+      })),
+    );
+    const view = render(await Home());
+    expect(view.getByTestId('errors').textContent).toBe('');
   });
 });

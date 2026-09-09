@@ -36,6 +36,12 @@ describe('ConferencesController', () => {
     jest.useRealTimers();
   });
 
+  it('rejects repeated status before Prisma', async () => {
+    await expect(controller.list(undefined, ['ACTIVE', 'PROPOSED'] as never)).rejects.toMatchObject(
+      { status: 400 },
+    );
+    expect(prisma.conference.findMany).not.toHaveBeenCalled();
+  });
   describe('list upcoming=1', () => {
     it.each([
       ['1000', 1000],

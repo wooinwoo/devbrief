@@ -1,13 +1,14 @@
 import type { ArticleDto } from '@/components/article-card';
 import { ArticlesView } from '@/components/articles-view';
 import type { DigestDto } from '@/components/daily-digest';
+import { parseArticleRows } from '@/lib/article-response';
 import { MOCK_ARTICLES } from '@/lib/mock-articles';
 import { type ConferenceDto, MOCK_CONFERENCES } from '@/lib/mock-conferences';
 import { MOCK_REPOS, type RepoDto } from '@/lib/mock-repos';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
 import { MOCKS_ENABLED } from '@/lib/mocks-enabled';
+import { publicRead } from '@/lib/public-read';
 import {
-  type ArticleListItem,
   type ConferenceDto as ConferenceWire,
   type DailyDigestDto,
   TOTAL_COUNT_HEADER,
@@ -36,30 +37,27 @@ function parseTotalCount(res: Response): number | null {
   return Number.isSafeInteger(n) && n >= 0 ? n : null;
 }
 
-async function getArticles(): Promise<ArticlesPayload> {
+async function getArticles(errors: Set<string>): Promise<ArticlesPayload> {
   try {
-    const res = await fetch(`${API_BASE}/articles?limit=100`, {
+    const res = await publicRead(`${API_BASE}/articles?limit=100`, {
       cache: 'no-store',
     });
-    if (!res.ok) return { articles: mockFallback(MOCK_ARTICLES), total: null };
-    const data = (await res.json()) as ArticleListItem[];
-    // 실데이터의 tags/source 누락 방어 (백엔드 응답에 null 가능)
-    const safe = data.map((a) => ({
-      ...a,
-      tags: a.tags ?? [],
-      source: a.source ?? { name: '출처 미상', provider: 'rss_generic' },
-    }));
+    if (!res.ok) throw new Error('Feed unavailable');
+    const safe = parseArticleRows(await res.json());
     if (safe.length === 0) return { articles: mockFallback(MOCK_ARTICLES), total: null };
     return { articles: safe, total: parseTotalCount(res) };
   } catch {
+    errors.add('개발 뉴스');
     return { articles: mockFallback(MOCK_ARTICLES), total: null };
   }
 }
 
-async function getConferences(): Promise<ConferenceDto[]> {
+async function getConferences(errors: Set<string>): Promise<ConferenceDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/conferences?upcoming=1&limit=12`, { cache: 'no-store' });
-    if (!res.ok) return mockFallback(MOCK_CONFERENCES);
+    const res = await publicRead(`${API_BASE}/conferences?upcoming=1&limit=12`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error('Feed unavailable');
     const data = (await res.json()) as ConferenceWire[];
     if (data.length === 0) return mockFallback(MOCK_CONFERENCES);
     return data.map((d) => ({
@@ -75,14 +73,15 @@ async function getConferences(): Promise<ConferenceDto[]> {
       brand: d.brandColor ?? undefined,
     }));
   } catch {
+    errors.add('행사');
     return mockFallback(MOCK_CONFERENCES);
   }
 }
 
-async function getDigest(): Promise<DigestDto | null> {
+async function getDigest(errors: Set<string>): Promise<DigestDto | null> {
   try {
-    const res = await fetch(`${API_BASE}/digest/today`, { cache: 'no-store' });
-    if (!res.ok) return null;
+    const res = await publicRead(`${API_BASE}/digest/today`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Feed unavailable');
     // 그 날 다이제스트가 없으면 본문이 JSON null — DailyDigest 전체 행이 계약이다.
     const data = (await res.json()) as DailyDigestDto | null;
     if (!data) return null;
@@ -92,16 +91,17 @@ async function getDigest(): Promise<DigestDto | null> {
       items: Array.isArray(data.items) ? data.items : [],
     };
   } catch {
+    errors.add('오늘의 요약');
     return null;
   }
 }
 
-async function getVideos(): Promise<VideoDto[]> {
+async function getVideos(errors: Set<string>): Promise<VideoDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/videos?limit=100`, {
+    const res = await publicRead(`${API_BASE}/videos?limit=100`, {
       cache: 'no-store',
     });
-    if (!res.ok) return mockFallback(MOCK_VIDEOS);
+    if (!res.ok) throw new Error('Feed unavailable');
     const data = (await res.json()) as VideoWire[];
     if (data.length === 0) return mockFallback(MOCK_VIDEOS);
     return data.map((d) => ({
@@ -118,33 +118,34 @@ async function getVideos(): Promise<VideoDto[]> {
       brand: d.conference?.brandColor ?? undefined,
     }));
   } catch {
+    errors.add('발표 영상');
     return mockFallback(MOCK_VIDEOS);
   }
 }
 
-async function getRepos(): Promise<RepoDto[]> {
-  try {
-    const [w, d] = await Promise.all([
-      fetch(`${API_BASE}/repos?period=weekly`, { cache: 'no-store' }),
-      fetch(`${API_BASE}/repos?period=daily`, { cache: 'no-store' }),
-    ]);
-    if (!w.ok && !d.ok) return mockFallback(MOCK_REPOS);
-    const weekly = w.ok ? ((await w.json()) as RepoDto[]) : [];
-    const daily = d.ok ? ((await d.json()) as RepoDto[]) : [];
-    const merged = [...weekly, ...daily];
-    return merged.length > 0 ? merged : mockFallback(MOCK_REPOS);
-  } catch {
-    return mockFallback(MOCK_REPOS);
-  }
+async function getRepos(errors: Set<string>): Promise<RepoDto[]> {
+  const results = await Promise.allSettled(
+    ['weekly', 'daily'].map(async (period) => {
+      const res = await publicRead(`${API_BASE}/repos?period=${period}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('Repos unavailable');
+      const rows = await res.json();
+      if (!Array.isArray(rows)) throw new Error('Invalid repos');
+      return rows as RepoDto[];
+    }),
+  );
+  if (results.some((result) => result.status === 'rejected')) errors.add('오픈소스');
+  const merged = results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
+  return merged.length > 0 ? merged : mockFallback(MOCK_REPOS);
 }
 
 export default async function Home() {
+  const errors = new Set<string>();
   const [{ articles, total }, videos, conferences, digest, repos] = await Promise.all([
-    getArticles(),
-    getVideos(),
-    getConferences(),
-    getDigest(),
-    getRepos(),
+    getArticles(errors),
+    getVideos(errors),
+    getConferences(errors),
+    getDigest(errors),
+    getRepos(errors),
   ]);
 
   return (
@@ -154,6 +155,7 @@ export default async function Home() {
     >
       <Suspense fallback={null}>
         <ArticlesView
+          initialLoadErrors={[...errors]}
           loadConferenceCatalog
           articles={articles}
           total={total}

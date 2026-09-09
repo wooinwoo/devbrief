@@ -1,6 +1,7 @@
 'use client';
 import { API_BASE } from '@/lib/api';
 import { pickTitle, useLang } from '@/lib/lang-context';
+import { publicRead } from '@/lib/public-read';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { ArticleDto } from './article-card';
@@ -45,13 +46,24 @@ export function GlobalSearch() {
     setState('loading');
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(
+        const res = await publicRead(
           `${API_BASE}/articles?limit=8&q=${encodeURIComponent(query.trim())}`,
           { signal: controller.signal },
         );
         if (!res.ok) throw new Error('Search unavailable');
         const rows = await res.json();
-        if (!Array.isArray(rows)) throw new Error('Invalid results');
+        if (
+          !Array.isArray(rows) ||
+          rows.some(
+            (row) =>
+              !row ||
+              typeof row.id !== 'string' ||
+              typeof row.title !== 'string' ||
+              (row.titleKo != null && typeof row.titleKo !== 'string') ||
+              (row.source != null && typeof row.source.name !== 'string'),
+          )
+        )
+          throw new Error('Invalid search results');
         if (!controller.signal.aborted) {
           setItems(rows);
           setState('done');

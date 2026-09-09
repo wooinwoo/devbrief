@@ -117,3 +117,21 @@ describe('VideoDetailPage 관련 영상 mock 격리 (c45)', () => {
     expect(getByTestId('detail').textContent).toBe('real-1:1');
   });
 });
+
+describe('temporary upstream failures', () => {
+  it.each([502, 429])('shows retry instead of a false 404 for HTTP %s', async (status) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status }));
+    const view = render(await VideoDetailPage(params('real-existing')));
+    expect(view.getByRole('alert').textContent).toContain('불러오지 못했어요');
+    expect(view.getByRole('button', { name: '다시 시도' })).toBeTruthy();
+    expect((await generateMetadata(params('real-existing'))).title).toBe('Devbrief');
+  });
+  it('reports malformed successful data as unavailable', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ error: 'invalid' }) }),
+    );
+    const view = render(await VideoDetailPage(params('real-existing')));
+    expect(view.getByRole('alert')).toBeTruthy();
+  });
+});

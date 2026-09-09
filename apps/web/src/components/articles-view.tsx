@@ -2,15 +2,16 @@
 
 import { isAiArticle } from '@/lib/ai-topics';
 import { API_BASE } from '@/lib/api';
+import { parseArticleRows } from '@/lib/article-response';
 import { bookmarks } from '@/lib/bookmark';
 import { fetchConferenceCatalog } from '@/lib/conference-catalog';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { RepoDto } from '@/lib/mock-repos';
 import type { VideoDto } from '@/lib/mock-videos';
+import { publicRead } from '@/lib/public-read';
 import { readTracking } from '@/lib/read-tracking';
 import { useUrlFilters } from '@/lib/use-url-filter';
 import { useVisibleNavigation } from '@/lib/use-visible-navigation';
-import type { ArticleListItem } from '@devbrief/shared';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ArticleDto } from './article-card';
@@ -18,6 +19,7 @@ import { BriefIcon } from './brief-icon';
 import type { DigestDto } from './daily-digest';
 import { GlobalSearch } from './global-search';
 import { LangToggle } from './lang-toggle';
+import { LoadFailure } from './load-failure';
 import { PageFooter } from './page-footer';
 import { ScrollTop } from './scroll-top';
 import { AiTab } from './tabs/ai-tab';
@@ -28,6 +30,7 @@ import { ReposTab } from './tabs/repos-tab';
 import { VideosTab } from './tabs/videos-tab';
 
 interface Props {
+  initialLoadErrors?: string[];
   loadConferenceCatalog?: boolean;
   articles: ArticleDto[];
   /** GET /articles 의 X-Total-Count — 서버 전체 글 수. null/미지정이면 전체 미상 (감사 c62). */
@@ -54,6 +57,7 @@ const LOAD_MORE_LIMIT = 100;
 
 export function ArticlesView({
   articles,
+  initialLoadErrors = [],
   loadConferenceCatalog = false,
   total = null,
   videos = [],
@@ -133,25 +137,17 @@ export function ArticlesView({
     setLoadingMore(true);
     setLoadMoreError(null);
     try {
-      const res = await fetch(
+      const res = await publicRead(
         `${API_BASE}/articles?limit=${LOAD_MORE_LIMIT}&offset=${allArticles.length}`,
         { cache: 'no-store' },
       );
       if (!res.ok) throw new Error('Articles unavailable');
-      const data = (await res.json()) as ArticleListItem[];
+      const data = parseArticleRows(await res.json());
       if (data.length === 0) {
         setDrained(true);
         return;
       }
-      // 실데이터의 tags/source 누락 방어 (page.tsx getArticles 와 같은 계약 방어)
-      setMoreArticles((prev) => [
-        ...prev,
-        ...data.map((a) => ({
-          ...a,
-          tags: a.tags ?? [],
-          source: a.source ?? { name: '출처 미상', provider: 'rss_generic' },
-        })),
-      ]);
+      setMoreArticles((prev) => [...prev, ...data]);
     } catch {
       setLoadMoreError(
         '이전 글을 불러오지 못했어요. 현재 목록은 그대로이며 다시 시도할 수 있어요.',
@@ -358,6 +354,8 @@ export function ArticlesView({
           </div>
         </div>
       </header>
+
+      {initialLoadErrors.length > 0 && <LoadFailure feeds={initialLoadErrors} />}
 
       {/* Content layouts are tailored to each reading or discovery task. */}
       <div

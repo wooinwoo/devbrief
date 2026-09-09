@@ -45,6 +45,29 @@ describe('ArticlesController', () => {
     controller = module.get(ArticlesController);
   });
 
+  describe('query boundaries', () => {
+    it.each(['-1', '1.5', 'Infinity', 'NaN'])(
+      'normalizes invalid limit %s before Prisma',
+      async (limit) => {
+        await controller.list(resStub(), undefined, limit);
+        expect(findMany.mock.calls[0][0].take).toBe(30);
+      },
+    );
+    it('does not pass out-of-range skip to Prisma', async () => {
+      await controller.list(resStub(), undefined, undefined, '99999999999999999999999');
+      expect(findMany.mock.calls[0][0].skip).toBe(0);
+    });
+    it('rejects repeated search parameters before querying', async () => {
+      await expect(
+        controller.list(resStub(), undefined, undefined, undefined, ['one', 'two'] as never),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(findMany).not.toHaveBeenCalled();
+    });
+    it('rejects repeated batch IDs instead of throwing a server error', async () => {
+      await expect(controller.batch(['a', 'b'] as never)).rejects.toMatchObject({ status: 400 });
+      expect(findMany).not.toHaveBeenCalled();
+    });
+  });
   describe('list', () => {
     it('searches every article with the same query for rows and total count', async () => {
       const res = resStub();

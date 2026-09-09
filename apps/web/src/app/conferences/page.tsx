@@ -1,7 +1,9 @@
+import { LoadFailure } from '@/components/load-failure';
 import { SiteNav } from '@/components/site-nav';
 import { ConferencesTab } from '@/components/tabs/conferences-tab';
 import { type ConferenceDto, MOCK_CONFERENCES } from '@/lib/mock-conferences';
 import { MOCKS_ENABLED } from '@/lib/mocks-enabled';
+import { publicRead } from '@/lib/public-read';
 
 import { API_BASE } from '@/lib/api';
 
@@ -23,10 +25,12 @@ function mockFallback(): ConferenceDto[] {
   return MOCKS_ENABLED ? MOCK_CONFERENCES : [];
 }
 
-async function getConferences(): Promise<ConferenceDto[]> {
+async function getConferences(errors: Set<string>): Promise<ConferenceDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/conferences?upcoming=1&limit=1000`, { cache: 'no-store' });
-    if (!res.ok) return mockFallback();
+    const res = await publicRead(`${API_BASE}/conferences?upcoming=1&limit=1000`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error('Events unavailable');
     const data = (await res.json()) as DbConference[];
     if (data.length === 0) return mockFallback();
     return data.map((d) => ({
@@ -42,12 +46,14 @@ async function getConferences(): Promise<ConferenceDto[]> {
       brand: d.brandColor ?? undefined,
     }));
   } catch {
+    errors.add('행사');
     return mockFallback();
   }
 }
 
 export default async function ConferencesPage() {
-  const conferences = await getConferences();
+  const errors = new Set<string>();
+  const conferences = await getConferences(errors);
   // 서버(Vercel)는 UTC 로 돌므로 KST 로 고정해야 자정~09시 사이에도 오늘 날짜가 맞다.
   const today = new Date().toLocaleDateString('ko-KR', {
     year: 'numeric',
@@ -72,7 +78,9 @@ export default async function ConferencesPage() {
         </p>
       </header>
 
-      {conferences.length > 0 ? (
+      {errors.size > 0 && !MOCKS_ENABLED ? (
+        <LoadFailure feeds={['행사']} />
+      ) : conferences.length > 0 ? (
         <ConferencesTab conferences={conferences} />
       ) : (
         <section
@@ -86,7 +94,7 @@ export default async function ConferencesPage() {
             아직 보여드릴 행사 일정이 없어요.
           </p>
           <p className="text-[13px] leading-relaxed" style={{ color: 'var(--color-fg-muted)' }}>
-            일정을 불러오지 못했거나 등록된 일정이 없습니다.
+            새 일정이 등록되면 여기에서 확인할 수 있어요.
             <br />
             잠시 후 새로고침으로 다시 확인해주세요.
           </p>

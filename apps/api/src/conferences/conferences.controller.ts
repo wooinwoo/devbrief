@@ -1,6 +1,7 @@
 import { Controller, Get, NotFoundException, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../common/admin.guard';
 import { kstDayStart } from '../common/kst';
+import { queryLimit, queryText } from '../common/public-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConferenceDiscoveryService } from './conference-discovery.service';
 import { ConferenceImageSyncService } from './conference-image-sync.service';
@@ -20,16 +21,11 @@ export class ConferencesController {
     @Query('status') status?: string,
     @Query('limit') limit?: string,
   ) {
-    const requestedLimit = Number(limit);
-    // ponytail: 공개 피드 규모에 맞춰 최대 1,000건. 초과 시 커서 페이지네이션으로 전환한다.
-    const take =
-      Number.isSafeInteger(requestedLimit) && requestedLimit > 0
-        ? Math.min(requestedLimit, 1000)
-        : 50;
+    const take = queryLimit(limit, 50, 1000);
     const where: Record<string, unknown> = {
-      status: status ?? 'ACTIVE',
+      status: queryText(status) ?? 'ACTIVE',
     };
-    if (upcoming === '1') {
+    if (queryText(upcoming) === '1') {
       // startDate/endDate 는 UTC 자정(= 당일 09:00 KST)으로 저장되므로 now 와 직접 비교하면
       // 행사 당일 09:00 KST 부터 목록에서 사라진다. KST 오늘 자정을 하한으로 삼아
       // 당일 행사는 KST 자정까지 유지하고, 멀티데이 행사는 endDate 로 마지막 날까지 포함.

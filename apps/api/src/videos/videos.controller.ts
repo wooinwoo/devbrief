@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { AdminGuard } from '../common/admin.guard';
+import { queryLimit } from '../common/public-query';
 import { PrismaService } from '../prisma/prisma.service';
 import type { VideoAnalyzeJobData } from './video-analysis.processor';
 import { VIDEO_ANALYZE_JOB_OPTS, VideoAnalyzerService } from './video-analyzer.service';
@@ -30,7 +31,7 @@ export class VideosController {
 
   @Get()
   async list(@Query('limit') limitStr?: string) {
-    const limit = Math.min(Number(limitStr) || 20, 100);
+    const limit = queryLimit(limitStr, 20, 100);
     return this.prisma.video.findMany({
       orderBy: { publishedAt: 'desc' },
       take: limit,

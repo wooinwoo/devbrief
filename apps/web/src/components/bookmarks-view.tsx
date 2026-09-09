@@ -1,12 +1,15 @@
 'use client';
 
+import { parseArticleRows } from '@/lib/article-response';
+import { publicRead } from '@/lib/public-read';
+
 import { API_BASE } from '@/lib/api';
 import { BATCH_MAX_IDS, bookmarks } from '@/lib/bookmark';
 import { filterArticles } from '@/lib/filter-articles';
 import { readTracking } from '@/lib/read-tracking';
 import type { ArticleListItem, ArticleSourceRef } from '@devbrief/shared';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ArticleDto } from './article-card';
 import { BriefIcon } from './brief-icon';
 import { SearchField } from './filter-sidebar';
@@ -68,7 +71,11 @@ export function BookmarksView() {
   const [sort, setSort] = useState<Sort>('saved');
   const [page, setPage] = useState(1);
 
+  const request = useRef<AbortController | null>(null);
   const fetchBookmarked = useCallback(async () => {
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
     const ids = [...bookmarks.load()];
     setReadSet(readTracking.load());
 
@@ -88,12 +95,16 @@ export function BookmarksView() {
     const settled = await Promise.allSettled(
       chunks.map(async (group) => {
         const qs = group.map(encodeURIComponent).join(',');
-        const res = await fetch(`${API_BASE}/articles/batch?ids=${qs}`, { cache: 'no-store' });
+        const res = await publicRead(`${API_BASE}/articles/batch?ids=${qs}`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
         if (!res.ok) throw new Error(`batch fetch failed: ${res.status}`);
-        return (await res.json()) as DbArticle[];
+        return parseArticleRows(await res.json()).filter((row) => group.includes(row.id));
       }),
     );
 
+    if (controller.signal.aborted) return;
     const anyFulfilled = settled.some((r) => r.status === 'fulfilled');
     // 청크가 전부 실패하면 부분 데이터가 없으므로 에러 상태로.
     if (!anyFulfilled) {
@@ -131,6 +142,7 @@ export function BookmarksView() {
 
   useEffect(() => {
     void fetchBookmarked();
+    return () => request.current?.abort();
   }, [fetchBookmarked]);
 
   const handleUnbookmark = useCallback((id: string) => {

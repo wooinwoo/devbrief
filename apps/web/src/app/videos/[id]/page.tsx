@@ -1,7 +1,9 @@
+import { LoadFailure } from '@/components/load-failure';
 import { SiteNav } from '@/components/site-nav';
 import { VideoDetail } from '@/components/video-detail';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
 import { MOCKS_ENABLED } from '@/lib/mocks-enabled';
+import { publicRead } from '@/lib/public-read';
 import { notFound } from 'next/navigation';
 
 import { API_BASE } from '@/lib/api';
@@ -28,21 +30,22 @@ interface DbVideo {
   conference?: { name: string; brandColor: string | null } | null;
 }
 
-async function getOne(id: string): Promise<VideoDto | null> {
+async function getOne(id: string): Promise<VideoDto | null | undefined> {
   try {
-    const res = await fetch(`${API_BASE}/videos/${id}`, { cache: 'no-store' });
-    if (!res.ok) return null;
+    const res = await publicRead(`${API_BASE}/videos/${id}`, { cache: 'no-store' });
+    if (res.status === 404) return null;
+    if (!res.ok) return undefined;
     const d = (await res.json()) as DbVideo;
     return mapDbToDto(d);
   } catch {
-    return null;
+    return undefined;
   }
 }
 
 // 관련 영상 목록: mock 폴백은 개발 환경 한정 — 프로덕션은 빈 배열로 섹션을 숨긴다.
 async function getAll(): Promise<VideoDto[]> {
   try {
-    const res = await fetch(`${API_BASE}/videos?limit=20`, {
+    const res = await publicRead(`${API_BASE}/videos?limit=20`, {
       cache: 'no-store',
     });
     if (!res.ok) return mockFallback();
@@ -63,6 +66,14 @@ function findMockVideo(id: string): VideoDto | undefined {
 }
 
 function mapDbToDto(d: DbVideo): VideoDto {
+  if (
+    !d ||
+    typeof d.id !== 'string' ||
+    typeof d.title !== 'string' ||
+    typeof d.videoId !== 'string' ||
+    typeof d.url !== 'string'
+  )
+    throw new Error('Invalid video');
   return {
     id: d.id,
     videoId: d.videoId,
@@ -96,6 +107,13 @@ export default async function VideoDetailPage({ params }: Props) {
   const { id } = await params;
   const [fromApi, all] = await Promise.all([getOne(id), getAll()]);
   const video = fromApi ?? findMockVideo(id);
+  if (!video && fromApi === undefined)
+    return (
+      <main id="main-content" className="mx-auto max-w-4xl px-5">
+        <SiteNav />
+        <LoadFailure />
+      </main>
+    );
   if (!video) notFound();
 
   const related = all.filter((v) => v.id !== video.id).slice(0, 5);
