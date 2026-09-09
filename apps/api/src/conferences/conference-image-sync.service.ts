@@ -26,10 +26,16 @@ export class ConferenceImageSyncService {
   /**
    * 이미지/브랜드색 비어 있는 ACTIVE 컨퍼런스 sync. force=true 면 상태 무관 전체 재갱신.
    * 비-force 는 status ACTIVE 로 한정 — REJECTED/PROPOSED 후보의 외부 URL 로
-   * 부팅·approve 때마다 낭비 fetch 하지 않는다.
+   * 동기화 때마다 낭비 fetch 하지 않는다.
    */
   async syncAll(
-    opts: { force?: boolean; limit?: number; concurrency?: number; imagesOnly?: boolean } = {},
+    opts: {
+      conferenceId?: string;
+      force?: boolean;
+      limit?: number;
+      concurrency?: number;
+      imagesOnly?: boolean;
+    } = {},
   ): Promise<{
     total: number;
     updated: number;
@@ -46,7 +52,7 @@ export class ConferenceImageSyncService {
             : { OR: [{ imageUrl: null }, { brandColor: null }] }),
         };
     const targets = await this.prisma.conference.findMany({
-      where,
+      where: { ...where, ...(opts.conferenceId ? { id: opts.conferenceId } : {}) },
       ...(opts.limit
         ? {
             take: Math.min(Math.max(Math.floor(opts.limit), 1), 1000),

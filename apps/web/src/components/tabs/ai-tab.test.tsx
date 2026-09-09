@@ -4,11 +4,13 @@ import type { ArticleDto } from '../article-card';
 
 // next/navigation 모킹 — AI 탭 필터도 URL 쿼리에서 파생된다.
 const replace = vi.fn();
-let currentSearch = '';
+function setSearch(value: string) {
+  window.history.replaceState(null, '', value ? `/?${value}` : '/');
+}
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
-  useSearchParams: () => new URLSearchParams(currentSearch),
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
 import { AiTab } from './ai-tab';
@@ -45,7 +47,7 @@ afterEach(() => {
 beforeEach(() => {
   replace.mockClear();
   window.history.replaceState(null, '', '/');
-  currentSearch = 'tab=ai';
+  setSearch('tab=ai');
   window.scrollTo = vi.fn();
 });
 
@@ -68,7 +70,7 @@ describe('AI 탭 멤버십 (isAiArticle 회귀)', () => {
 
 describe('AI 탭 필터 URL 동기화', () => {
   it('URL 의 model 파라미터로 필터가 복원된다(새로고침/공유/뒤로가기)', () => {
-    currentSearch = 'tab=ai&model=claude';
+    setSearch('tab=ai&model=claude');
     const { getByText, queryByText } = render(
       <AiTab articles={ARTICLES} readSet={new Set()} onOpen={() => {}} />,
     );
@@ -90,7 +92,7 @@ describe('AI 탭 필터 URL 동기화', () => {
   });
 
   it('활성 필터 해제(전체 보기)는 키를 지운다', () => {
-    currentSearch = 'tab=ai&model=claude';
+    setSearch('tab=ai&model=claude');
     const { getByText } = render(
       <AiTab articles={ARTICLES} readSet={new Set()} onOpen={() => {}} />,
     );
@@ -104,7 +106,7 @@ describe('AI 탭 필터 URL 동기화', () => {
 
 describe('AI 탭 faceted 카운트', () => {
   it('모델 필터 활성 시 다른 그룹 카운트는 교차 필터가 반영된다', () => {
-    currentSearch = 'tab=ai&model=claude';
+    setSearch('tab=ai&model=claude');
     const { getByRole } = render(
       <AiTab articles={ARTICLES} readSet={new Set()} onOpen={() => {}} />,
     );

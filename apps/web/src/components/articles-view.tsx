@@ -13,7 +13,7 @@ import { readTracking } from '@/lib/read-tracking';
 import { useUrlFilters } from '@/lib/use-url-filter';
 import { useVisibleNavigation } from '@/lib/use-visible-navigation';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ArticleDto } from './article-card';
 import { BriefIcon } from './brief-icon';
 import type { DigestDto } from './daily-digest';
@@ -85,6 +85,7 @@ export function ArticlesView({
   const [catalogLoading, setCatalogLoading] = useState(loadConferenceCatalog);
   const [catalogError, setCatalogError] = useState(false);
   const [catalogRetry, setCatalogRetry] = useState(0);
+  const remainingLoadErrors = initialLoadErrors.filter((feed) => feed !== '행사' || !catalogLoaded);
   useEffect(() => {
     if (!loadConferenceCatalog || tab !== 'conferences' || catalogLoaded) return;
     const controller = new AbortController();
@@ -112,6 +113,10 @@ export function ArticlesView({
   // c62 — '더 불러오기': 서버 첫 로드(최신 100건) 뒤 offset 페치로 이전 글을 이어 붙인다.
   // NEXT_PUBLIC_API_BASE 직접 호출(서버가 CORS exposedHeaders 처리 완료).
   const [moreArticles, setMoreArticles] = useState<ArticleDto[]>([]);
+  // API offset counts received rows, including overlaps that the view deduplicates.
+  const nextOffset = useRef(articles.length);
+  const loadMoreRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => loadMoreRequest.current?.abort(), []);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   // 서버 응답이 비면 total 과의 드리프트(삭제 등)로 판단하고 버튼을 접는다.
@@ -133,29 +138,35 @@ export function ArticlesView({
   const hasMore = total !== null && allArticles.length < total && !drained;
 
   const handleLoadMore = useCallback(async () => {
-    if (loadingMore) return;
+    if (loadMoreRequest.current) return;
+    const controller = new AbortController();
+    loadMoreRequest.current = controller;
     setLoadingMore(true);
     setLoadMoreError(null);
     try {
       const res = await publicRead(
-        `${API_BASE}/articles?limit=${LOAD_MORE_LIMIT}&offset=${allArticles.length}`,
-        { cache: 'no-store' },
+        `${API_BASE}/articles?limit=${LOAD_MORE_LIMIT}&offset=${nextOffset.current}`,
+        { cache: 'no-store', signal: controller.signal },
       );
       if (!res.ok) throw new Error('Articles unavailable');
       const data = parseArticleRows(await res.json());
+      if (controller.signal.aborted) return;
+      nextOffset.current += data.length;
       if (data.length === 0) {
         setDrained(true);
         return;
       }
       setMoreArticles((prev) => [...prev, ...data]);
     } catch {
+      if (controller.signal.aborted) return;
       setLoadMoreError(
         '이전 글을 불러오지 못했어요. 현재 목록은 그대로이며 다시 시도할 수 있어요.',
       );
     } finally {
-      setLoadingMore(false);
+      loadMoreRequest.current = null;
+      if (!controller.signal.aborted) setLoadingMore(false);
     }
-  }, [loadingMore, allArticles.length]);
+  }, []);
 
   useEffect(() => {
     setReadSet(readTracking.load());
@@ -355,7 +366,7 @@ export function ArticlesView({
         </div>
       </header>
 
-      {initialLoadErrors.length > 0 && <LoadFailure feeds={initialLoadErrors} />}
+      {remainingLoadErrors.length > 0 && <LoadFailure feeds={remainingLoadErrors} />}
 
       {/* Content layouts are tailored to each reading or discovery task. */}
       <div

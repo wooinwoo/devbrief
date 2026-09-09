@@ -31,6 +31,20 @@ describe('ConferenceImageSyncService', () => {
     service = moduleRef.get(ConferenceImageSyncService);
   });
 
+  it('limits approval image work to the requested event and skips image decoding', async () => {
+    prisma.conference.findMany.mockResolvedValue([
+      { id: 'event-one', name: 'Event', url: 'https://event.test', brandColor: null },
+    ]);
+    og.fetch.mockResolvedValue('https://event.test/poster.jpg');
+    const options = { conferenceId: 'event-one', imagesOnly: true, limit: 1 };
+    await service.syncAll(options);
+    expect(prisma.conference.findMany).toHaveBeenCalledWith({
+      where: { id: 'event-one', status: 'ACTIVE', imageUrl: null },
+      take: 1,
+      orderBy: { startDate: 'asc' },
+    });
+    expect(brand.extractFromUrl).not.toHaveBeenCalled();
+  });
   it('force=false 는 ACTIVE + 이미지/브랜드색 비어 있는 행만 대상 (REJECTED/PROPOSED 제외)', async () => {
     prisma.conference.findMany.mockResolvedValue([]);
     await service.syncAll();

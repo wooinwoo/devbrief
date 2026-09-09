@@ -42,6 +42,38 @@ describe('ConferencesController', () => {
     );
     expect(prisma.conference.findMany).not.toHaveBeenCalled();
   });
+  describe('image work on the API server', () => {
+    it('only fetches image metadata for the event being approved', async () => {
+      prisma.conference.findUnique.mockResolvedValue({ id: 'event-one', status: 'PROPOSED' });
+      prisma.conference.update.mockResolvedValue({ id: 'event-one', status: 'ACTIVE' });
+      expect(await controller.approve('event-one')).toMatchObject({ status: 'ACTIVE' });
+      expect(imageSync.syncAll).toHaveBeenCalledWith({
+        conferenceId: 'event-one',
+        limit: 1,
+        imagesOnly: true,
+      });
+    });
+    it('never decodes image pixels during a manual API image sync', async () => {
+      await controller.syncImages('1');
+      expect(imageSync.syncAll).toHaveBeenCalledWith({
+        force: true,
+        limit: 1000,
+        imagesOnly: true,
+      });
+    });
+    it('does not start another job for an already approved event', async () => {
+      prisma.conference.findUnique.mockResolvedValue({ id: 'event-one', status: 'ACTIVE' });
+      await controller.approve('event-one');
+      expect(prisma.conference.update).not.toHaveBeenCalled();
+      expect(imageSync.syncAll).not.toHaveBeenCalled();
+    });
+    it('keeps approval successful when fetching the event poster fails', async () => {
+      prisma.conference.findUnique.mockResolvedValue({ id: 'event-one', status: 'PROPOSED' });
+      prisma.conference.update.mockResolvedValue({ id: 'event-one', status: 'ACTIVE' });
+      imageSync.syncAll.mockRejectedValue(new Error('poster unavailable'));
+      expect(await controller.approve('event-one')).toMatchObject({ status: 'ACTIVE' });
+    });
+  });
   describe('list upcoming=1', () => {
     it.each([
       ['1000', 1000],
