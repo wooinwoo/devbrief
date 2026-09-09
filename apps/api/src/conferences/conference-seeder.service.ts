@@ -1,6 +1,5 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ConferenceImageSyncService } from './conference-image-sync.service';
 
 interface ConfSeed {
   name: string;
@@ -65,10 +64,7 @@ const SEEDS: ConfSeed[] = [
 export class ConferenceSeederService implements OnApplicationBootstrap {
   private readonly logger = new Logger(ConferenceSeederService.name);
 
-  constructor(
-    private prisma: PrismaService,
-    private imageSync: ConferenceImageSyncService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async onApplicationBootstrap() {
     try {
@@ -82,16 +78,9 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
       return;
     }
 
-    // 백그라운드: 이미지/브랜드색 비어 있는 ACTIVE 컨퍼런스 og:image 자동 추출
-    // await 하지 않고 fire-and-forget — 부팅 차단 X
-    this.imageSync
-      .syncAll()
-      .then((r) =>
-        this.logger.log(
-          `Conference image auto-sync: total=${r.total} updated=${r.updated} failed=${r.failed}`,
-        ),
-      )
-      .catch((e) => this.logger.warn(`Conference image sync 실패: ${(e as Error).message}`));
+    // 이미지 수집은 GitHub Actions collect / conference-images CLI에서 실행한다.
+    // 서빙 프로세스에서 디코딩을 시작하면 작은 인스턴스가 OOM으로 재시작하고,
+    // 부팅마다 같은 수집을 반복하면서 모든 읽기 API까지 중단된다.
   }
 
   /** 잘못 배포된 시드와 모든 식별 필드가 일치할 때만 정정한다. 운영자 수정과 거절은 보존한다. */
