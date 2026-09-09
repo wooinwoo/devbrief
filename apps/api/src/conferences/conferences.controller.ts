@@ -44,7 +44,8 @@ export class ConferencesController {
   @Post('sync-images')
   @UseGuards(AdminGuard)
   async syncImages(@Query('force') force?: string) {
-    return this.imageSync.syncAll({ force: force === '1' });
+    // API processes poster URLs only; image decoding belongs to the collection CLI.
+    return this.imageSync.syncAll({ force: force === '1', limit: 1000, imagesOnly: true });
   }
 
   /** 공개 일정 피드와 최근 기사에서 컨퍼런스·해커톤 후보를 수집한다. */
@@ -69,8 +70,8 @@ export class ConferencesController {
       where: { id },
       data: { status: 'ACTIVE' },
     });
-    // 승인된 직후 image sync 백그라운드 트리거
-    this.imageSync.syncAll().catch(() => {
+    // 승인한 행사만 처리한다. 전체 이미지/색상 재처리는 API 메모리를 고갈시킬 수 있다.
+    this.imageSync.syncAll({ conferenceId: id, limit: 1, imagesOnly: true }).catch(() => {
       /* graceful */
     });
     return updated;

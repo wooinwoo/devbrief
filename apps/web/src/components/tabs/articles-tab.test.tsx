@@ -4,11 +4,13 @@ import type { ArticleDto } from '../article-card';
 
 // next/navigation 모킹 — 필터는 URL 쿼리에서 파생되므로 searchParams 와 replace 를 제어한다.
 const replace = vi.fn();
-let currentSearch = '';
+function setSearch(value: string) {
+  window.history.replaceState(null, '', value ? `/?${value}` : '/');
+}
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
-  useSearchParams: () => new URLSearchParams(currentSearch),
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
 import { ArticlesTab } from './articles-tab';
@@ -37,7 +39,7 @@ afterEach(() => {
 beforeEach(() => {
   replace.mockClear();
   window.history.replaceState(null, '', '/');
-  currentSearch = '';
+  setSearch('');
   window.scrollTo = vi.fn();
 });
 
@@ -48,7 +50,7 @@ describe('unread 필터 중 읽음 발생 시 페이지 고정', () => {
   );
 
   it('글을 연 직후의 readSet 변화는 목록/페이지를 즉시 바꾸지 않고, 페이지 이동 시 반영된다', () => {
-    currentSearch = 'tab=articles&unread=1';
+    setSearch('tab=articles&unread=1');
     const onOpen = vi.fn();
     const { getByRole, getByText, queryByText, rerender } = render(
       <ArticlesTab articles={many} readSet={new Set()} onOpen={onOpen} />,
@@ -110,7 +112,7 @@ describe('사이드바 faceted 카운트', () => {
   ];
 
   it('소스 필터 활성 시 카테고리 카운트는 교차 필터가 반영된 수치를 보여준다', () => {
-    currentSearch = 'tab=articles&source=devto';
+    setSearch('tab=articles&source=devto');
     const { getByRole } = render(
       <ArticlesTab articles={mixed} readSet={new Set()} onOpen={() => {}} />,
     );
@@ -121,7 +123,7 @@ describe('사이드바 faceted 카운트', () => {
   });
 
   it('카테고리 필터 활성 시 소스 카운트도 교차 필터 반영 — 버튼 숫자=클릭 후 결과 수', () => {
-    currentSearch = 'tab=articles&cat=ai';
+    setSearch('tab=articles&cat=ai');
     const { getByRole } = render(
       <ArticlesTab articles={mixed} readSet={new Set()} onOpen={() => {}} />,
     );
@@ -133,7 +135,7 @@ describe('사이드바 faceted 카운트', () => {
 
 describe('카테고리 필터 = 칩과 같은 진실', () => {
   it('태그 없는 글도 categoryOf 기반 카테고리 필터에 잡힌다', () => {
-    currentSearch = 'tab=articles&cat=frontend';
+    setSearch('tab=articles&cat=frontend');
     const articles = [
       makeArticle({ id: 'f1', title: 'React 19 출시' }), // tags=[] 여도 frontend
       makeArticle({ id: 'b1', title: 'Postgres 인덱스 튜닝' }),
@@ -147,7 +149,7 @@ describe('카테고리 필터 = 칩과 같은 진실', () => {
   });
 
   it('태그 클릭은 카테고리가 아닌 키워드 검색으로 흐른다(원시 태그는 6분류 키가 아님)', () => {
-    currentSearch = 'tab=articles';
+    setSearch('tab=articles');
     // 첫 글은 featured 로 렌더되므로(태그 버튼 없음) 태그 있는 글을 두 번째 행으로 둔다.
     const articles = [
       makeArticle({ id: 't0', title: '머리기사' }),

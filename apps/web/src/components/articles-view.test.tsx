@@ -4,12 +4,14 @@ import type { ArticleDto } from './article-card';
 
 // URL 쿼리를 제어하되, 같은 화면의 이동이 서버 라우터를 호출하지 않는지 확인한다.
 const replace = vi.fn();
-let currentSearch = '';
+function setSearch(value: string) {
+  window.history.replaceState(null, '', value ? `/?${value}` : '/');
+}
 let currentPath = '/';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
-  useSearchParams: () => new URLSearchParams(currentSearch),
+  useSearchParams: () => new URLSearchParams(window.location.search),
   usePathname: () => currentPath,
 }));
 
@@ -43,7 +45,7 @@ beforeEach(() => {
   replace.mockClear();
   window.history.replaceState(null, '', '/');
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-  currentSearch = '';
+  setSearch('');
   currentPath = '/';
 });
 
@@ -98,7 +100,7 @@ describe('ArticlesView 탭 키보드 접근성', () => {
 
 describe('setTab 쿼리 보존', () => {
   it('화살표 키 탭 전환 시 기존 필터 쿼리(cat/unread)를 보존한다', () => {
-    currentSearch = 'tab=articles&cat=ai&unread=1';
+    setSearch('tab=articles&cat=ai&unread=1');
     const { getAllByRole } = render(<ArticlesView articles={[]} />);
     const active = getAllByRole('tab').find((t) => t.getAttribute('aria-selected') === 'true');
     expect(active?.textContent).toBe('개발 뉴스');
@@ -111,7 +113,7 @@ describe('setTab 쿼리 보존', () => {
   });
 
   it('현재 활성 탭을 재클릭해도 필터 쿼리가 초기화되지 않는다', () => {
-    currentSearch = 'tab=articles&q=react';
+    setSearch('tab=articles&q=react');
     const { getAllByRole } = render(<ArticlesView articles={[]} />);
     const active = getAllByRole('tab').find((t) => t.getAttribute('aria-selected') === 'true');
 
@@ -122,7 +124,7 @@ describe('setTab 쿼리 보존', () => {
   });
 
   it("'오늘' 탭 전환은 tab 키만 지우고 나머지 쿼리는 유지", () => {
-    currentSearch = 'tab=articles&q=react';
+    setSearch('tab=articles&q=react');
     const { getAllByRole } = render(<ArticlesView articles={[]} />);
     const today = getAllByRole('tab').find((t) => t.textContent === '오늘');
 
@@ -177,7 +179,7 @@ describe('상세 페이지 내비게이션', () => {
 
 describe("articles 탭 '전체' 통계 + 더 불러오기 (c62)", () => {
   it("'전체'는 로드된 개수가 아닌 X-Total-Count 의 서버 전체 건수를 표시한다", () => {
-    currentSearch = 'tab=articles';
+    setSearch('tab=articles');
     const { getByText } = render(
       <ArticlesView articles={[makeArticle({ id: 'a1' })]} total={250} />,
     );
@@ -186,7 +188,7 @@ describe("articles 탭 '전체' 통계 + 더 불러오기 (c62)", () => {
   });
 
   it('total 미상(null)이면 로드 수로 폴백하고 더 불러오기를 노출하지 않는다', () => {
-    currentSearch = 'tab=articles';
+    setSearch('tab=articles');
     const { queryByText } = render(
       <ArticlesView articles={[makeArticle({ id: 'a1' })]} total={null} />,
     );
@@ -194,7 +196,7 @@ describe("articles 탭 '전체' 통계 + 더 불러오기 (c62)", () => {
   });
 
   it('클릭 → offset 페치로 이전 글을 append 하고, 전부 로드되면 버튼을 접는다', async () => {
-    currentSearch = 'tab=articles';
+    setSearch('tab=articles');
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [makeArticle({ id: 'a3', title: '아카이브 글' })],
@@ -215,7 +217,7 @@ describe("articles 탭 '전체' 통계 + 더 불러오기 (c62)", () => {
   });
 
   it('중복 id 가 내려와도(offset 드리프트) 목록에 두 번 넣지 않는다', async () => {
-    currentSearch = 'tab=articles';
+    setSearch('tab=articles');
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -239,7 +241,7 @@ describe("articles 탭 '전체' 통계 + 더 불러오기 (c62)", () => {
   });
 
   it('서버가 빈 응답을 주면(전체 count 와 드리프트) 버튼을 접는다', async () => {
-    currentSearch = 'tab=articles';
+    setSearch('tab=articles');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
 
     const { getByText, queryByText } = render(
@@ -262,23 +264,37 @@ describe('event catalog loading', () => {
       topics: [],
     },
   ];
+  it('clears the initial event failure after recovery while retaining other failed feeds', async () => {
+    setSearch('tab=conferences');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => events }));
+    const view = render(
+      <ArticlesView
+        articles={[]}
+        loadConferenceCatalog
+        initialLoadErrors={['행사', '개발 뉴스']}
+      />,
+    );
+    await view.findByRole('link', { name: 'Future Community' });
+    expect(view.getByRole('alert').textContent).toContain('개발 뉴스');
+    expect(view.getByRole('alert').textContent).not.toContain('행사');
+  });
   it('only downloads the full catalog when the event tab is opened', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => events });
     vi.stubGlobal('fetch', fetchMock);
     const view = render(<ArticlesView articles={[]} loadConferenceCatalog />);
     expect(fetchMock).not.toHaveBeenCalled();
-    currentSearch = 'tab=conferences';
+    setSearch('tab=conferences');
     view.rerender(<ArticlesView articles={[]} loadConferenceCatalog />);
     expect(await view.findByRole('link', { name: 'Future Community' })).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    currentSearch = 'tab=all';
+    setSearch('tab=all');
     view.rerender(<ArticlesView articles={[]} loadConferenceCatalog />);
-    currentSearch = 'tab=conferences';
+    setSearch('tab=conferences');
     view.rerender(<ArticlesView articles={[]} loadConferenceCatalog />);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
   it('automatically recovers a transient catalog failure while keeping the loading state', async () => {
-    currentSearch = 'tab=conferences';
+    setSearch('tab=conferences');
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({ ok: false, status: 502 })
@@ -291,7 +307,7 @@ describe('event catalog loading', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
   it('exposes failures and lets the visitor retry', async () => {
-    currentSearch = 'tab=conferences';
+    setSearch('tab=conferences');
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({ ok: false, status: 400 })
@@ -306,7 +322,7 @@ describe('event catalog loading', () => {
 });
 
 it('이전 글 조회 실패를 알리고 재시도할 때 현재 목록을 보존한다', async () => {
-  currentSearch = 'tab=articles';
+  setSearch('tab=articles');
   const fetchMock = vi
     .fn()
     .mockResolvedValueOnce({ ok: false, status: 503 })
@@ -331,7 +347,7 @@ it('이전 글 조회 실패를 알리고 재시도할 때 현재 목록을 보�
 it.each([null, { error: 'bad response' }, [null]])(
   'keeps the current articles when more returns %j',
   async (payload) => {
-    currentSearch = 'tab=articles';
+    setSearch('tab=articles');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => payload }));
     const view = render(
       <ArticlesView articles={[makeArticle({ id: 'a1', title: '현재 글' })]} total={2} />,
@@ -348,4 +364,51 @@ it('shows failed feed names with a retry control on the home view', () => {
   );
   expect(view.getByRole('alert').textContent).toContain('개발 뉴스 · 발표 영상');
   expect(view.getByRole('button', { name: '다시 시도' })).toBeTruthy();
+});
+
+it('advances past overlapping rows and retries the same failed page', async () => {
+  setSearch('tab=articles');
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => [makeArticle({ id: 'a1' }), makeArticle({ id: 'a2', title: '두 번째 글' })],
+    })
+    .mockResolvedValueOnce({ ok: false, status: 503 })
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => [makeArticle({ id: 'a3', title: '세 번째 글' })],
+    });
+  vi.stubGlobal('fetch', fetcher);
+  const view = render(<ArticlesView articles={[makeArticle({ id: 'a1' })]} total={4} />);
+  fireEvent.click(view.getByText('이전 글 더 불러오기'));
+  await view.findByText('두 번째 글');
+  fireEvent.click(view.getByText('이전 글 더 불러오기'));
+  await view.findByRole('alert');
+  fireEvent.click(view.getByText('이전 글 다시 불러오기'));
+  await view.findByText('세 번째 글');
+  expect(
+    fetcher.mock.calls.map((call) =>
+      new URL(call[0], 'https://devbrief.test').searchParams.get('offset'),
+    ),
+  ).toEqual(['1', '3', '3']);
+});
+
+it('aborts an unfinished older-article request when leaving the page', async () => {
+  setSearch('tab=articles');
+  let signal: AbortSignal | undefined;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((_url, options) => {
+      signal = options.signal;
+      return new Promise((_resolve, reject) =>
+        signal?.addEventListener('abort', () => reject(new Error('cancelled'))),
+      );
+    }),
+  );
+  const view = render(<ArticlesView articles={[makeArticle({ id: 'a1' })]} total={2} />);
+  fireEvent.click(view.getByText('이전 글 더 불러오기'));
+  expect(signal).toBeDefined();
+  view.unmount();
+  expect(signal?.aborted).toBe(true);
 });
