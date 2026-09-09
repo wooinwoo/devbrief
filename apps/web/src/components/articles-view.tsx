@@ -3,6 +3,7 @@
 import { isAiArticle } from '@/lib/ai-topics';
 import { API_BASE } from '@/lib/api';
 import { bookmarks } from '@/lib/bookmark';
+import { fetchConferenceCatalog } from '@/lib/conference-catalog';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { RepoDto } from '@/lib/mock-repos';
 import type { VideoDto } from '@/lib/mock-videos';
@@ -85,15 +86,10 @@ export function ArticlesView({
     const controller = new AbortController();
     setCatalogLoading(true);
     setCatalogError(false);
-    fetch(`${API_BASE}/conferences?upcoming=1&limit=1000`, { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error('Event collection unavailable');
-        return response.json();
-      })
+    fetchConferenceCatalog(controller.signal)
       .then((rows) => {
-        if (!Array.isArray(rows)) throw new Error('Invalid event collection');
         if (!controller.signal.aborted) {
-          setConferenceCatalog(rows.map((d) => ({ ...d, brand: d.brandColor ?? undefined })));
+          setConferenceCatalog(rows);
           setCatalogLoaded(true);
         }
       })
@@ -446,6 +442,8 @@ export function ArticlesView({
             {catalogError && (
               <div className="catalog-error" role="alert">
                 전체 일정을 불러오지 못했어요.
+                {conferenceCatalog.length > 0 &&
+                  ` 먼저 받은 ${conferenceCatalog.length}개 일정을 표시합니다.`}
                 <button type="button" onClick={() => setCatalogRetry((n) => n + 1)}>
                   다시 시도
                 </button>
@@ -453,7 +451,7 @@ export function ArticlesView({
             )}
             {catalogLoading ? (
               <div className="catalog-loading" role="status">
-                <p>새로운 만남을 찾고 있어요…</p>
+                <p>전체 일정을 불러오는 중이에요…</p>
                 <div className="skeleton-line" />
                 <div className="skeleton-line" />
                 <div className="skeleton-line" />

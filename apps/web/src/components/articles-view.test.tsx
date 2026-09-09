@@ -277,11 +277,24 @@ describe('event catalog loading', () => {
     view.rerender(<ArticlesView articles={[]} loadConferenceCatalog />);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it('automatically recovers a transient catalog failure while keeping the loading state', async () => {
+    currentSearch = 'tab=conferences';
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 502 })
+      .mockResolvedValueOnce({ ok: true, json: async () => events });
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(<ArticlesView articles={[]} loadConferenceCatalog />);
+    expect(view.getByText('전체 일정을 불러오는 중이에요…')).toBeTruthy();
+    expect(await view.findByRole('link', { name: 'Future Community' })).toBeTruthy();
+    expect(view.queryByRole('alert')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
   it('exposes failures and lets the visitor retry', async () => {
     currentSearch = 'tab=conferences';
     const fetchMock = vi
       .fn()
-      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ ok: false, status: 400 })
       .mockResolvedValueOnce({ ok: true, json: async () => events });
     vi.stubGlobal('fetch', fetchMock);
     const view = render(<ArticlesView articles={[]} loadConferenceCatalog />);
