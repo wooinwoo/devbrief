@@ -25,26 +25,28 @@ describe('same-origin benchmark feed', () => {
     expect(fetch).toHaveBeenCalledWith(
       BENCHMARK_FEED_URL,
       expect.objectContaining({
-        redirect: 'error',
+        redirect: 'manual',
         cache: 'no-store',
         signal: expect.any(AbortSignal),
       }),
     );
   });
 
-  it.each(['http', 'network', 'invalid', 'oversize', 'older'])(
+  it.each(['http', 'redirect', 'network', 'invalid', 'oversize', 'older'])(
     'keeps the original snapshot and date on %s failure',
     async (kind) => {
       if (kind === 'network') vi.mocked(fetch).mockRejectedValue(new Error('timeout'));
       else
         vi.mocked(fetch).mockResolvedValue(
-          kind === 'http'
-            ? new Response('no', { status: 503 })
-            : kind === 'invalid'
-              ? Response.json({ models: [] })
-              : kind === 'oversize'
-                ? new Response(' '.repeat(512_001))
-                : Response.json({ ...BENCHMARK_SNAPSHOT, checkedAt: '2026-01-01T00:00:00Z' }),
+          kind === 'redirect'
+            ? new Response(null, { status: 302, headers: { location: 'https://example.com' } })
+            : kind === 'http'
+              ? new Response('no', { status: 503 })
+              : kind === 'invalid'
+                ? Response.json({ models: [] })
+                : kind === 'oversize'
+                  ? new Response(' '.repeat(512_001))
+                  : Response.json({ ...BENCHMARK_SNAPSHOT, checkedAt: '2026-01-01T00:00:00Z' }),
         );
       const response = await GET();
       expect(response.status).toBe(200);
