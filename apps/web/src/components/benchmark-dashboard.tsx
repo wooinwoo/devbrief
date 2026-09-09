@@ -1,206 +1,275 @@
 'use client';
 
 import {
-  BENCHMARK_MODELS,
-  BENCHMARK_SOURCE,
+  BENCHMARK_FEED_URL,
+  BENCHMARK_SNAPSHOT,
   type BenchModel,
+  type BenchmarkMetric,
+  isBenchmarkStale,
+  parseBenchmarkSnapshot,
+  selectBenchmarkModels,
   vendorColor,
-  vendorLabel,
 } from '@/lib/benchmark-data';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-type View = 'intelligence' | 'coding' | 'speed' | 'value';
-
-const TABS: Array<{ key: View; label: string }> = [
+const TABS: Array<{ key: BenchmarkMetric; label: string }> = [
   { key: 'intelligence', label: '종합 지능' },
-  { key: 'coding', label: '코딩 (SWE-bench)' },
   { key: 'speed', label: '출력 속도' },
-  { key: 'value', label: '가격 대비 성능' },
+  { key: 'costPerTask', label: '작업당 비용' },
 ];
 
-const VENDORS: BenchModel['vendor'][] = ['claude', 'gpt', 'gemini', 'open'];
-
 export function BenchmarkDashboard() {
-  const [view, setView] = useState<View>('intelligence');
+  const [snapshot, setSnapshot] = useState(BENCHMARK_SNAPSHOT);
+  const [view, setView] = useState<BenchmarkMetric>('intelligence');
+  const [query, setQuery] = useState('');
+  const [limit, setLimit] = useState(10);
+  const [stale, setStale] = useState(false);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8_000);
+    fetch(BENCHMARK_FEED_URL, { signal: controller.signal, credentials: 'omit' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Benchmark feed unavailable');
+        const next = parseBenchmarkSnapshot(await response.json());
+        if (
+          !controller.signal.aborted &&
+          Date.parse(next.checkedAt) > Date.parse(BENCHMARK_SNAPSHOT.checkedAt)
+        )
+          setSnapshot(next);
+      })
+      .catch(() => {
+        /* Keep the last verified snapshot and its original checkedAt. */
+      })
+      .finally(() => clearTimeout(timeout));
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    const update = () => setStale(isBenchmarkStale(snapshot.checkedAt));
+    update();
+    const interval = setInterval(update, 60_000);
+    return () => clearInterval(interval);
+  }, [snapshot.checkedAt]);
+
+  const data = selectBenchmarkModels(snapshot.models, view, query);
+  const visible = data.slice(0, limit);
   return (
     <section
-      className="border-y py-6 sm:py-7"
-      style={{
-        borderColor: 'var(--color-line-strong)',
-      }}
+      aria-label="LLM 벤치마크"
+      className="border-y border-(--color-line-strong) py-6 sm:py-7"
     >
-      {/* 헤더 */}
-      <div className="flex items-baseline justify-between gap-x-5 gap-y-2 flex-wrap mb-5">
-        <h2
-          className="text-[1.125rem] leading-snug tracking-[-0.015em]"
-          style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-        >
-          LLM 벤치마크
-        </h2>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-(--color-fg-strong)">
+            LLM 벤치마크
+          </h2>
+          <p className="mt-1 text-sm text-(--color-fg-muted)">
+            Intelligence Index v{snapshot.indexVersion}
+            <span className="mx-2" aria-hidden="true">
+              ·
+            </span>
+            <time dateTime={snapshot.checkedAt}>
+              {snapshot.checkedAt.slice(0, 10).replaceAll('-', '.')}
+            </time>
+            {' 확인'}
+          </p>
+        </div>
         <a
-          href={BENCHMARK_SOURCE.url}
+          href={snapshot.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center text-[12px] leading-relaxed transition-colors hover:text-(--color-accent)"
-          style={{ color: 'var(--color-fg-subtle)' }}
+          className="inline-flex min-h-11 items-center text-sm font-medium text-(--color-accent-strong) hover:underline"
         >
-          {BENCHMARK_SOURCE.name} · {BENCHMARK_SOURCE.updatedAt} ↗
+          Artificial Analysis 원문 ↗
         </a>
       </div>
-
-      {/* 지표 토글 */}
+      {stale && (
+        <p
+          role="status"
+          className="mb-4 rounded-lg border border-(--color-line-strong) bg-(--color-bg-sunken) px-4 py-3 text-sm text-(--color-fg-default)"
+        >
+          갱신이 지연되고 있어요. 위 확인일의 자료이며, 최신 수치는 원문에서 확인할 수 있어요.
+        </p>
+      )}
       <div
         role="group"
         aria-label="벤치마크 지표 선택"
-        className="grid grid-cols-2 sm:flex items-center gap-x-2 mb-6 border-b border-(--color-line)"
+        className="flex flex-wrap gap-1 mb-4 border-b border-(--color-line)"
       >
-        {TABS.map((t) => {
-          const active = view === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setView(t.key)}
-              aria-pressed={active}
-              className="min-h-11 px-2 sm:px-3 py-2 border-b-2 text-[12.5px] transition-colors hover:text-(--color-fg-strong)"
-              style={
-                active
-                  ? {
-                      borderColor: 'var(--color-accent)',
-                      color: 'var(--color-accent-strong)',
-                      fontWeight: 600,
-                    }
-                  : { borderColor: 'transparent', color: 'var(--color-fg-muted)', fontWeight: 500 }
-              }
-            >
-              {t.label}
-            </button>
-          );
-        })}
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            aria-pressed={view === tab.key}
+            onClick={() => {
+              setView(tab.key);
+              setLimit(10);
+            }}
+            className="min-h-11 px-3 py-2 border-b-2 text-sm transition-colors"
+            style={
+              view === tab.key
+                ? {
+                    borderColor: 'var(--color-accent)',
+                    color: 'var(--color-accent-strong)',
+                    fontWeight: 700,
+                  }
+                : { borderColor: 'transparent', color: 'var(--color-fg-muted)' }
+            }
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
-
-      {view === 'value' ? (
-        <ValueTable />
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <label className="w-full sm:w-64">
+          <span className="sr-only">벤치마크 모델 검색</span>
+          <input
+            type="search"
+            value={query}
+            placeholder="모델·개발사 검색"
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setLimit(10);
+            }}
+            className="min-h-11 w-full rounded-lg border border-(--color-line-strong) bg-(--color-bg-surface) px-3 text-sm text-(--color-fg-default)"
+          />
+        </label>
+        <p className="text-[13px] text-(--color-fg-muted)">
+          {view === 'costPerTask'
+            ? '비용 낮은 순'
+            : view === 'speed'
+              ? '출력 빠른 순'
+              : '지능 높은 순'}
+          {' · '}
+          {data.length}개 설정 중 {visible.length}개
+        </p>
+      </div>
+      {visible.length === 0 ? (
+        <p role="status" className="py-8 text-center text-sm text-(--color-fg-muted)">
+          해당 지표에서 검색 결과가 없어요.
+        </p>
+      ) : view === 'costPerTask' ? (
+        <CostTable models={visible} />
       ) : (
-        <BarMetric metric={view as 'intelligence' | 'speed' | 'coding'} />
+        <BarMetric models={visible} metric={view} />
       )}
-      <p className="text-[12px] leading-relaxed mt-5" style={{ color: 'var(--color-fg-subtle)' }}>
-        {view === 'intelligence' &&
-          '* Artificial Analysis Intelligence Index (0~100, 높을수록 우수)'}
-        {view === 'coding' &&
-          '* SWE-bench Verified (% resolved) · 일부 모델만 공개, GPT-5.5는 추정치'}
-        {view === 'speed' && '* 출력 속도 중앙값 (tokens/s, 높을수록 빠름)'}
-        {view === 'value' && '* 가격: 100만 토큰당 달러, 지능: Intelligence Index'}
-      </p>
-
-      {/* 범례 */}
-      {view !== 'value' && (
-        <div
-          className="flex items-center gap-4 flex-wrap mt-5 pt-4 border-t text-[12px]"
-          style={{ borderColor: 'var(--color-line)' }}
+      {visible.length < data.length && (
+        <button
+          type="button"
+          onClick={() => setLimit((value) => value + 10)}
+          className="mt-5 min-h-11 w-full rounded-lg border border-(--color-line-strong) text-sm font-medium text-(--color-fg-default) hover:bg-(--color-bg-sunken)"
         >
-          {VENDORS.map((v) => (
-            <span
-              key={v}
-              className="flex items-center gap-1.5"
-              style={{ color: 'var(--color-fg-muted)' }}
-            >
-              <span
-                className="inline-block w-2.5 h-2.5 rounded-sm"
-                style={{ background: vendorColor(v) }}
-              />
-              {vendorLabel(v)}
-            </span>
-          ))}
-        </div>
+          10개 더 보기
+        </button>
       )}
+      <div className="mt-5 space-y-1 border-t border-(--color-line) pt-4 text-[13px] leading-relaxed text-(--color-fg-muted)">
+        <p>
+          {view === 'intelligence' &&
+            '종합 지능은 높을수록 우수합니다. 평가 버전이 다른 점수와 직접 비교할 수 없어요.'}
+          {view === 'speed' &&
+            '출력 속도는 초당 생성 토큰의 중앙값입니다. 답변 시작 전 대기 시간은 포함하지 않아요.'}
+          {view === 'costPerTask' &&
+            '비용은 종합 지능 평가 작업 1개당 가중 평균 달러(USD)입니다. 100만 토큰당 API 요금과는 달라요.'}
+        </p>
+        <p>
+          모델의 추론 설정별 결과입니다. 불완전한 지능 점수와 미측정 항목은 제외하며, 매일 갱신을
+          확인합니다.
+        </p>
+      </div>
     </section>
   );
 }
 
-function BarMetric({ metric }: { metric: 'intelligence' | 'speed' | 'coding' }) {
-  const unit = metric === 'speed' ? ' tok/s' : metric === 'coding' ? '%' : '';
-  const data = BENCHMARK_MODELS.filter((m) => m[metric] != null).sort(
-    (a, b) => (b[metric] as number) - (a[metric] as number),
-  );
-  const max = Math.max(...data.map((m) => m[metric] as number));
-
+function ModelLabel({ model }: { model: BenchModel }) {
+  const configuration = model.name.match(/^(.*?)\s+(\([^)]*\))$/);
   return (
-    <ul className="flex flex-col gap-2.5">
-      {data.map((m) => {
-        const val = m[metric] as number;
-        return (
-          <li
-            key={m.name}
-            className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[160px_minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 items-center"
+    <a
+      href={`https://artificialanalysis.ai/models/${model.slug}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="min-w-0 text-sm leading-snug hover:underline"
+    >
+      <span className="block font-semibold text-(--color-fg-default) wrap-break-word">
+        {configuration?.[1] ?? model.name}
+      </span>
+      <span className="mt-0.5 block text-xs leading-relaxed text-(--color-fg-muted) wrap-break-word">
+        {model.creator}
+        {configuration ? ` · ${configuration[2].slice(1, -1)}` : ''}
+      </span>
+    </a>
+  );
+}
+
+function BarMetric({ models, metric }: { models: BenchModel[]; metric: 'intelligence' | 'speed' }) {
+  const maximum = Math.max(1, ...models.map((model) => model[metric] ?? 0));
+  return (
+    <ul
+      aria-label={metric === 'intelligence' ? '종합 지능 순위' : '출력 속도 순위'}
+      className="flex flex-col gap-3"
+    >
+      {models.map((model) => (
+        <li
+          key={model.slug}
+          className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(180px,0.8fr)_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 py-1"
+        >
+          <ModelLabel model={model} />
+          <span
+            aria-hidden="true"
+            className="col-span-2 row-start-2 sm:col-span-1 sm:row-auto block h-2.5 rounded-sm bg-(--color-bg-sunken)"
           >
             <span
-              className="text-[12.5px] truncate"
-              style={{ color: 'var(--color-fg-default)', fontWeight: 600 }}
-              title={m.name}
-            >
-              {m.name}
-            </span>
-            <span
-              aria-hidden="true"
-              className="col-span-2 row-start-2 sm:col-span-1 sm:row-auto h-2 sm:h-3"
-              style={{ background: 'var(--color-bg-sunken)', display: 'block' }}
-            >
-              <span
-                className="h-2 sm:h-3 block"
-                style={{ width: `${(val / max) * 100}%`, background: vendorColor(m.vendor) }}
-              />
-            </span>
-            <span
-              className="row-start-1 col-start-2 sm:col-start-3 text-[12.5px] tabular-nums text-right w-16"
-              style={{ color: 'var(--color-fg-strong)', fontWeight: 700 }}
-            >
-              {val}
-              {unit}
-            </span>
-          </li>
-        );
-      })}
+              className="block h-2.5 rounded-sm"
+              style={{
+                width: `${((model[metric] ?? 0) / maximum) * 100}%`,
+                background: vendorColor(model.creator),
+              }}
+            />
+          </span>
+          <span className="row-start-1 col-start-2 sm:col-start-3 text-right text-sm font-bold tabular-nums text-(--color-fg-strong)">
+            {model[metric]}
+            {metric === 'speed' && <span className="ml-1 text-xs font-normal">tok/s</span>}
+          </span>
+        </li>
+      ))}
     </ul>
   );
 }
 
-function ValueTable() {
-  const data = BENCHMARK_MODELS.filter((m) => m.price != null && m.intelligence != null);
-
+function CostTable({ models }: { models: BenchModel[] }) {
   return (
-    <div>
-      <p className="text-[11.5px] mb-2" style={{ color: 'var(--color-fg-muted)' }}>
-        가격은 낮을수록, 지능 지수는 높을수록 좋습니다.
-      </p>
-      <table className="w-full table-fixed text-[13px]">
-        <caption className="sr-only">모델별 가격과 지능 지수</caption>
-        <thead>
-          <tr className="border-b border-(--color-line)">
-            <th scope="col" className="w-1/2 text-left py-3">
-              모델
+    <table className="w-full table-fixed text-sm">
+      <caption className="sr-only">모델별 작업당 비용과 종합 지능</caption>
+      <thead>
+        <tr className="border-b border-(--color-line) text-(--color-fg-muted)">
+          <th scope="col" className="w-1/2 py-3 text-left font-medium">
+            모델
+          </th>
+          <th scope="col" className="py-3 text-right font-medium">
+            작업당 비용
+          </th>
+          <th scope="col" className="w-1/5 py-3 text-right font-medium">
+            지능
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {models.map((model) => (
+          <tr key={model.slug} className="border-b border-(--color-line)">
+            <th scope="row" className="py-3 pr-3 text-left font-normal">
+              <ModelLabel model={model} />
             </th>
-            <th scope="col" className="text-right py-3">
-              가격
-            </th>
-            <th scope="col" className="text-right py-3">
-              지능
-            </th>
+            <td className="text-right tabular-nums text-(--color-fg-strong)">
+              {'$'}
+              {model.costPerTask?.toFixed(2)}
+            </td>
+            <td className="text-right tabular-nums">{model.intelligence}</td>
           </tr>
-        </thead>
-        <tbody>
-          {data.map((model) => (
-            <tr key={model.name} className="border-b border-(--color-line)">
-              <th scope="row" className="text-left font-medium py-3 pr-2">
-                {model.name}
-              </th>
-              <td className="text-right tabular-nums">${model.price}</td>
-              <td className="text-right tabular-nums">{model.intelligence}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+        ))}
+      </tbody>
+    </table>
   );
 }

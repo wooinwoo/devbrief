@@ -47,6 +47,9 @@ jobs:
       - name: Test (api)
         run: pnpm --filter @devbrief/api test
 
+      - name: Test benchmark collection
+        run: node --test scripts/refresh-benchmarks.test.mjs
+
       - name: Test (web)
         run: pnpm --filter @devbrief/web test
 
