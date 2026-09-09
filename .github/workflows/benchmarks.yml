@@ -1,0 +1,42 @@
+name: Refresh LLM benchmarks
+
+on:
+  schedule:
+    # Daily 09:20 KST, separate from article ingestion.
+    - cron: '20 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: benchmark-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test parser and failure preservation
+        run: node --test scripts/refresh-benchmarks.test.mjs
+      - name: Checkout last published data
+        uses: actions/checkout@v4
+        with:
+          ref: benchmark-data
+          path: benchmark-feed
+      - name: Refresh verified snapshot
+        run: node scripts/refresh-benchmarks.mjs benchmark-feed/llm-benchmarks.json
+      - name: Publish data without rebuilding the app
+        working-directory: benchmark-feed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add llm-benchmarks.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "data: refresh verified LLM benchmarks"
+          git push origin HEAD:benchmark-data
