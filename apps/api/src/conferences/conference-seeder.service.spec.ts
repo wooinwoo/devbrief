@@ -249,9 +249,11 @@ describe('ConferenceSeederService', () => {
     expect(rows[5].status).toBe('PROPOSED');
   });
 
-  it('시드 후 imageSync.syncAll 을 fire-and-forget 트리거한다', async () => {
+  it('서빙 서버의 반복 부팅은 이미지 다운로드나 디코딩을 시작하지 않는다', async () => {
     await service.onApplicationBootstrap();
-    expect(imageSync.syncAll).toHaveBeenCalledTimes(1);
+    await service.onApplicationBootstrap();
+    await service.onApplicationBootstrap();
+    expect(imageSync.syncAll).not.toHaveBeenCalled();
   });
 
   it('시딩 실패 시 imageSync 를 트리거하지 않고 graceful 종료', async () => {
