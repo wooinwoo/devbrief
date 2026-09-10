@@ -11,13 +11,20 @@ import {
   themesOf,
 } from '@/lib/ai-topics';
 import { useUrlFilters } from '@/lib/use-url-filter';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ArticleDto } from '../article-card';
 import { ArticleRow } from '../article-row';
-import { BenchmarkDashboard } from '../benchmark-dashboard';
 import { type FilterGroup, FilterSidebar } from '../filter-sidebar';
 import { Pagination } from '../pagination';
 import { SectionHeader } from '../section-header';
+
+const BenchmarkDashboard = dynamic(
+  () => import('../benchmark-dashboard').then((module) => module.BenchmarkDashboard),
+  {
+    loading: () => <p role="status">모델 성능 비교를 불러오는 중이에요…</p>,
+  },
+);
 
 interface Props {
   articles: ArticleDto[];
@@ -71,6 +78,7 @@ function facetOptions(
 }
 
 export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Props) {
+  const [showBenchmarks, setShowBenchmarks] = useState(false);
   const aiArticles = useMemo(() => articles.filter(isAiArticle), [articles]);
 
   // 필터 상태는 URL 쿼리에서 파생 — articles 탭(q/source/cat/unread)과 같은 패턴.
@@ -210,9 +218,14 @@ export function AiTab({ articles, readSet, bookmarkSet, onOpen, onBookmark }: Pr
           </>
         ) : (
           <div className="flex flex-col gap-12">
-            <details className="benchmark-disclosure">
+            <details
+              className="benchmark-disclosure"
+              onToggle={(event) => {
+                if (event.currentTarget.open) setShowBenchmarks(true);
+              }}
+            >
               <summary>모델 성능 비교</summary>
-              <BenchmarkDashboard />
+              {showBenchmarks && <BenchmarkDashboard />}
             </details>
             {themeGroups.map((g) => (
               <section key={g.theme.key}>

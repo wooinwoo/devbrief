@@ -18,9 +18,26 @@ describe('cleanBody', () => {
     expect(cleanBody('')).toBe('');
     expect(cleanBody(undefined as unknown as string)).toBe('');
   });
+  it('영문 메타데이터와 스크립트는 제거하고 엔티티의 실제 문자는 보존한다', () => {
+    expect(
+      cleanBody(
+        'Article URL: https://example.com Comments URL: https://news.ycombinator.com Points: 10 # Comments: 3',
+      ),
+    ).toBe('');
+    expect(cleanBody('<script>bad()</script><p>React &amp; TypeScript &#xAC00;</p>')).toBe(
+      'React & TypeScript 가',
+    );
+  });
 });
 
 describe('splitSentences', () => {
+  it('마침표가 없어도 Gemini 응답의 각 줄을 보존한다', () => {
+    expect(splitSentences('첫 번째 요약\n두 번째 요약\r\n세 번째 요약')).toEqual([
+      '첫 번째 요약',
+      '두 번째 요약',
+      '세 번째 요약',
+    ]);
+  });
   it('마침표·물음표·느낌표 뒤 공백 기준으로 문장을 나눈다', () => {
     expect(splitSentences('첫 문장. 둘째? 셋째!')).toEqual(['첫 문장.', '둘째?', '셋째!']);
   });
@@ -53,6 +70,11 @@ describe('topSentences', () => {
   it('본문이 너무 짧으면 빈 배열', () => {
     expect(topSentences('짧음', 3)).toEqual([]);
     expect(topSentences('', 3)).toEqual([]);
+  });
+  it('첫 글 인사말·구독 안내·중복 문장은 버리고 본문의 설명을 남긴다', () => {
+    const useful = 'This implementation uses a neural network with two hidden layers.';
+    const text = `Note: This is my first ever blog post, so please excuse any mistakes. Also, since this is my first post, I did not use AI to polish my writing. ${useful} Subscribe to our newsletter for more articles. ${useful}`;
+    expect(topSentences(text, 3)).toEqual([useful]);
   });
 });
 

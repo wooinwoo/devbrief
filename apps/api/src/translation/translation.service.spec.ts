@@ -39,7 +39,7 @@ describe('TranslationService', () => {
     it('보호 매체명(Import AI)은 번역 과정에서 보존된다', async () => {
       // mock은 받은 q(placeholder 마스킹된 텍스트)를 그대로 돌려준다
       mockGet.mockImplementation((_url: string, opts: { params: { q: string } }) =>
-        Promise.resolve({ data: [[[opts.params.q, opts.params.q]]] }),
+        Promise.resolve({ data: [[[`${opts.params.q} 출시`, opts.params.q]]] }),
       );
       const out = await svc.toKorean('Import AI launches today');
       expect(out).toContain('Import AI'); // ⟦0⟧ 복원 확인
@@ -56,6 +56,29 @@ describe('TranslationService', () => {
     it('두 경로 모두 실패하면 null', async () => {
       mockGet.mockRejectedValue(new Error('all down'));
       expect(await svc.toKorean('Hello')).toBeNull();
+    });
+    it('비영문은 언어 자동 감지로 번역하며 영어 전용 대체 경로로 보내지 않는다', async () => {
+      mockGet.mockResolvedValueOnce({ data: [[['새로운 모델을 발표했습니다', 'ประกาศโมเดลใหม่']]] });
+      expect(await svc.toKorean('ประกาศโมเดลใหม่')).toBe('새로운 모델을 발표했습니다');
+      expect(mockGet.mock.calls[0][1].params.sl).toBe('auto');
+      mockGet.mockReset().mockRejectedValueOnce(new Error('offline'));
+      expect(await new TranslationService().toKorean('新しいモデルを公開しました')).toBeNull();
+      expect(mockGet).toHaveBeenCalledTimes(1);
+    });
+    it('한국어가 아닌 응답과 누락된 고유명사 토큰을 저장하지 않는다', async () => {
+      mockGet
+        .mockResolvedValueOnce({ data: [[['Still English', 'Original']]] })
+        .mockResolvedValueOnce({
+          data: { responseStatus: 200, responseData: { translatedText: 'English again' } },
+        });
+      expect(await svc.toKorean('Original')).toBeNull();
+      mockGet
+        .mockReset()
+        .mockResolvedValueOnce({ data: [[['새 소식입니다', 'Import AI']]] })
+        .mockResolvedValueOnce({
+          data: { responseStatus: 200, responseData: { translatedText: '새 소식입니다' } },
+        });
+      expect(await new TranslationService().toKorean('Import AI launches today')).toBeNull();
     });
   });
 

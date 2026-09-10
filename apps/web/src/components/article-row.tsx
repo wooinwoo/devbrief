@@ -1,5 +1,6 @@
 'use client';
 
+import { readableSummary } from '@/lib/article-summary';
 import { categoryOf } from '@/lib/category';
 import { pickTitle, useLang } from '@/lib/lang-context';
 import Link from 'next/link';
@@ -37,6 +38,7 @@ export function ArticleRow({
   const { lang } = useLang();
   const cat = categoryOf(article);
   const { primary, secondary } = pickTitle(article, lang);
+  const summary = readableSummary(article.summaryOneLine);
 
   return (
     <li
@@ -59,14 +61,14 @@ export function ArticleRow({
         </div>
 
         {/* 요약이 없으면 반대 언어 제목을 표시한다. */}
-        {(article.summaryOneLine || secondary) && (
+        {(summary || secondary) && (
           <Link
             href={`/articles/${article.id}`}
             onClick={onOpen}
             className="article-row-summary block mt-2 text-[16px] leading-[1.75] line-clamp-2"
             style={{ color: 'var(--color-fg-muted)' }}
           >
-            {article.summaryOneLine ?? secondary}
+            {summary ?? secondary}
           </Link>
         )}
 

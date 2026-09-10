@@ -375,7 +375,9 @@ export async function repairSummaries(
   >(
     `SELECT id, title, "contentSnippet" FROM "Article"
      WHERE "summaryOneLine" IS NULL OR concat("titleKo", "summaryOneLine", "summaryThreeLine")
-       ~* 'QUERY LENGTH LIMIT EXCEEDED|MYMEMORY WARNING|USED ALL AVAILABLE FREE TRANSLATIONS'
+       ~* 'QUERY LENGTH LIMIT EXCEEDED|MYMEMORY WARNING|USED ALL AVAILABLE FREE TRANSLATIONS|(Article|Comments?|기사|댓글)[[:space:]]*URL[[:space:]]*:'
+       OR "summaryOneLine" ~* '^(Note:[[:space:]]*)?This is my (very )?first (ever )?(blog )?post'
+       OR "summaryOneLine" ~ '^(참고:[[:space:]]*)?(이것은[[:space:]]*)?(제|내|저의)[[:space:]]*첫[[:space:]]*(번째[[:space:]]*)?블로그'
      ORDER BY ("summaryOneLine" IS NOT NULL) DESC, "publishedAt" DESC LIMIT $1`,
     limit,
   );

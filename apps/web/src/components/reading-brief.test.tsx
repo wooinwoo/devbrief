@@ -2,6 +2,8 @@ import { selectReadingBrief } from '@/lib/reading-brief';
 import { cleanup, fireEvent, render, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ArticleDto } from './article-card';
+import { ArticleRow } from './article-row';
+import { FeaturedArticle } from './featured-article';
 import { ReadingBrief } from './reading-brief';
 
 const NOW = Date.parse('2026-09-07T12:00:00Z');
@@ -71,6 +73,30 @@ describe('읽을 글 선정', () => {
     expect(selectReadingBrief(rows, [], new Set(['web', 'ai']), NOW).items).toEqual([]);
     expect(selectReadingBrief([], [], new Set(), NOW).items).toEqual([]);
   });
+  it('요약 없는 글·수집 메타데이터·미분류 일반 뉴스는 기본 추천에서 제외한다', () => {
+    const rows = [
+      { ...article('missing'), summaryOneLine: null },
+      { ...article('metadata'), summaryOneLine: 'Article URL: https://example.com' },
+      { ...article('general', 0, 'news', []), title: '캐나다 유제품 수입 금지' },
+      article('useful', 1),
+    ];
+    expect(selectReadingBrief(rows, [], new Set(), NOW).items.map((row) => row.id)).toEqual([
+      'useful',
+    ]);
+    expect(selectReadingBrief(rows, ['etc'], new Set(), NOW).items.map((row) => row.id)).toEqual([
+      'general',
+    ]);
+  });
+  it('같은 원문이 여러 출처에 수집돼도 최신 항목만 추천한다', () => {
+    const rows = [
+      article('older', 2),
+      { ...article('newer', 1, 'another'), url: 'https://example.com/older#comments' },
+      article('other', 3),
+    ];
+    const result = selectReadingBrief(rows, [], new Set(), NOW);
+    expect(result.items.map((row) => row.id)).toEqual(['newer', 'other']);
+    expect(result.candidateCount).toBe(2);
+  });
 });
 
 describe('ReadingBrief', () => {
@@ -134,10 +160,35 @@ describe('ReadingBrief', () => {
         summaryThreeLine: 'Article URL: https://example.com Comments URL: https://example.com',
       },
     ]);
-    expect(view.getByRole('link', { name: '글 metadata' })).toBeTruthy();
+    expect(view.queryByRole('link', { name: '글 metadata' })).toBeNull();
+    expect(view.getByRole('button', { name: '개발 뉴스 모두 보기' })).toBeTruthy();
     expect(view.queryByText(/댓글 URL/)).toBeNull();
     expect(view.queryByRole('button', { name: '요약 더 읽기' })).toBeNull();
   });
+  it('번역 제목과 원문을 함께 보여줘 내용을 비교할 수 있다', () => {
+    const view = renderBrief([
+      {
+        ...article('translated'),
+        title: 'React server rendering',
+        titleKo: 'React 서버 렌더링',
+        language: 'en',
+      },
+    ]);
+    expect(view.getByRole('link', { name: 'React 서버 렌더링' })).toBeTruthy();
+    expect(view.getByText('React server rendering').getAttribute('lang')).toBe('en');
+  });
+  it.each([ArticleRow, FeaturedArticle])(
+    '기사 목록·머리기사에서도 수집 메타데이터를 요약처럼 표시하지 않는다 (%#)',
+    (Component) => {
+      const view = render(
+        <Component
+          article={{ ...article('metadata'), summaryOneLine: '기사 URL: 댓글 URL: 포인트: 53' }}
+        />,
+      );
+      expect(view.getByRole('link', { name: /글 metadata/ })).toBeTruthy();
+      expect(view.queryByText(/댓글 URL/)).toBeNull();
+    },
+  );
   it('추천 결과가 없으면 관심 분야 초기화와 전체 탐색으로 복구한다', () => {
     localStorage.setItem('devbrief.interests.v1', JSON.stringify(['mobile']));
     const view = renderBrief();
