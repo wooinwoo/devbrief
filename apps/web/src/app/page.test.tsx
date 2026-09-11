@@ -86,7 +86,6 @@ function fetchWithArticleHeaders(headers?: Record<string, string>) {
     if (url.includes('/articles')) {
       return { ok: true, headers: new Headers(headers), json: async () => [WIRE_ARTICLE] };
     }
-    if (url.includes('/digest')) return { ok: true, json: async () => null };
     return { ok: true, json: async () => [] };
   });
 }
@@ -119,20 +118,16 @@ describe('Home partial outages', () => {
     expect(view.getByTestId('errors').textContent).toContain('개발 뉴스');
     expect(view.getByTestId('errors').textContent).toContain('발표 영상');
   });
-  it('keeps weekly repos when the daily request rejects', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('period=daily')) throw new Error('offline');
-        return {
-          ok: true,
-          json: async () => (url.includes('period=weekly') ? [{ id: 'repo1', name: 'repo' }] : []),
-        };
-      }),
-    );
-    const view = render(await Home());
-    expect(view.getByTestId('counts').textContent).toBe('0-0-0-1');
-    expect(view.getByTestId('errors').textContent).toContain('오픈소스');
+  it('홈은 기사·행사·영상 미리보기만 조회한다', async () => {
+    const fetcher = fetchWithArticleHeaders();
+    vi.stubGlobal('fetch', fetcher);
+    render(await Home());
+    expect(fetcher.mock.calls.map(([url]) => new URL(url).pathname.split('/').pop())).toEqual([
+      'articles',
+      'videos',
+      'conferences',
+    ]);
+    expect(fetcher.mock.calls.some(([url]) => url.includes('/videos?limit=2'))).toBe(true);
   });
   it('does not flag valid empty feeds as outages', async () => {
     vi.stubGlobal(

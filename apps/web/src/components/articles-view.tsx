@@ -8,6 +8,7 @@ import { fetchConferenceCatalog } from '@/lib/conference-catalog';
 import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { RepoDto } from '@/lib/mock-repos';
 import type { VideoDto } from '@/lib/mock-videos';
+import { fetchRepos, fetchVideos } from '@/lib/public-feeds';
 import { publicRead } from '@/lib/public-read';
 import { readTracking } from '@/lib/read-tracking';
 import { useUrlFilters } from '@/lib/use-url-filter';
@@ -16,7 +17,6 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ArticleDto } from './article-card';
 import { BriefIcon } from './brief-icon';
-import type { DigestDto } from './daily-digest';
 import { GlobalSearch } from './global-search';
 import { LangToggle } from './lang-toggle';
 import { LoadFailure } from './load-failure';
@@ -32,12 +32,12 @@ import { VideosTab } from './tabs/videos-tab';
 interface Props {
   initialLoadErrors?: string[];
   loadConferenceCatalog?: boolean;
+  loadTabCatalogs?: boolean;
   articles: ArticleDto[];
   /** GET /articles 의 X-Total-Count — 서버 전체 글 수. null/미지정이면 전체 미상 (감사 c62). */
   total?: number | null;
   videos?: VideoDto[];
   conferences?: ConferenceDto[];
-  digest?: DigestDto | null;
   repos?: RepoDto[];
 }
 
@@ -59,11 +59,11 @@ export function ArticlesView({
   articles,
   initialLoadErrors = [],
   loadConferenceCatalog = false,
+  loadTabCatalogs = false,
   total = null,
-  videos = [],
+  videos: initialVideos = [],
   conferences = [],
-  digest = null,
-  repos = [],
+  repos: initialRepos = [],
 }: Props) {
   const { searchParams, setParam } = useUrlFilters();
   // 탭은 URL 쿼리에서 파생 — 새로고침/뒤로가기/링크 공유 시 그대로 복원됨.
@@ -85,7 +85,50 @@ export function ArticlesView({
   const [catalogLoading, setCatalogLoading] = useState(loadConferenceCatalog);
   const [catalogError, setCatalogError] = useState(false);
   const [catalogRetry, setCatalogRetry] = useState(0);
-  const remainingLoadErrors = initialLoadErrors.filter((feed) => feed !== '행사' || !catalogLoaded);
+  const [videoCatalog, setVideos] = useState<VideoDto[] | null>(null);
+  const videos = videoCatalog ?? initialVideos;
+  const [repos, setRepos] = useState(initialRepos);
+  const [loadedFeeds, setLoadedFeeds] = useState({ videos: false, repos: false });
+  const [feedErrors, setFeedErrors] = useState({ videos: false, repos: false });
+  const [feedLoading, setFeedLoading] = useState<Tab | null>(null);
+  const [feedRetry, setFeedRetry] = useState(0);
+  const activeFeedLoaded = tab === 'videos' ? loadedFeeds.videos : loadedFeeds.repos;
+  const remainingLoadErrors = initialLoadErrors.filter(
+    (feed) => (feed !== '행사' || !catalogLoaded) && (feed !== '발표 영상' || !loadedFeeds.videos),
+  );
+  useEffect(() => {
+    if (!loadTabCatalogs || (tab !== 'videos' && tab !== 'repos') || activeFeedLoaded) return;
+    const controller = new AbortController();
+    setFeedLoading(tab);
+    setFeedErrors((current) => ({ ...current, [tab]: false }));
+    const load = async () => {
+      try {
+        let failed = false;
+        if (tab === 'videos') {
+          const rows = await fetchVideos(100, controller.signal);
+          if (controller.signal.aborted) return;
+          setVideos(rows);
+        } else {
+          const result = await fetchRepos(controller.signal);
+          if (controller.signal.aborted) return;
+          // 재시도 중 한쪽 기간이 실패해도 이미 받은 목록을 보존한다.
+          setRepos((current) => [
+            ...current.filter((row) => !result.periods.includes(row.period)),
+            ...result.rows,
+          ]);
+          failed = result.failed;
+        }
+        setLoadedFeeds((current) => ({ ...current, [tab]: !failed }));
+        setFeedErrors((current) => ({ ...current, [tab]: failed }));
+      } catch {
+        if (!controller.signal.aborted) setFeedErrors((current) => ({ ...current, [tab]: true }));
+      } finally {
+        if (!controller.signal.aborted) setFeedLoading(null);
+      }
+    };
+    void load();
+    return () => controller.abort();
+  }, [tab, loadTabCatalogs, activeFeedLoaded, feedRetry]);
   useEffect(() => {
     if (!loadConferenceCatalog || tab !== 'conferences' || catalogLoaded) return;
     const controller = new AbortController();
@@ -412,7 +455,6 @@ export function ArticlesView({
             articles={allArticles}
             conferences={conferences}
             videos={videos}
-            digest={digest}
             readSet={readSet}
             bookmarkSet={bookmarkSet}
             onOpen={handleOpen}
@@ -470,8 +512,30 @@ export function ArticlesView({
             )}
           </>
         )}
-        {tab === 'videos' && <VideosTab videos={videos} />}
-        {tab === 'repos' && <ReposTab repos={repos} />}
+        {(tab === 'videos' || tab === 'repos') && (
+          <>
+            {feedErrors[tab] && (
+              <div className="catalog-error" role="alert">
+                {tab === 'videos' ? '영상' : '오픈소스'} 목록을 모두 불러오지 못했어요. 받은 내용은
+                그대로 볼 수 있어요.
+                <button type="button" onClick={() => setFeedRetry((value) => value + 1)}>
+                  다시 불러오기
+                </button>
+              </div>
+            )}
+            {feedLoading === tab && (
+              <p className="catalog-loading" role="status">
+                {tab === 'videos' ? '영상' : '오픈소스'} 목록을 불러오는 중이에요…
+              </p>
+            )}
+            {tab === 'videos' && (videos.length > 0 || loadedFeeds.videos || !loadTabCatalogs) && (
+              <VideosTab videos={videos} />
+            )}
+            {tab === 'repos' && (repos.length > 0 || loadedFeeds.repos || !loadTabCatalogs) && (
+              <ReposTab repos={repos} />
+            )}
+          </>
+        )}
       </div>
 
       <PageFooter total={allArticles.length} />

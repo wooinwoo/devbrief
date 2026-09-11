@@ -12,6 +12,9 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
+vi.mock('../benchmark-dashboard', () => ({
+  BenchmarkDashboard: () => <div data-testid="benchmark-dashboard">벤치마크 내용</div>,
+}));
 
 import { AiTab } from './ai-tab';
 
@@ -52,6 +55,14 @@ beforeEach(() => {
 });
 
 describe('AI 탭 멤버십 (isAiArticle 회귀)', () => {
+  it('모델 비교를 펼칠 때만 대시보드를 마운트한다', async () => {
+    const view = render(<AiTab articles={ARTICLES} readSet={new Set()} onOpen={() => {}} />);
+    expect(view.queryByTestId('benchmark-dashboard')).toBeNull();
+    const details = view.getByText('모델 성능 비교').closest('details')!;
+    details.open = true;
+    fireEvent(details, new Event('toggle'));
+    expect(await view.findByTestId('benchmark-dashboard')).toBeTruthy();
+  });
   it('ChatGPT 복합어·인공지능 음차 글이 AI 탭에 노출된다', () => {
     const { getByText } = render(
       <AiTab articles={ARTICLES} readSet={new Set()} onOpen={() => {}} />,

@@ -51,8 +51,9 @@ export class IngestionService {
   }
 
   /** 소스당 최신 수집 상한 — 아카이브 전체가 실린 피드(OpenAI 등)의 폭주 방지.
-   *  Gemini 일일 한도 안에서 번역/요약이 돌게 하는 1차 밸브이기도 하다. */
-  private readonly maxPerSource = Number(process.env.INGEST_MAX_PER_SOURCE) || 30;
+   *  Gemini 일일 한도 안에서 번역/요약이 돌게 하는 1차 밸브이기도 하다.
+   *  50 = 주요 피드(GeekNews 등)가 싣는 최대 항목 수 — 30이면 글이 많은 날 잘렸다. */
+  private readonly maxPerSource = Number(process.env.INGEST_MAX_PER_SOURCE) || 50;
 
   /**
    * 소스 1개 수집. 성공/실패를 Source.lastFetchedAt/lastError 에 기록해

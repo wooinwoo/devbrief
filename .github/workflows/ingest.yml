@@ -5,6 +5,7 @@ name: Ingest
 on:
   schedule:
     # 매일 00:00 UTC = 09:00 KST
+    # (GitHub cron 은 수십 분 지연될 수 있어 정시 보장은 없다)
     - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
