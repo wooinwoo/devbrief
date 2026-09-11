@@ -4,9 +4,9 @@ name: Ingest
 # CLI(node apps/api/dist/cli.js)가 Neon DB 에 직접 쓰기 — 서빙(web/api)은 별도에서 읽기만.
 on:
   schedule:
-    # 매시 — 새 글이 한 시간 안에 올라오게 한다.
+    # 매일 00:00 UTC = 09:00 KST
     # (GitHub cron 은 수십 분 지연될 수 있어 정시 보장은 없다)
-    - cron: '0 * * * *'
+    - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
       command:
