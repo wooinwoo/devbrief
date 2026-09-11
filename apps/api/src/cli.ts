@@ -277,6 +277,11 @@ export async function runAll(
   mode: 'all' | 'collect' = 'all',
 ): Promise<string[]> {
   const failures: string[] = [];
+  /** 외부 소스 부분 실패 — 배치는 성공으로 두고 run 페이지에 경고만 남긴다. */
+  const degraded = (name: string, message: string): void => {
+    logger.warn(`  · ${name} 부분 실패: ${message}`);
+    annotate('warning', `ingest ${name} 부분 실패`, message);
+  };
   const runStep = async (name: string, fn: () => Promise<void>): Promise<void> => {
     try {
       await fn();
@@ -293,7 +298,11 @@ export async function runAll(
     logger.log(
       `  · ingest: sources=${r.sourceCount} new=${r.newArticles} failed=${r.failedSources ?? 0}`,
     );
-    if (r.failedSources > 0) throw new Error(`RSS source failures: ${r.failedSources}`);
+    // 원격 피드 일부 실패는 배치 실패가 아니다 (403/타임아웃 등 상대 서버 사정).
+    // 전멸일 때만 실패 — 우리 쪽(네트워크/DB/설정) 문제일 가능성이 높다.
+    if (r.sourceCount > 0 && (r.failedSources ?? 0) >= r.sourceCount)
+      throw new Error(`RSS source failures: ${r.failedSources}/${r.sourceCount}`);
+    if ((r.failedSources ?? 0) > 0) degraded('ingest', `RSS 일부 실패: ${r.failedSources}`);
   });
 
   if (mode === 'collect') {
@@ -337,7 +346,10 @@ export async function runAll(
   await runStep('videos', async () => {
     const r = await s.youtube.syncAllConferences();
     logger.log(`  · videos: synced=${r.synced} failed=${r.failed ?? 0}`);
-    if (r.failed > 0) throw new Error(`Video feed failures: ${r.failed}`);
+    // 채널 피드 404/500 은 YouTube 쪽에서 수시로 난다 — 전멸일 때만 실패.
+    if (r.synced === 0 && (r.failed ?? 0) > 0)
+      throw new Error(`Video feed failures: ${r.failed}`);
+    if ((r.failed ?? 0) > 0) degraded('videos', `영상 피드 일부 실패: ${r.failed}`);
   });
 
   await runStep('conferences', async () => {
@@ -346,8 +358,9 @@ export async function runAll(
       limit: 100,
     });
     logger.log(`  · conferences: proposed=${r.proposed} skipped=${r.skipped}`);
-    if (r.failedSources > 0 || r.failed > 0)
-      throw new Error(`행사 수집 일부 실패: sources=${r.failedSources} writes=${r.failed}`);
+    // 쓰기 실패(DB)만 배치 실패. 원격 행사 피드 실패는 경고.
+    if (r.failed > 0) throw new Error(`행사 저장 실패: writes=${r.failed}`);
+    if (r.failedSources > 0) degraded('conferences', `행사 피드 일부 실패: ${r.failedSources}`);
   });
 
   await runStep('conference-images', async () => {
