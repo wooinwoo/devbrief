@@ -392,10 +392,17 @@ describe('runAll (c7: 서브스텝 실패 수집 + 계속 진행)', () => {
     expect(await runAll(asServices(), flags, 100)).toEqual(['ingest']);
   });
 
-  it('영상 전멸은 실패로 집계된다', async () => {
+  it('YOUTUBE_API_KEY 설정 시 영상 전멸은 실패로 집계된다', async () => {
+    process.env.YOUTUBE_API_KEY = 'yt-key';
     services.youtube.syncAllConferences.mockResolvedValue({ synced: 0, failed: 5 });
 
     expect(await runAll(asServices(), flags, 100)).toEqual(['videos']);
+  });
+
+  it('키 없는 공개 RSS 폴백 전멸은 실패가 아니다', async () => {
+    services.youtube.syncAllConferences.mockResolvedValue({ synced: 0, failed: 5 });
+
+    expect(await runAll(asServices(), flags, 100)).toEqual([]);
   });
 
   it('여러 스텝 실패는 전부 순서대로 수집된다', async () => {
