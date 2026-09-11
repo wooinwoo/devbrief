@@ -1,5 +1,6 @@
 'use client';
 
+import { readableSummary } from '@/lib/article-summary';
 import { categoryOf } from '@/lib/category';
 import { pickTitle, useLang } from '@/lib/lang-context';
 import Link from 'next/link';
@@ -27,6 +28,7 @@ export function FeaturedArticle({
   const { lang } = useLang();
   const cat = categoryOf(article);
   const { primary } = pickTitle(article, lang);
+  const summary = readableSummary(article.summaryOneLine);
 
   return (
     <article
@@ -52,12 +54,12 @@ export function FeaturedArticle({
               </span>
             </h2>
 
-            {article.summaryOneLine && (
+            {summary && (
               <p
                 className="text-[16px] leading-[1.75] mt-4 mb-5 max-w-[65ch]"
                 style={{ color: 'var(--color-fg-default)' }}
               >
-                {article.summaryOneLine}
+                {summary}
               </p>
             )}
 

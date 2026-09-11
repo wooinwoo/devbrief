@@ -4,14 +4,12 @@ import type { ConferenceDto } from '@/lib/mock-conferences';
 import type { VideoDto } from '@/lib/mock-videos';
 import type { ArticleDto } from '../article-card';
 import { BriefIcon } from '../brief-icon';
-import type { DigestDto } from '../daily-digest';
 import { ReadingBrief } from '../reading-brief';
 import { VideoCard } from '../video-card';
 interface Props {
   articles: ArticleDto[];
   conferences: ConferenceDto[];
   videos: VideoDto[];
-  digest: DigestDto | null;
   readSet: Set<string>;
   bookmarkSet?: Set<string>;
   onOpen: (id: string) => void;

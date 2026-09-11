@@ -51,7 +51,7 @@ export class TranslationService {
     return /[가-힣]/.test(s);
   }
 
-  /** 영문 → 한국어. 이미 한국어거나 빈 값이면 null. */
+  /** 원문 언어를 자동 감지해 한국어로 번역한다. 실패한 결과는 저장하지 않는다. */
   async toKorean(text: string): Promise<string | null> {
     const t = (text ?? '').trim();
     if (!t || this.hasKorean(t)) return null;
@@ -70,13 +70,19 @@ export class TranslationService {
     }
 
     await this.throttle();
-    const out = (await this.viaGoogle(masked)) ?? (await this.viaMyMemory(masked));
-    if (!out) return null;
-    // 복원 (혹시 번역기가 placeholder를 깨먹었으면 잔여물 제거)
-    return out
-      .replace(/⟦\s*(\d+)\s*⟧/g, (_, i) => tokens[Number(i)] ?? '')
-      .replace(/⟦.*?⟧/g, '')
-      .trim();
+    const restore = (out: string | null) => {
+      if (!out || !this.hasKorean(out)) return null;
+      if (tokens.some((_, index) => !new RegExp(`⟦\\s*${index}\\s*⟧`).test(out))) return null;
+      const restored = out
+        .replace(/⟦\s*(\d+)\s*⟧/g, (token, i) => tokens[Number(i)] ?? token)
+        .trim();
+      return /[⟦⟧]/.test(restored) ? null : restored;
+    };
+    const google = restore(await this.viaGoogle(masked));
+    if (google) return google;
+    // 영어 전용 대체 경로에 태국어·일본어 등을 보내 오역하지 않는다.
+    if (hasNonLatinLetters(t)) return null;
+    return restore(await this.viaMyMemory(masked));
   }
 
   private async viaGoogle(text: string): Promise<string | null> {
@@ -85,7 +91,7 @@ export class TranslationService {
       const { data } = await axios.get<unknown[]>(
         'https://translate.googleapis.com/translate_a/single',
         {
-          params: { client: 'gtx', sl: 'en', tl: 'ko', dt: 't', q: text },
+          params: { client: 'gtx', sl: 'auto', tl: 'ko', dt: 't', q: text },
           timeout: 10_000,
           headers: { 'User-Agent': 'Mozilla/5.0' },
         },
@@ -93,7 +99,7 @@ export class TranslationService {
       const segs = data?.[0];
       if (Array.isArray(segs)) {
         const out = segs
-          .map((s) => (Array.isArray(s) ? (s[0] as string) : ''))
+          .map((s) => (Array.isArray(s) && typeof s[0] === 'string' ? s[0] : ''))
           .join('')
           .trim();
         return out || null;
@@ -144,4 +150,9 @@ export class TranslationService {
     }
     return null;
   }
+}
+
+/** 문자 체계만 검사한다. 라틴 문자 입력의 실제 언어를 영어로 확정하지 않는다. */
+export function hasNonLatinLetters(text: string): boolean {
+  return /[^\p{Script=Latin}\p{N}\p{P}\p{Z}\p{S}\p{M}\s]/u.test(text);
 }

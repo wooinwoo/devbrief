@@ -26,7 +26,7 @@ export function VideoCard({ video: v }: Props) {
 
   return (
     <li className="video-card min-w-0">
-      <Link href={`/videos/${v.id}`} className="group block">
+      <Link href={`/videos/${v.id}`} prefetch={false} className="group block">
         <div
           className="relative aspect-video overflow-hidden mb-4 rounded-md"
           style={{ background: 'var(--bar-bg)' }}

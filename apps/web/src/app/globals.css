@@ -504,6 +504,22 @@ button {
   font-weight: 650;
   letter-spacing: -0.025em;
 }
+.reading-selection-note,
+.reading-original-title {
+  color: var(--color-fg-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.reading-selection-note {
+  margin-bottom: 20px;
+}
+.reading-original-title {
+  margin-top: 8px;
+}
+.reading-brief-list > li:first-child .reading-original-title {
+  color: inherit;
+}
 .reading-preferences[open] {
   grid-column: 1 / -1;
 }

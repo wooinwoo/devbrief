@@ -1,3 +1,5 @@
+import { MOCK_REPOS } from '@/lib/mock-repos';
+import { MOCK_VIDEOS } from '@/lib/mock-videos';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ArticleDto } from './article-card';
@@ -317,6 +319,114 @@ describe('event catalog loading', () => {
     expect(await view.findByRole('alert')).toBeTruthy();
     fireEvent.click(view.getByRole('button', { name: '다시 시도' }));
     expect(await view.findByRole('link', { name: 'Future Community' })).toBeTruthy();
+    expect(view.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('영상·오픈소스 지연 조회', () => {
+  it('서버에서 새로 받은 미리보기는 전체 영상 조회 전에도 반영한다', () => {
+    const view = render(<ArticlesView articles={[]} loadTabCatalogs />);
+    view.rerender(<ArticlesView articles={[]} videos={MOCK_VIDEOS.slice(0, 1)} loadTabCatalogs />);
+    expect(view.getByText(MOCK_VIDEOS[0].title)).toBeTruthy();
+  });
+  it('홈에서는 조회하지 않고 영상 탭에서 전체 목록을 한 번만 받는다', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => MOCK_VIDEOS });
+    vi.stubGlobal('fetch', fetcher);
+    const view = render(
+      <ArticlesView articles={[]} videos={MOCK_VIDEOS.slice(0, 2)} loadTabCatalogs />,
+    );
+    expect(fetcher).not.toHaveBeenCalled();
+    fireEvent.click(view.getByRole('tab', { name: '발표 영상' }));
+    view.rerender(<ArticlesView articles={[]} videos={MOCK_VIDEOS.slice(0, 2)} loadTabCatalogs />);
+    await waitFor(() => expect(view.queryByText('영상 목록을 불러오는 중이에요…')).toBeNull());
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0][0]).toContain('/videos?limit=100');
+    fireEvent.click(view.getByRole('tab', { name: '오늘' }));
+    view.rerender(<ArticlesView articles={[]} videos={MOCK_VIDEOS.slice(0, 2)} loadTabCatalogs />);
+    fireEvent.click(view.getByRole('tab', { name: '발표 영상' }));
+    view.rerender(<ArticlesView articles={[]} videos={MOCK_VIDEOS.slice(0, 2)} loadTabCatalogs />);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([null, [null], { error: 'upstream' }])(
+    '잘못된 영상 응답 %j에도 미리보기를 보존하고 재시도한다',
+    async (payload) => {
+      setSearch('tab=videos');
+      const fetcher = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => payload })
+        .mockResolvedValueOnce({ ok: true, json: async () => MOCK_VIDEOS });
+      vi.stubGlobal('fetch', fetcher);
+      const view = render(
+        <ArticlesView
+          articles={[]}
+          videos={MOCK_VIDEOS.slice(0, 1)}
+          loadTabCatalogs
+          initialLoadErrors={['발표 영상', '개발 뉴스']}
+        />,
+      );
+      await view.findByRole('button', { name: '다시 불러오기' });
+      expect(view.getByText(MOCK_VIDEOS[0].title)).toBeTruthy();
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      fireEvent.click(view.getByRole('button', { name: '다시 불러오기' }));
+      await waitFor(() => expect(view.queryByRole('button', { name: '다시 불러오기' })).toBeNull());
+      expect(view.getByRole('alert').textContent).toContain('개발 뉴스');
+      expect(view.getByRole('alert').textContent).not.toContain('발표 영상');
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('오픈소스 직접 진입·부분 실패·재시도에서 성공한 기간을 보존하고 새 빈 결과도 반영한다', async () => {
+    setSearch('tab=repos');
+    const weekly = MOCK_REPOS[0];
+    const daily = { ...MOCK_REPOS[1], id: 'daily-repo', period: 'daily' };
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [weekly] })
+      .mockRejectedValueOnce(new Error('daily offline'))
+      .mockRejectedValueOnce(new Error('weekly offline'))
+      .mockResolvedValueOnce({ ok: true, json: async () => [daily] })
+      .mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal('fetch', fetcher);
+    const view = render(<ArticlesView articles={[]} loadTabCatalogs />);
+    await view.findByRole('button', { name: '다시 불러오기' });
+    expect(view.getByText(weekly.name)).toBeTruthy();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    fireEvent.click(view.getByRole('button', { name: '다시 불러오기' }));
+    await waitFor(() => expect(view.queryByText('오픈소스 목록을 불러오는 중이에요…')).toBeNull());
+    expect(view.getByText(weekly.name)).toBeTruthy();
+    expect(fetcher).toHaveBeenCalledTimes(4);
+    fireEvent.click(view.getByRole('button', { name: '다시 불러오기' }));
+    await waitFor(() => expect(view.queryByRole('button', { name: '다시 불러오기' })).toBeNull());
+    expect(view.queryByText(weekly.name)).toBeNull();
+    fireEvent.click(view.getByRole('tab', { name: '오늘' }));
+    view.rerender(<ArticlesView articles={[]} loadTabCatalogs />);
+    fireEvent.click(view.getByRole('tab', { name: '오픈소스' }));
+    view.rerender(<ArticlesView articles={[]} loadTabCatalogs />);
+    expect(fetcher).toHaveBeenCalledTimes(6);
+  });
+
+  it('탭을 떠나면 요청을 취소하고 돌아올 때 다시 조회한다', async () => {
+    setSearch('tab=videos');
+    let signal: AbortSignal | undefined;
+    const fetcher = vi
+      .fn()
+      .mockImplementationOnce((_url, options) => {
+        signal = options.signal;
+        return new Promise((_resolve, reject) =>
+          signal?.addEventListener('abort', () => reject(new Error('aborted'))),
+        );
+      })
+      .mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal('fetch', fetcher);
+    const view = render(<ArticlesView articles={[]} loadTabCatalogs />);
+    fireEvent.click(view.getByRole('tab', { name: '오늘' }));
+    view.rerender(<ArticlesView articles={[]} loadTabCatalogs />);
+    expect(signal?.aborted).toBe(true);
+    fireEvent.click(view.getByRole('tab', { name: '발표 영상' }));
+    view.rerender(<ArticlesView articles={[]} loadTabCatalogs />);
+    await waitFor(() => expect(view.queryByText('영상 목록을 불러오는 중이에요…')).toBeNull());
+    expect(fetcher).toHaveBeenCalledTimes(2);
     expect(view.queryByRole('alert')).toBeNull();
   });
 });

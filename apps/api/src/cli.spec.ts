@@ -365,6 +365,39 @@ describe('runAll (c7: 서브스텝 실패 수집 + 계속 진행)', () => {
     expect(services.digest.generateForToday).toHaveBeenCalled();
   });
 
+  it('원격 소스 부분 실패는 배치 실패가 아니다', async () => {
+    services.ingestion.ingestAll.mockResolvedValue({
+      sourceCount: 10,
+      newArticles: 3,
+      failedSources: 1,
+    });
+    services.youtube.syncAllConferences.mockResolvedValue({ synced: 2, failed: 5 });
+    services.conferences.discover.mockResolvedValue({
+      proposed: 1,
+      skipped: 0,
+      failedSources: 2,
+      failed: 0,
+    });
+
+    expect(await runAll(asServices(), flags, 100)).toEqual([]);
+  });
+
+  it('RSS 전멸은 실패로 집계된다', async () => {
+    services.ingestion.ingestAll.mockResolvedValue({
+      sourceCount: 3,
+      newArticles: 0,
+      failedSources: 3,
+    });
+
+    expect(await runAll(asServices(), flags, 100)).toEqual(['ingest']);
+  });
+
+  it('영상 전멸은 실패로 집계된다', async () => {
+    services.youtube.syncAllConferences.mockResolvedValue({ synced: 0, failed: 5 });
+
+    expect(await runAll(asServices(), flags, 100)).toEqual(['videos']);
+  });
+
   it('여러 스텝 실패는 전부 순서대로 수집된다', async () => {
     services.repos.refreshAll.mockRejectedValue(new Error('x'));
     services.digest.generateForToday.mockRejectedValue(new Error('y'));

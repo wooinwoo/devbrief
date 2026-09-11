@@ -1,5 +1,6 @@
 'use client';
 
+import { readableSummary } from '@/lib/article-summary';
 import { CATEGORIES, categoryOf } from '@/lib/category';
 import { pickTitle, useLang } from '@/lib/lang-context';
 import { selectReadingBrief } from '@/lib/reading-brief';
@@ -11,11 +12,6 @@ import { CoverImage } from './cover-image';
 import { RelativeTimeText } from './relative-time-text';
 
 const INTERESTS_KEY = 'devbrief.interests.v1';
-
-function readableSummary(text: string | null) {
-  const summary = text?.trim();
-  return summary && !/^(?:기사|Article) URL:/i.test(summary) ? summary : null;
-}
 
 interface Props {
   articles: ArticleDto[];
@@ -118,8 +114,8 @@ export function ReadingBrief({
             </fieldset>
             <p>여러 분야를 골라도 좋아요. 선택은 이 브라우저에 기억해 둘게요.</p>
             <p>
-              최근 7일의 안 읽은 글 중 관심 분야에 맞는 최신 글을 고르고, 서로 다른 출처를 먼저
-              보여줘요.
+              최근 7일의 안 읽은 글 중 요약이 있고 개발 분야로 분류된 글을 고릅니다. 출처를 나누어
+              최신순으로 보여주며, 미분류 글은 ‘기타’를 선택하면 볼 수 있어요.
             </p>
             {storageUnavailable && (
               <p role="status">설정을 저장하지 못했어요. 이번 화면에서만 적용됩니다.</p>
@@ -127,6 +123,7 @@ export function ReadingBrief({
           </div>
         </details>
       </div>
+      <p className="reading-selection-note">최근 7일 · 요약이 있는 미열람 글 · 출처별로 골랐어요</p>
       {now === null ? (
         <p className="reading-brief-empty" role="status">
           읽을 글을 고르고 있어요.
@@ -139,8 +136,8 @@ export function ReadingBrief({
               : '지금 추천할 새 글이 없어요.'}
           </h3>
           <p>
-            최근 7일 글에서 조건에 맞는 안 읽은 글을 찾지 못했어요. 다른 분야나 이전 글도
-            둘러보세요.
+            최근 7일 글에서 분야와 요약 조건을 만족하는 안 읽은 글을 찾지 못했어요. 개발 뉴스에서
+            요약이 없는 글과 이전 글도 볼 수 있어요.
           </p>
           {interests.length > 0 && (
             <button type="button" onClick={() => choose([])} className="text-link">
@@ -151,7 +148,7 @@ export function ReadingBrief({
       ) : (
         <ol className="reading-brief-list">
           {items.map((article, index) => {
-            const title = pickTitle(article, lang).primary;
+            const { primary: title, secondary } = pickTitle(article, lang);
             const category = categoryOf(article);
             const saved = bookmarkSet?.has(article.id) ?? false;
             const excerpt = readableSummary(article.summaryOneLine);
@@ -171,14 +168,27 @@ export function ReadingBrief({
                         <RelativeTimeText iso={article.publishedAt} />
                       </div>
                       <h3>
-                        <Link href={`/articles/${article.id}`} onClick={() => onOpen(article.id)}>
+                        <Link
+                          href={`/articles/${article.id}`}
+                          prefetch={false}
+                          onClick={() => onOpen(article.id)}
+                        >
                           {title}
                         </Link>
                       </h3>
+                      {secondary && (
+                        <p
+                          className="reading-original-title"
+                          lang={lang === 'ko' ? article.language : 'ko'}
+                        >
+                          {secondary}
+                        </p>
+                      )}
                     </div>
                     {article.imageUrl && (
                       <Link
                         href={`/articles/${article.id}`}
+                        prefetch={false}
                         onClick={() => onOpen(article.id)}
                         className="reading-story-cover"
                         tabIndex={-1}

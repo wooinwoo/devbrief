@@ -45,7 +45,7 @@ describe('SummarizationService.summarize', () => {
       summaryThreeLine: '줄1\n줄2\n줄3',
     });
 
-    await svc.summarize('a1', 'Title', 'snippet');
+    await svc.summarize('a1', 'Title', KO_SNIPPET);
 
     expect(prisma.article.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -61,7 +61,7 @@ describe('SummarizationService.summarize', () => {
     gemini.isAvailable.mockReturnValue(true);
     gemini.generateJson.mockRejectedValue(new Error('429 rate limit'));
 
-    await expect(svc.summarize('a1', 'Title', 'snippet')).rejects.toThrow('429 rate limit');
+    await expect(svc.summarize('a1', 'Title', KO_SNIPPET)).rejects.toThrow('429 rate limit');
     // 폴백 저장이 일어나지 않아야 한다
     expect(prisma.article.update).not.toHaveBeenCalled();
     expect(translation.toKorean).not.toHaveBeenCalled();
@@ -94,4 +94,58 @@ describe('SummarizationService.summarize', () => {
     await svc.summarizeFree('a1', 'Original title', KO_SNIPPET);
     expect(prisma.article.update.mock.calls.at(-1)[0].data.titleKo).toBe(titleKo);
   });
+  it('본문 근거가 없으면 AI에게 제목만으로 요약을 생성시키지 않는다', async () => {
+    gemini.isAvailable.mockReturnValue(true);
+    prisma.article.findUnique.mockResolvedValue({ url: 'https://example.com' });
+    await svc.summarize('a1', '새로운 기술', '');
+    expect(gemini.generateJson).not.toHaveBeenCalled();
+    expect(prisma.article.update.mock.calls.at(-1)[0].data.summaryOneLine).toBeNull();
+  });
+  it('AI 응답 형식이 깨지면 기존 요약에 쓰지 않는다', async () => {
+    gemini.isAvailable.mockReturnValue(true);
+    gemini.generateJson.mockResolvedValue({
+      language: 'en',
+      titleKo: null,
+      summaryOneLine: { text: 'bad' },
+    });
+    await expect(svc.summarize('a1', 'Title', KO_SNIPPET)).rejects.toThrow(
+      'Invalid grounded summary',
+    );
+    expect(prisma.article.update).not.toHaveBeenCalled();
+  });
+  it('메타데이터뿐인 피드는 저장된 본문에서 요약한다', async () => {
+    prisma.article.findUnique.mockResolvedValue({
+      url: 'https://example.com',
+      contentHtml: `<article><p>${KO_SNIPPET}</p></article>`,
+    });
+    await svc.summarizeFree(
+      'a1',
+      '한국어 제목',
+      'Article URL: https://example.com Comments URL: https://news.ycombinator.com Points: 50 # Comments: 3',
+    );
+    expect(fetcher.fetchBody).not.toHaveBeenCalled();
+    expect(prisma.article.update.mock.calls.at(-1)[0].data.summaryOneLine).toContain(
+      '첫 번째 문장',
+    );
+  });
+  it.each(['', KO_SNIPPET])(
+    '무료 폴백이 기존 Gemini 요약을 지우거나 추출문으로 낮추지 않는다 (%s)',
+    async (snippet) => {
+      translation.toKorean.mockResolvedValue(null);
+      prisma.article.findUnique.mockResolvedValue({
+        url: 'https://example.com',
+        summaryOneLine: '기존 정상 요약',
+        summaryThreeLine: '기존 정상 상세 요약',
+        summarySource: 'gemini',
+      });
+      await svc.summarizeFree('a1', 'Original title', snippet);
+      expect(prisma.article.update.mock.calls.at(-1)[0].data).toEqual(
+        expect.objectContaining({
+          summaryOneLine: '기존 정상 요약',
+          summaryThreeLine: '기존 정상 상세 요약',
+          summarySource: 'gemini',
+        }),
+      );
+    },
+  );
 });
