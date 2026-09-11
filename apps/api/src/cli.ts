@@ -347,8 +347,7 @@ export async function runAll(
     const r = await s.youtube.syncAllConferences();
     logger.log(`  · videos: synced=${r.synced} failed=${r.failed ?? 0}`);
     // 채널 피드 404/500 은 YouTube 쪽에서 수시로 난다 — 전멸일 때만 실패.
-    if (r.synced === 0 && (r.failed ?? 0) > 0)
-      throw new Error(`Video feed failures: ${r.failed}`);
+    if (r.synced === 0 && (r.failed ?? 0) > 0) throw new Error(`Video feed failures: ${r.failed}`);
     if ((r.failed ?? 0) > 0) degraded('videos', `영상 피드 일부 실패: ${r.failed}`);
   });
 
