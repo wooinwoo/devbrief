@@ -1,6 +1,7 @@
 name: Keepalive
 
-# Render Free 인스턴스는 15분 유휴 후 sleep 한다. 깨어 있게 /health 를 주기적으로 친다.
+# Render Free는 15분 유휴 후 sleep, Neon Free는 5분 무쿼리면 suspend 된다.
+# /health 는 프로세스 생존만 확인해서 Neon은 계속 잔다 → /health/db 가 SELECT 1 로 둘 다 깨운다.
 # GitHub cron 은 수십 분 지연될 수 있어 15분 창을 매번 지키지는 못한다.
 # 지연이 문제가 되면 외부 스케줄러(cron-job.org 등)로 옮긴다.
 on:
@@ -14,4 +15,16 @@ jobs:
     timeout-minutes: 5
     steps:
       # 콜드스타트는 수십 초 걸린다 — 첫 요청이 느려도 실패로 보지 않게 여유를 둔다.
-      - run: curl -sf --max-time 90 https://devbrief-api-8lyo.onrender.com/health
+      # /health/db 가 503이어도 Render는 깬 거라(Neon 해제 중) 경고만 남기고 초록 유지.
+      - run: |
+          curl -sf --max-time 90 https://devbrief-api-8lyo.onrender.com/health
+          CODE=$(curl -s -o /tmp/keepalive-db.json -w '%{http_code}' --max-time 90 https://devbrief-api-8lyo.onrender.com/health/db || echo "000")
+          echo "health/db -> HTTP $CODE"
+          cat /tmp/keepalive-db.json 2>/dev/null || true
+          echo ""
+          if [ "$CODE" = "503" ]; then
+            echo "::warning title=Keepalive::API는 깼으나 DB가 down (Neon suspend 해제 중일 수 있음)"
+          elif [ "$CODE" != "200" ]; then
+            echo "::warning title=Keepalive::health/db 예상 밖 상태코드 $CODE"
+          fi
+          exit 0

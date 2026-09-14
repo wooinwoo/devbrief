@@ -25,8 +25,8 @@ async function bootstrap() {
     credentials: false,
     exposedHeaders: [TOTAL_COUNT_HEADER],
   });
-  // /api/v1 prefix — 단, 헬스체크(/health)는 prefix 없이 노출 (Railway healthcheckPath)
-  app.setGlobalPrefix('api/v1', { exclude: ['health'] });
+  // /api/v1 prefix — 단, 헬스체크(/health, /health/db)는 prefix 없이 노출 (Railway healthcheckPath + keep-alive 핑)
+  app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/db'] });
 
   // Railway 등 PaaS 는 PORT 를 주입한다. 로컬은 API_PORT 유지, 둘 다 없으면 4000.
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
