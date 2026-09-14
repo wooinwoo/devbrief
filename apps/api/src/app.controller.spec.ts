@@ -12,10 +12,7 @@ describe('AppController', () => {
     prisma = { ping: jest.fn() };
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [
-        AppService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [AppService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     appController = app.get<AppController>(AppController);
