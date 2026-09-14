@@ -1,8 +1,9 @@
 name: Keepalive
 
-# Render Free 인스턴스는 15분 유휴 후 sleep 한다. 깨어 있게 /health 를 주기적으로 친다.
+# Render Free 인스턴스는 15분 유휴 후 sleep, Neon DB는 5분 유휴 후 suspend 한다.
+# /health 로 Render를, /health/db(SELECT 1)로 Neon까지 깨운다.
 # GitHub cron 은 수십 분 지연될 수 있어 15분 창을 매번 지키지는 못한다.
-# 지연이 문제가 되면 외부 스케줄러(cron-job.org 등)로 옮긴다.
+# 확실하게 하려면 외부 스케줄러(cron-job.org 등)에서 같은 2개 URL을 5~10분마다 친다.
 on:
   schedule:
     - cron: '*/10 * * * *'
@@ -14,4 +15,8 @@ jobs:
     timeout-minutes: 5
     steps:
       # 콜드스타트는 수십 초 걸린다 — 첫 요청이 느려도 실패로 보지 않게 여유를 둔다.
-      - run: curl -sf --max-time 90 https://devbrief-api-8lyo.onrender.com/health
+      - name: Wake Render
+        run: curl -sf --max-time 90 https://devbrief-api-8lyo.onrender.com/health
+      # SELECT 1 한 방 — Neon suspend 상태면 여기서 몇 초 더 걸린다.
+      - name: Wake Neon DB
+        run: curl -sf --max-time 90 https://devbrief-api-8lyo.onrender.com/health/db
