@@ -41,9 +41,7 @@ describe('AppController', () => {
 
     it('db down이면 503', async () => {
       prisma.ping.mockResolvedValue({ ok: false, latencyMs: 5000, error: 'timeout' });
-      await expect(appController.getDbHealth()).rejects.toBeInstanceOf(
-        ServiceUnavailableException,
-      );
+      await expect(appController.getDbHealth()).rejects.toBeInstanceOf(ServiceUnavailableException);
     });
   });
 });
