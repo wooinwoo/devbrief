@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceUrl": "https://artificialanalysis.ai/leaderboards/models",
-  "checkedAt": "2026-09-17T05:00:25.221Z",
+  "checkedAt": "2026-09-18T04:52:46.260Z",
   "indexVersion": "4.3",
   "models": [
     {
@@ -9,7 +9,7 @@
       "creator": "Anthropic",
       "slug": "claude-fable-5-1",
       "intelligence": 53,
-      "speed": 67,
+      "speed": 68,
       "costPerTask": 7.63
     },
     {
@@ -17,7 +17,7 @@
       "creator": "Anthropic",
       "slug": "claude-fable-5-1-xhigh",
       "intelligence": 53,
-      "speed": 56,
+      "speed": 55,
       "costPerTask": 5.98
     },
     {
@@ -33,7 +33,7 @@
       "creator": "OpenAI",
       "slug": "gpt-6-astra-xhigh",
       "intelligence": 53,
-      "speed": 51,
+      "speed": 49,
       "costPerTask": 2.31
     },
     {
@@ -41,7 +41,7 @@
       "creator": "Anthropic",
       "slug": "claude-fable-5-1-high",
       "intelligence": 51,
-      "speed": 55,
+      "speed": 53,
       "costPerTask": 3.91
     },
     {
@@ -49,7 +49,7 @@
       "creator": "OpenAI",
       "slug": "gpt-6-astra-high",
       "intelligence": 51,
-      "speed": 48,
+      "speed": 46,
       "costPerTask": 1.72
     },
     {
@@ -65,7 +65,7 @@
       "creator": "OpenAI",
       "slug": "gpt-6-astra-medium",
       "intelligence": 50,
-      "speed": 49,
+      "speed": 46,
       "costPerTask": 1.54
     },
     {
@@ -73,7 +73,7 @@
       "creator": "Anthropic",
       "slug": "claude-opus-5-xhigh",
       "intelligence": 50,
-      "speed": 53,
+      "speed": 52,
       "costPerTask": 4.88
     },
     {
@@ -81,7 +81,7 @@
       "creator": "Anthropic",
       "slug": "claude-fable-5-1-medium",
       "intelligence": 49,
-      "speed": 52,
+      "speed": 50,
       "costPerTask": 2.98
     },
     {
@@ -89,7 +89,7 @@
       "creator": "Anthropic",
       "slug": "claude-opus-5-high",
       "intelligence": 48,
-      "speed": 52,
+      "speed": 51,
       "costPerTask": 3.61
     },
     {
@@ -97,7 +97,7 @@
       "creator": "Meta",
       "slug": "muse-spark-1-3",
       "intelligence": 48,
-      "speed": 242,
+      "speed": 204,
       "costPerTask": 1.6
     },
     {
@@ -105,7 +105,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-sol",
       "intelligence": 47,
-      "speed": 70,
+      "speed": 63,
       "costPerTask": 1.99
     },
     {
@@ -113,7 +113,7 @@
       "creator": "Anthropic",
       "slug": "claude-fable-5-1-low",
       "intelligence": 47,
-      "speed": 53,
+      "speed": 51,
       "costPerTask": 2.37
     },
     {
@@ -137,7 +137,7 @@
       "creator": "Meta",
       "slug": "muse-spark-1-3-xhigh",
       "intelligence": 45,
-      "speed": 235,
+      "speed": 202,
       "costPerTask": 1.37
     },
     {
@@ -145,7 +145,7 @@
       "creator": "Anthropic",
       "slug": "claude-opus-5-medium",
       "intelligence": 45,
-      "speed": 51,
+      "speed": 50,
       "costPerTask": 2.19
     },
     {
@@ -153,7 +153,7 @@
       "creator": "Z AI",
       "slug": "glm-5-3",
       "intelligence": 45,
-      "speed": 67,
+      "speed": 63,
       "costPerTask": 2.01
     },
     {
@@ -161,7 +161,7 @@
       "creator": "SpaceXAI",
       "slug": "grok-4-6",
       "intelligence": 44,
-      "speed": 62,
+      "speed": 59,
       "costPerTask": 1.86
     },
     {
@@ -169,7 +169,7 @@
       "creator": "SpaceXAI",
       "slug": "grok-4-6-xhigh",
       "intelligence": 44,
-      "speed": 59,
+      "speed": 56,
       "costPerTask": 2.32
     },
     {
@@ -177,7 +177,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-sol-xhigh",
       "intelligence": 44,
-      "speed": 66,
+      "speed": 67,
       "costPerTask": 1.18
     },
     {
@@ -185,7 +185,7 @@
       "creator": "Kimi",
       "slug": "kimi-k3",
       "intelligence": 44,
-      "speed": 36,
+      "speed": 37,
       "costPerTask": 2
     },
     {
@@ -193,7 +193,7 @@
       "creator": "SpaceXAI",
       "slug": "grok-4-6-medium",
       "intelligence": 43,
-      "speed": 58,
+      "speed": 57,
       "costPerTask": 1.5
     },
     {
@@ -201,7 +201,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-sol-high",
       "intelligence": 42,
-      "speed": 61,
+      "speed": 60,
       "costPerTask": 0.81
     },
     {
@@ -209,7 +209,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-terra",
       "intelligence": 42,
-      "speed": 89,
+      "speed": 84,
       "costPerTask": 1.4
     },
     {
@@ -217,7 +217,7 @@
       "creator": "Z AI",
       "slug": "glm-5-3-flash",
       "intelligence": 42,
-      "speed": 116,
+      "speed": 107,
       "costPerTask": 0.25
     },
     {
@@ -225,7 +225,7 @@
       "creator": "Google",
       "slug": "gemini-3-8-flash",
       "intelligence": 41,
-      "speed": 341,
+      "speed": 299,
       "costPerTask": 1.24
     },
     {
@@ -233,7 +233,7 @@
       "creator": "Alibaba",
       "slug": "qwen3-8-2-4t-a95b",
       "intelligence": 40,
-      "speed": 41,
+      "speed": 39,
       "costPerTask": 2.16
     },
     {
@@ -249,7 +249,7 @@
       "creator": "Alibaba",
       "slug": "qwen3-8-flash-next",
       "intelligence": 40,
-      "speed": 52,
+      "speed": 53,
       "costPerTask": 0.37
     },
     {
@@ -257,7 +257,7 @@
       "creator": "Anthropic",
       "slug": "claude-opus-5-low",
       "intelligence": 40,
-      "speed": 50,
+      "speed": 49,
       "costPerTask": 1.1
     },
     {
@@ -265,7 +265,7 @@
       "creator": "DeepSeek",
       "slug": "deepseek-v4-1-flash",
       "intelligence": 40,
-      "speed": 219,
+      "speed": 207,
       "costPerTask": 0.27
     },
     {
@@ -273,7 +273,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-sol-medium",
       "intelligence": 39,
-      "speed": 61,
+      "speed": 60,
       "costPerTask": 0.5
     },
     {
@@ -289,7 +289,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-terra-xhigh",
       "intelligence": 38,
-      "speed": 85,
+      "speed": 79,
       "costPerTask": 0.63
     },
     {
@@ -297,7 +297,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-luna",
       "intelligence": 38,
-      "speed": 120,
+      "speed": 124,
       "costPerTask": 0.18
     },
     {
@@ -305,7 +305,7 @@
       "creator": "DeepSeek",
       "slug": "deepseek-v4-pro",
       "intelligence": 36,
-      "speed": 89,
+      "speed": 80,
       "costPerTask": 0.67
     },
     {
@@ -313,7 +313,7 @@
       "creator": "SpaceXAI",
       "slug": "grok-4-6-low",
       "intelligence": 35,
-      "speed": 55,
+      "speed": 54,
       "costPerTask": 0.48
     },
     {
@@ -321,7 +321,7 @@
       "creator": "DeepSeek",
       "slug": "deepseek-v4-flash-vision",
       "intelligence": 35,
-      "speed": 216,
+      "speed": 211,
       "costPerTask": 0.31
     },
     {
@@ -345,7 +345,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-terra-high",
       "intelligence": 34,
-      "speed": 83,
+      "speed": 76,
       "costPerTask": 0.34
     },
     {
@@ -353,7 +353,7 @@
       "creator": "Alibaba",
       "slug": "qwen3-8-27b",
       "intelligence": 34,
-      "speed": 43,
+      "speed": 42,
       "costPerTask": 0.82
     },
     {
@@ -361,7 +361,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-sol-low",
       "intelligence": 34,
-      "speed": 65,
+      "speed": 62,
       "costPerTask": 0.26
     },
     {
@@ -377,7 +377,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-luna-high",
       "intelligence": 32,
-      "speed": 114,
+      "speed": 113,
       "costPerTask": 0.04
     },
     {
@@ -385,12 +385,12 @@
       "creator": "Anthropic",
       "slug": "claude-sonnet-5-high",
       "intelligence": 32,
-      "speed": 66,
+      "speed": 64,
       "costPerTask": 1.79
     },
     {
       "name": "K2 Horizon 375B A23B",
-      "creator": "MBZUAI Institute of Foundation Models",
+      "creator": "Institute of Foundation Models",
       "slug": "k2-horizon-375b-a23b",
       "intelligence": 31,
       "speed": null,
@@ -401,7 +401,7 @@
       "creator": "Kimi",
       "slug": "kimi-k3-low",
       "intelligence": 30,
-      "speed": 33,
+      "speed": 34,
       "costPerTask": 1.15
     },
     {
@@ -409,7 +409,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-terra-medium",
       "intelligence": 30,
-      "speed": 85,
+      "speed": 68,
       "costPerTask": 0.18
     },
     {
@@ -417,7 +417,7 @@
       "creator": "Google",
       "slug": "gemini-3-1-pro-preview",
       "intelligence": 30,
-      "speed": 122,
+      "speed": 116,
       "costPerTask": 0.67
     },
     {
@@ -425,7 +425,7 @@
       "creator": "MiniMax",
       "slug": "minimax-m3",
       "intelligence": 30,
-      "speed": 118,
+      "speed": 155,
       "costPerTask": 0.51
     },
     {
@@ -433,7 +433,7 @@
       "creator": "Anthropic",
       "slug": "claude-sonnet-5-medium",
       "intelligence": 28,
-      "speed": 64,
+      "speed": 62,
       "costPerTask": 1
     },
     {
@@ -441,7 +441,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-terra-low",
       "intelligence": 28,
-      "speed": 86,
+      "speed": 75,
       "costPerTask": 0.14
     },
     {
@@ -449,7 +449,7 @@
       "creator": "Alibaba",
       "slug": "qwen3-8-27b-medium",
       "intelligence": 28,
-      "speed": 49,
+      "speed": 44,
       "costPerTask": 0.9
     },
     {
@@ -457,7 +457,7 @@
       "creator": "Sapiens AI",
       "slug": "agnes-2-5-pro-alpha",
       "intelligence": 28,
-      "speed": 187,
+      "speed": 175,
       "costPerTask": null
     },
     {
@@ -465,7 +465,7 @@
       "creator": "Multiverse Computing",
       "slug": "quasar-438b",
       "intelligence": 27,
-      "speed": 146,
+      "speed": 147,
       "costPerTask": 2.02
     },
     {
@@ -473,7 +473,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-5-instant-06-26",
       "intelligence": 27,
-      "speed": 144,
+      "speed": 124,
       "costPerTask": 0.69
     },
     {
@@ -481,7 +481,7 @@
       "creator": "Alibaba",
       "slug": "qwen3-8-27b-low",
       "intelligence": 26,
-      "speed": 50,
+      "speed": 47,
       "costPerTask": 0.83
     },
     {
@@ -497,7 +497,7 @@
       "creator": "Kimi",
       "slug": "kimi-k2-7-code",
       "intelligence": 26,
-      "speed": 57,
+      "speed": 58,
       "costPerTask": 0.54
     },
     {
@@ -505,7 +505,7 @@
       "creator": "Thinking Machines",
       "slug": "inkling-small",
       "intelligence": 26,
-      "speed": 189,
+      "speed": 170,
       "costPerTask": 0.09
     },
     {
@@ -521,13 +521,13 @@
       "creator": "Tencent",
       "slug": "hy3",
       "intelligence": 26,
-      "speed": 87,
+      "speed": 78,
       "costPerTask": 0.07
     },
     {
       "name": "K2 Horizon MoVA 36B A4B",
-      "creator": "MBZUAI Institute of Foundation Models",
-      "slug": "k2-mova-36b-mid5",
+      "creator": "Institute of Foundation Models",
+      "slug": "k2-horizon-mova-36b-a4b",
       "intelligence": 26,
       "speed": null,
       "costPerTask": null
@@ -537,7 +537,7 @@
       "creator": "Thinking Machines",
       "slug": "inkling",
       "intelligence": 26,
-      "speed": 79,
+      "speed": 80,
       "costPerTask": 0.61
     },
     {
@@ -545,7 +545,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-luna-medium",
       "intelligence": 25,
-      "speed": 110,
+      "speed": 113,
       "costPerTask": 0.02
     },
     {
@@ -553,7 +553,7 @@
       "creator": "InclusionAI",
       "slug": "ling-3-0-flash-vl",
       "intelligence": 25,
-      "speed": 144,
+      "speed": 143,
       "costPerTask": null
     },
     {
@@ -561,7 +561,7 @@
       "creator": "Anthropic",
       "slug": "claude-sonnet-5-low",
       "intelligence": 25,
-      "speed": 63,
+      "speed": 60,
       "costPerTask": 0.51
     },
     {
@@ -569,7 +569,7 @@
       "creator": "NVIDIA",
       "slug": "nvidia-nemotron-3-ultra-550b-a55b",
       "intelligence": 23,
-      "speed": 175,
+      "speed": 157,
       "costPerTask": 0.58
     },
     {
@@ -577,7 +577,7 @@
       "creator": "InclusionAI",
       "slug": "ling-3-0-flash-fin",
       "intelligence": 23,
-      "speed": 162,
+      "speed": 160,
       "costPerTask": null
     },
     {
@@ -585,7 +585,7 @@
       "creator": "Google",
       "slug": "gemini-3-5-flash-lite",
       "intelligence": 23,
-      "speed": 365,
+      "speed": 358,
       "costPerTask": 0.12
     },
     {
@@ -593,7 +593,7 @@
       "creator": "Xiaomi",
       "slug": "mimo-v2-5-0424",
       "intelligence": 22,
-      "speed": 51,
+      "speed": 40,
       "costPerTask": 0.02
     },
     {
@@ -601,7 +601,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-luna-low",
       "intelligence": 22,
-      "speed": 102,
+      "speed": 104,
       "costPerTask": 0.01
     },
     {
@@ -609,13 +609,13 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-terra-non-reasoning",
       "intelligence": 21,
-      "speed": 88,
+      "speed": 79,
       "costPerTask": 0.14
     },
     {
       "name": "K2 Horizon 7B",
-      "creator": "MBZUAI Institute of Foundation Models",
-      "slug": "k2-7b-ph2",
+      "creator": "Institute of Foundation Models",
+      "slug": "k2-horizon-7b",
       "intelligence": 21,
       "speed": null,
       "costPerTask": null
@@ -625,7 +625,7 @@
       "creator": "InclusionAI",
       "slug": "ling-3-0-flash",
       "intelligence": 21,
-      "speed": 345,
+      "speed": 317,
       "costPerTask": 0.03
     },
     {
@@ -641,7 +641,7 @@
       "creator": "Alibaba",
       "slug": "qwen3-5-397b-a17b",
       "intelligence": 19,
-      "speed": 83,
+      "speed": 82,
       "costPerTask": 0.47
     },
     {
@@ -649,7 +649,7 @@
       "creator": "Alibaba",
       "slug": "qwen3-6-35b-a3b",
       "intelligence": 19,
-      "speed": 127,
+      "speed": 105,
       "costPerTask": 0.48
     },
     {
@@ -657,7 +657,7 @@
       "creator": "Meta",
       "slug": "muse-glimmer",
       "intelligence": 18,
-      "speed": 100,
+      "speed": 105,
       "costPerTask": 0.06
     },
     {
@@ -665,7 +665,7 @@
       "creator": "Anthropic",
       "slug": "claude-4-5-haiku-reasoning",
       "intelligence": 18,
-      "speed": 88,
+      "speed": 89,
       "costPerTask": 0.21
     },
     {
@@ -686,8 +686,8 @@
     },
     {
       "name": "K2 Horizon 3.7B",
-      "creator": "MBZUAI Institute of Foundation Models",
-      "slug": "k2-4b-ph1",
+      "creator": "Institute of Foundation Models",
+      "slug": "k2-horizon-3-7b",
       "intelligence": 16,
       "speed": null,
       "costPerTask": null
@@ -697,7 +697,7 @@
       "creator": "OpenAI",
       "slug": "gpt-5-6-luna-non-reasoning",
       "intelligence": 16,
-      "speed": 104,
+      "speed": 102,
       "costPerTask": 0.01
     },
     {
@@ -713,7 +713,7 @@
       "creator": "Mistral",
       "slug": "mistral-medium-3-5",
       "intelligence": 15,
-      "speed": 141,
+      "speed": 145,
       "costPerTask": 0.44
     },
     {
@@ -721,7 +721,7 @@
       "creator": "Cohere",
       "slug": "command-a-plus",
       "intelligence": 14,
-      "speed": 252,
+      "speed": 241,
       "costPerTask": 0
     },
     {
@@ -753,7 +753,7 @@
       "creator": "OpenAI",
       "slug": "gpt-oss-120b",
       "intelligence": 12,
-      "speed": 174,
+      "speed": 177,
       "costPerTask": 0.11
     },
     {
@@ -761,7 +761,7 @@
       "creator": "InclusionAI",
       "slug": "ling-3-0-tiny",
       "intelligence": 12,
-      "speed": 161,
+      "speed": 157,
       "costPerTask": 0
     },
     {
@@ -769,7 +769,7 @@
       "creator": "IBM",
       "slug": "granite-4-2-8b",
       "intelligence": 12,
-      "speed": 91,
+      "speed": 92,
       "costPerTask": 0.02
     },
     {
@@ -777,7 +777,7 @@
       "creator": "Inception",
       "slug": "mercury-2",
       "intelligence": 12,
-      "speed": 609,
+      "speed": 480,
       "costPerTask": 0.07
     },
     {
@@ -785,7 +785,7 @@
       "creator": "Mistral",
       "slug": "mistral-small-4",
       "intelligence": 11,
-      "speed": 163,
+      "speed": 171,
       "costPerTask": 0.05
     },
     {
@@ -793,7 +793,7 @@
       "creator": "Arcee AI",
       "slug": "trinity-large-thinking",
       "intelligence": 11,
-      "speed": 313,
+      "speed": 309,
       "costPerTask": 0.35
     },
     {
@@ -809,7 +809,7 @@
       "creator": "Cohere",
       "slug": "north-mini-code",
       "intelligence": 10,
-      "speed": 76,
+      "speed": 73,
       "costPerTask": 0
     },
     {
@@ -817,7 +817,7 @@
       "creator": "Mistral",
       "slug": "mistral-large-3",
       "intelligence": 10,
-      "speed": 80,
+      "speed": 75,
       "costPerTask": 0.1
     },
     {
@@ -825,7 +825,7 @@
       "creator": "Mistral",
       "slug": "devstral-2",
       "intelligence": 9,
-      "speed": 136,
+      "speed": 143,
       "costPerTask": 0
     },
     {
@@ -833,7 +833,7 @@
       "creator": "Meta",
       "slug": "llama-4-maverick",
       "intelligence": 9,
-      "speed": 111,
+      "speed": 114,
       "costPerTask": 0.04
     },
     {
@@ -841,7 +841,7 @@
       "creator": "IBM",
       "slug": "granite-4-2-3b",
       "intelligence": 9,
-      "speed": 208,
+      "speed": 209,
       "costPerTask": 0.01
     },
     {
@@ -849,7 +849,7 @@
       "creator": "OpenAI",
       "slug": "gpt-oss-20b",
       "intelligence": 9,
-      "speed": 205,
+      "speed": 178,
       "costPerTask": 0.01
     },
     {
@@ -857,7 +857,7 @@
       "creator": "NVIDIA",
       "slug": "nvidia-nemotron-3-nano-30b-a3b-reasoning",
       "intelligence": 9,
-      "speed": 110,
+      "speed": 105,
       "costPerTask": 0.02
     },
     {
@@ -865,7 +865,7 @@
       "creator": "Mistral",
       "slug": "devstral-small-2",
       "intelligence": 8,
-      "speed": 131,
+      "speed": 132,
       "costPerTask": 0
     },
     {
@@ -873,7 +873,7 @@
       "creator": "Meta",
       "slug": "llama-4-scout",
       "intelligence": 6,
-      "speed": 103,
+      "speed": 100,
       "costPerTask": 0.12
     },
     {
@@ -881,7 +881,7 @@
       "creator": "Celeris",
       "slug": "celeris-1",
       "intelligence": 6,
-      "speed": 1463,
+      "speed": 1423,
       "costPerTask": 0.05
     },
     {
@@ -897,7 +897,7 @@
       "creator": "Mistral",
       "slug": "ministral-3-8b",
       "intelligence": 5,
-      "speed": 91,
+      "speed": 100,
       "costPerTask": 0.07
     },
     {
@@ -905,13 +905,13 @@
       "creator": "Mistral",
       "slug": "ministral-3-3b",
       "intelligence": 5,
-      "speed": 217,
+      "speed": 226,
       "costPerTask": 0.04
     },
     {
       "name": "K2 Horizon 0.9B",
-      "creator": "MBZUAI Institute of Foundation Models",
-      "slug": "k2-1b-final",
+      "creator": "Institute of Foundation Models",
+      "slug": "k2-horizon-0-9b",
       "intelligence": 3,
       "speed": null,
       "costPerTask": null
