@@ -210,7 +210,7 @@ async function extractArticles(
   prisma: PrismaService,
   extractor: ArticleExtractService,
   opts: { onlyMissing: boolean; limit: number; concurrency?: number },
-): Promise<{ scanned: number; extracted: number; failed: number }> {
+): Promise<{ scanned: number; extracted: number; unavailable: number; failed: number }> {
   const where = opts.onlyMissing ? `WHERE "contentHtml" IS NULL` : '';
   const rows = await prisma.$queryRawUnsafe<ExtractRow[]>(
     `SELECT id, url
@@ -223,6 +223,7 @@ async function extractArticles(
 
   const concurrency = Math.max(1, Math.min(opts.concurrency ?? 4, 8));
   let extracted = 0;
+  let unavailable = 0;
   let failed = 0;
   let cursor = 0;
 
@@ -230,10 +231,20 @@ async function extractArticles(
     while (cursor < rows.length) {
       const row = rows[cursor++];
       try {
-        const html = await extractor.extract(row.url);
+        const result = await extractor.extract(row.url);
+        const html = result.html;
         if (!html) {
-          failed++;
-          logger.debug(`[${row.id}] 추출 실패(본문 없음/짧음): ${row.url}`);
+          if (result.unavailable) {
+            // ponytail: '' 는 "가져왔지만 쓸 본문 없음" 표시라 onlyMissing 이 다시 고르지 않는다.
+            // 상태별 재시도 주기가 필요해지면 전용 컬럼(시도 시각·사유)으로 옮긴다.
+            await prisma.article.update({ where: { id: row.id }, data: { contentHtml: '' } });
+            unavailable++;
+          } else {
+            failed++;
+          }
+          logger.debug(
+            `[${row.id}] 추출 실패(${result.unavailable ? '영구' : '일시'}): ${row.url}`,
+          );
           continue;
         }
         await prisma.article.update({
@@ -249,7 +260,7 @@ async function extractArticles(
   }
 
   await Promise.all(Array.from({ length: concurrency }, () => worker()));
-  return { scanned: rows.length, extracted, failed };
+  return { scanned: rows.length, extracted, unavailable, failed };
 }
 
 export interface CliServices {
@@ -333,7 +344,9 @@ export async function runAll(
       onlyMissing: true,
       limit: extractLimit,
     });
-    logger.log(`  · extract(missing): extracted=${r.extracted} failed=${r.failed}`);
+    logger.log(
+      `  · extract(missing): extracted=${r.extracted} unavailable=${r.unavailable} failed=${r.failed}`,
+    );
   });
 
   await runStep('repos', async () => {
@@ -488,7 +501,9 @@ async function main() {
           onlyMissing: !argv.includes('--all'),
           limit: extractLimit,
         });
-        logger.log(`✔ extract: scanned=${r.scanned} extracted=${r.extracted} failed=${r.failed}`);
+        logger.log(
+          `✔ extract: scanned=${r.scanned} extracted=${r.extracted} unavailable=${r.unavailable} failed=${r.failed}`,
+        );
         break;
       }
       case 'repos': {

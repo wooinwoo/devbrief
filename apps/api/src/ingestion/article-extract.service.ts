@@ -69,10 +69,14 @@ export class ArticleExtractService {
   /** 본문으로 인정할 최소 평문 길이. 이보다 짧으면 추출 실패로 간주. */
   private static readonly MIN_TEXT_LEN = 200;
 
+  /** 다시 요청해도 결과가 같은 응답: 접근 거부·삭제·법적 차단. */
+  private static readonly PERMANENT_STATUS = new Set([401, 403, 404, 410, 451]);
+
   /**
-   * url 의 원문을 받아 정제된 본문 HTML 을 돌려준다. 실패/너무 짧으면 null.
+   * url 의 원문을 받아 정제된 본문 HTML 을 돌려준다. 실패/너무 짧으면 html=null.
+   * unavailable=true 는 재시도해도 같은 결과인 실패(차단·없음·본문 부족), false 는 일시 실패(시간 초과·5xx 등).
    */
-  async extract(url: string): Promise<string | null> {
+  async extract(url: string): Promise<{ html: string | null; unavailable: boolean }> {
     let html: string;
     try {
       const res = await fetch(url, {
@@ -85,15 +89,16 @@ export class ArticleExtractService {
       });
       if (!res.ok) {
         this.logger.debug(`본문 fetch 실패 ${url}: HTTP ${res.status}`);
-        return null;
+        return { html: null, unavailable: ArticleExtractService.PERMANENT_STATUS.has(res.status) };
       }
       html = await res.text();
     } catch (e) {
       this.logger.debug(`본문 fetch 실패 ${url}: ${(e as Error).message}`);
-      return null;
+      return { html: null, unavailable: false };
     }
 
-    return this.extractFromHtml(html, url);
+    const extracted = this.extractFromHtml(html, url);
+    return { html: extracted, unavailable: extracted === null };
   }
 
   /**
