@@ -346,9 +346,15 @@ export async function runAll(
   await runStep('videos', async () => {
     const r = await s.youtube.syncAllConferences();
     logger.log(`  · videos: synced=${r.synced} failed=${r.failed ?? 0}`);
-    // 채널 피드 404/500 은 YouTube 쪽에서 수시로 난다 — 전멸일 때만 실패.
-    if (r.synced === 0 && (r.failed ?? 0) > 0) throw new Error(`Video feed failures: ${r.failed}`);
-    if ((r.failed ?? 0) > 0) degraded('videos', `영상 피드 일부 실패: ${r.failed}`);
+    // 키 없이 쓰는 공개 RSS 폴백은 YouTube 가 같은 채널에도 404/500 을 수시로 낸다.
+    // 그 실패로 배치를 빨갛게 만들 수 없으므로, 실패 집계는 API 키가 있을 때만 한다.
+    if ((r.failed ?? 0) === 0) return;
+    if (!process.env.YOUTUBE_API_KEY?.trim()) {
+      degraded('videos', `공개 RSS 폴백 실패: ${r.failed} (YOUTUBE_API_KEY 미설정)`);
+      return;
+    }
+    if (r.synced === 0) throw new Error(`Video feed failures: ${r.failed}`);
+    degraded('videos', `영상 피드 일부 실패: ${r.failed}`);
   });
 
   await runStep('conferences', async () => {
