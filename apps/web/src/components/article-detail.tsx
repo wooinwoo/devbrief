@@ -50,7 +50,7 @@ export function ArticleDetail({ article, related }: Props) {
     <article className="detail-reading pb-12 sm:pb-16">
       <Link
         href="/?tab=articles"
-        className="inline-flex min-h-11 items-center gap-2 text-[13px] mb-5 transition-colors hover:text-(--color-fg-default)"
+        className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap text-[13px] mb-5 transition-colors hover:text-(--color-fg-default)"
         style={{ color: 'var(--color-fg-muted)' }}
       >
         <span aria-hidden>←</span> 개발 뉴스로
