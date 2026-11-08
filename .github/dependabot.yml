@@ -1,0 +1,22 @@
+# 의존성 보안 업데이트. GitHub Actions는 커밋 해시로 고정돼 있어 Dependabot이 해시째 올려준다.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # 메이저 업데이트는 코드 수정이 필요할 수 있어 자동 제안에서 제외하고 직접 올린다.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]

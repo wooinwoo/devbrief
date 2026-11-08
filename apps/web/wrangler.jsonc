@@ -5,6 +5,6 @@
   "compatibility_flags": ["nodejs_compat"],
   "pages_build_output_dir": "./dist/pages",
   "vars": {
-    "NEXT_PUBLIC_API_BASE": "https://devbrief-api-8lyo.onrender.com/api/v1"
+    "NEXT_PUBLIC_API_BASE": "https://devbrief-api.wooin1001.workers.dev/api/v1"
   }
 }
