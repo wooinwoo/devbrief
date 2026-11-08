@@ -18,3 +18,8 @@ coverage
 # stale next build artifacts
 .next-stale*
 **/.next-stale*
+
+# Cloudflare Worker 빌드 산출물
+apps/edge-api/dist/
+apps/edge-api/generated/
+.wrangler/

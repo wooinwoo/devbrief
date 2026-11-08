@@ -5,7 +5,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const env = {
   ...process.env,
   NEXT_PUBLIC_API_BASE:
-    process.env.NEXT_PUBLIC_API_BASE || 'https://devbrief-api-8lyo.onrender.com/api/v1',
+    process.env.NEXT_PUBLIC_API_BASE || 'https://devbrief-api.wooin1001.workers.dev/api/v1',
   NEXT_PUBLIC_API_PROXY_PATH: '/api/public',
 };
 const result = spawnSync(process.execPath, ['node_modules/vinext/dist/cli.js', 'build'], {
