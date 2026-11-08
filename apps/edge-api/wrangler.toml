@@ -13,3 +13,7 @@ base_dir = "dist"
 type = "CompiledWasm"
 globs = ["**/*.wasm"]
 fallthrough = false
+
+# 매일 09:40 KST에 영상 RSS를 동기화한다 (수집 워크플로 09:00 KST 이후).
+[triggers]
+crons = ["40 0 * * *"]
