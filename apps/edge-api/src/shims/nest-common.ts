@@ -16,7 +16,11 @@ export function getMeta<T>(target: object, key: string): T | undefined {
   return metadataStore.get(target)?.get(key) as T | undefined;
 }
 
-type Decorator = (target: object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor) => void;
+type Decorator = (
+  target: object,
+  propertyKey?: string | symbol,
+  descriptor?: PropertyDescriptor,
+) => void;
 
 function owner(target: object, descriptor?: PropertyDescriptor) {
   return (descriptor?.value as object | undefined) ?? target;
@@ -26,32 +30,45 @@ function decorate(key: string, value: unknown): Decorator {
   return (target, _propertyKey, descriptor) => setMeta(owner(target, descriptor), key, value);
 }
 
-const route = (method: string) => (path = "") => decorate("route", { method, path });
+const route =
+  (method: string) =>
+  (path = '') =>
+    decorate('route', { method, path });
 
 export const Injectable = (): ClassDecorator => () => undefined;
 export const Module = (): ClassDecorator => () => undefined;
 export const Global = (): ClassDecorator => () => undefined;
-export const Controller = (prefix = ""): ClassDecorator => (target) => setMeta(target, "prefix", prefix);
-export const Get = route("GET");
-export const Post = route("POST");
-export const Patch = route("PATCH");
-export const Put = route("PUT");
-export const Delete = route("DELETE");
-export const HttpCode = (status: number) => decorate("httpCode", status);
+export const Controller =
+  (prefix = ''): ClassDecorator =>
+  (target) =>
+    setMeta(target, 'prefix', prefix);
+export const Get = route('GET');
+export const Post = route('POST');
+export const Patch = route('PATCH');
+export const Put = route('PUT');
+export const Delete = route('DELETE');
+export const HttpCode = (status: number) => decorate('httpCode', status);
 export const SetMetadata = (key: string, value: unknown) => decorate(key, value);
 export const Inject = (): ParameterDecorator => () => undefined;
 
-export const Header = (name: string, value: string): Decorator => (target, _key, descriptor) => {
-  const target_ = owner(target, descriptor);
-  setMeta(target_, "headers", [...(getMeta<[string, string][]>(target_, "headers") ?? []), [name, value]]);
-};
+export const Header =
+  (name: string, value: string): Decorator =>
+  (target, _key, descriptor) => {
+    const target_ = owner(target, descriptor);
+    setMeta(target_, 'headers', [
+      ...(getMeta<[string, string][]>(target_, 'headers') ?? []),
+      [name, value],
+    ]);
+  };
 
-export const UseGuards = (...guards: unknown[]): Decorator => (target, _key, descriptor) => {
-  const target_ = owner(target, descriptor);
-  setMeta(target_, "guards", [...(getMeta<unknown[]>(target_, "guards") ?? []), ...guards]);
-};
+export const UseGuards =
+  (...guards: unknown[]): Decorator =>
+  (target, _key, descriptor) => {
+    const target_ = owner(target, descriptor);
+    setMeta(target_, 'guards', [...(getMeta<unknown[]>(target_, 'guards') ?? []), ...guards]);
+  };
 
-export type ParamKind = "body" | "query" | "param" | "req" | "res" | "headers";
+export type ParamKind = 'body' | 'query' | 'param' | 'req' | 'res' | 'headers';
 export interface ParamSpec {
   index: number;
   kind: ParamKind;
@@ -62,24 +79,31 @@ function paramDecorator(kind: ParamKind, name?: string): ParameterDecorator {
   return (target, propertyKey, index) => {
     if (propertyKey === undefined) return;
     const method = (target as Record<string | symbol, object>)[propertyKey]!;
-    setMeta(method, "params", [...(getMeta<ParamSpec[]>(method, "params") ?? []), { index, kind, name }]);
+    setMeta(method, 'params', [
+      ...(getMeta<ParamSpec[]>(method, 'params') ?? []),
+      { index, kind, name },
+    ]);
   };
 }
 
 // 파이프 인자(ParseIntPipe 등)는 받지 않는다. 데코레이터 이름만 맞춘다.
-export const Body = (name?: string) => paramDecorator("body", typeof name === "string" ? name : undefined);
-export const Query = (name?: string) => paramDecorator("query", typeof name === "string" ? name : undefined);
-export const Param = (name?: string) => paramDecorator("param", typeof name === "string" ? name : undefined);
-export const Headers = (name?: string) => paramDecorator("headers", typeof name === "string" ? name : undefined);
-export const Req = () => paramDecorator("req");
-export const Res = () => paramDecorator("res");
+export const Body = (name?: string) =>
+  paramDecorator('body', typeof name === 'string' ? name : undefined);
+export const Query = (name?: string) =>
+  paramDecorator('query', typeof name === 'string' ? name : undefined);
+export const Param = (name?: string) =>
+  paramDecorator('param', typeof name === 'string' ? name : undefined);
+export const Headers = (name?: string) =>
+  paramDecorator('headers', typeof name === 'string' ? name : undefined);
+export const Req = () => paramDecorator('req');
+export const Res = () => paramDecorator('res');
 
 export class HttpException extends Error {
   constructor(
     private readonly body: string | Record<string, unknown>,
     private readonly status: number,
   ) {
-    super(typeof body === "string" ? body : String(body.message ?? ""));
+    super(typeof body === 'string' ? body : String(body.message ?? ''));
   }
 
   getStatus() {
@@ -87,7 +111,9 @@ export class HttpException extends Error {
   }
 
   getResponse() {
-    return typeof this.body === "string" ? { statusCode: this.status, message: this.body } : this.body;
+    return typeof this.body === 'string'
+      ? { statusCode: this.status, message: this.body }
+      : this.body;
   }
 }
 
@@ -99,13 +125,13 @@ function httpError(status: number, fallback: string) {
   };
 }
 
-export const BadRequestException = httpError(400, "Bad Request");
-export const UnauthorizedException = httpError(401, "Unauthorized");
-export const ForbiddenException = httpError(403, "Forbidden");
-export const NotFoundException = httpError(404, "Not Found");
-export const ConflictException = httpError(409, "Conflict");
-export const ServiceUnavailableException = httpError(503, "Service Unavailable");
-export const InternalServerErrorException = httpError(500, "Internal Server Error");
+export const BadRequestException = httpError(400, 'Bad Request');
+export const UnauthorizedException = httpError(401, 'Unauthorized');
+export const ForbiddenException = httpError(403, 'Forbidden');
+export const NotFoundException = httpError(404, 'Not Found');
+export const ConflictException = httpError(409, 'Conflict');
+export const ServiceUnavailableException = httpError(503, 'Service Unavailable');
+export const InternalServerErrorException = httpError(500, 'Internal Server Error');
 
 export class ValidationPipe {
   constructor(_options?: unknown) {
@@ -115,7 +141,7 @@ export class ValidationPipe {
 
 // Nest Logger와 같은 모양. Worker 로그(wrangler tail)로 내보낸다.
 export class Logger {
-  constructor(private readonly context = "") {}
+  constructor(private readonly context = '') {}
   log(message: unknown) {
     console.log(`[${this.context}]`, message);
   }
