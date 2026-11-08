@@ -36,6 +36,9 @@ on:
         default: false
 
 # 직전 실행이 안 끝났으면 취소하지 말고 줄세움 (DB 쓰기 충돌 방지)
+permissions:
+  contents: read
+
 concurrency:
   group: ingest
   cancel-in-progress: false
@@ -49,9 +52,6 @@ jobs:
       run:
         shell: bash
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
       # 배치 실패의 원인 로그 다수가 debug 레벨 — Actions 에서는 debug 를 켠다 (cli.ts resolveLogLevels)
       LOG_LEVEL: debug
       # 수동 실행(workflow_dispatch)이면 선택한 command, 스케줄이면 all
@@ -61,6 +61,10 @@ jobs:
       # 미정의 secret 은 Actions 가 빈 문자열로 주입한다 — 회전 실수/오타를 여기서 빨간불로 만든다.
       # (CLI 도 부트 전에 같은 검증을 하지만, install/build 전에 즉시 실패하는 편이 빠르다)
       - name: Preflight (secrets 검증)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: |
           [ -n "$DATABASE_URL" ] || { echo "::error title=Preflight::DATABASE_URL secret 이 비어 있습니다"; exit 1; }
           case "$COMMAND" in
@@ -71,13 +75,15 @@ jobs:
           [ -n "$YOUTUBE_API_KEY" ] || echo "::warning title=Preflight::YOUTUBE_API_KEY 미설정 — 공개 영상 RSS를 사용합니다"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           # @devbrief/db의 main이 src/index.ts(TS 원본)라 런타임 require 시
           # Node의 strip-types가 필요. 24는 이를 안정 지원(Dockerfile과 동일 버전).
@@ -92,11 +98,15 @@ jobs:
 
       - name: Prepare legacy schema (manual recovery only)
         if: inputs.prepare_schema == true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           node scripts/database-audit.mjs prepare
           pnpm db:migrate:deploy
 
       - name: Database counts before collection
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: node scripts/database-audit.mjs
 
       - name: Build API
@@ -112,6 +122,10 @@ jobs:
 
       - name: Run CLI
         id: cli
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         # tee 로 로그 사본을 남겨 아래 Summary/알림 스텝에서 재사용.
         # (Actions 기본 bash 는 -o pipefail 이라 CLI 실패가 tee 뒤로도 전파된다)
         run: node apps/api/dist/cli.js "$COMMAND" --limit "$LIMIT" 2>&1 | tee /tmp/cli.log
@@ -119,6 +133,8 @@ jobs:
       # run 목록에서 클릭 한 번으로 스텝별 결과/실패를 확인 (성공/실패 무관하게 기록)
       - name: Database counts after collection
         if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: node scripts/database-audit.mjs
 
       - name: Step summary
