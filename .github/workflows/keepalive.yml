@@ -20,9 +20,9 @@ jobs:
           set -u
           fail=0
           for url in \
-            "https://devbrief.pages.dev/" \
+            "https://devbrief.wooki.cc/" \
             "https://devbrief-api.wooin1001.workers.dev/health/db" \
-            "https://devbrief.pages.dev/api/public/articles?limit=1"; do
+            "https://devbrief.wooki.cc/api/public/articles?limit=1"; do
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$url" || echo "000")
             echo "$url -> HTTP $code"
             if [ "$code" != "200" ]; then

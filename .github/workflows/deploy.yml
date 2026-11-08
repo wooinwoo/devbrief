@@ -74,7 +74,7 @@ jobs:
 
       - name: Smoke test
         run: |
-          for url in "https://devbrief-api.wooin1001.workers.dev/health/db" "https://devbrief.pages.dev/api/public/articles?limit=1"; do
+          for url in "https://devbrief-api.wooin1001.workers.dev/health/db" "https://devbrief.wooki.cc/api/public/articles?limit=1"; do
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$url" || echo "000")
             echo "$url -> HTTP $code"
             test "$code" = "200"

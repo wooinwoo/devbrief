@@ -2,7 +2,7 @@
 
 개발 뉴스, 발표 영상, 오픈소스와 국내외 행사를 모아 **읽을 정보와 참여할 기회를 찾는 기술 큐레이션 서비스**입니다.
 
-[서비스 보기](https://devbrief.pages.dev) · [행사 탐색](https://devbrief.pages.dev/conferences) · [설계 사례](#설계와-문제-해결) · [로컬 실행](#로컬-실행)
+[서비스 보기](https://devbrief.wooki.cc) · [행사 탐색](https://devbrief.wooki.cc/conferences) · [설계 사례](#설계와-문제-해결) · [로컬 실행](#로컬-실행)
 
 [![CI](https://github.com/wooinwoo/devbrief/actions/workflows/ci.yml/badge.svg)](https://github.com/wooinwoo/devbrief/actions/workflows/ci.yml)
 

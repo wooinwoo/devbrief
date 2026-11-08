@@ -4,7 +4,7 @@
 
 ## 현재 구성
 
-- 웹: https://devbrief.pages.dev
+- 웹: https://devbrief.wooki.cc
 - API: https://devbrief-api.wooin1001.workers.dev/api/v1
 - 정적 파일: Pages CDN (`/_next/static/*`는 함수 실행에서 제외)
 - 서버 렌더링/관리자 접근 검사: Pages `_worker.js`
