@@ -1,6 +1,6 @@
 // devbrief 공개 읽기 API를 Cloudflare Worker에서 실행한다.
 // apps/api의 controller·service를 Nest 없이 그대로 연결하고 GET route만 연다.
-// 수집·요약·관리자 기능은 GitHub Actions CLI와 기존 서버 쪽에 그대로 둔다.
+// 수집·요약·관리자 기능은 GitHub Actions CLI가 맡고, 영상 RSS 동기화만 이 Worker의 예약 작업이 맡는다.
 import { PrismaNeon } from '@prisma/adapter-neon';
 import { AppController } from '../../api/src/app.controller';
 import { AppService } from '../../api/src/app.service';
@@ -15,11 +15,15 @@ import { SourcesController } from '../../api/src/sources/sources.controller';
 import { StatsController } from '../../api/src/stats/stats.controller';
 import { StatsService } from '../../api/src/stats/stats.service';
 import { VideosController } from '../../api/src/videos/videos.controller';
+import { YouTubeSyncService } from '../../api/src/videos/youtube-sync.service';
 import { PrismaClient } from '../generated/prisma/client';
 import { HttpException, type ParamSpec, getMeta } from './shims/nest-common';
+import { ConfigService } from './shims/nest-extras';
 
 interface Env {
   DATABASE_URL: string;
+  /** 영상 동기화를 수동으로 실행할 때 쓰는 토큰. 설정하지 않으면 수동 실행 경로는 닫힌다. */
+  MANUAL_SYNC_TOKEN?: string;
 }
 
 interface Context {
@@ -132,6 +136,15 @@ function json(status: number, body: unknown, headers: Headers) {
 async function handle(request: Request, env: Env, context: Context): Promise<Response> {
   const url = new URL(request.url);
   const headers = new Headers();
+  if (request.method === 'POST' && url.pathname === '/internal/sync-videos') {
+    const token = request.headers.get('x-sync-token');
+    if (!env.MANUAL_SYNC_TOKEN || token !== env.MANUAL_SYNC_TOKEN) {
+      return json(404, { statusCode: 404, message: 'Not Found' }, headers);
+    }
+    const startedAt = Date.now();
+    await syncVideos(env);
+    return json(200, { ok: true, ms: Date.now() - startedAt }, headers);
+  }
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return json(405, { statusCode: 405, message: '읽기 전용 API입니다.' }, headers);
   }
@@ -214,6 +227,26 @@ async function handle(request: Request, env: Env, context: Context): Promise<Res
   }
 }
 
+// 매일 영상 RSS 동기화. YouTube는 GitHub Actions 서버 IP의 RSS 요청을 404로 막지만
+// Cloudflare에서는 받아지므로, API 키 없이 공개 RSS로 기존 동기화 로직을 그대로 실행한다.
+async function syncVideos(env: Env) {
+  const prisma = new EdgePrisma({
+    adapter: new PrismaNeon({ connectionString: env.DATABASE_URL }),
+  });
+  try {
+    const youtube = new YouTubeSyncService(new ConfigService() as never, prisma as never);
+    const result = await youtube.syncAllConferences(15);
+    console.log(`[videos] synced=${result.synced} failed=${result.failed}`);
+    if (result.synced === 0 && result.failed > 0)
+      throw new Error('모든 채널의 영상 동기화가 실패했습니다.');
+  } finally {
+    await prisma.$disconnect().catch(() => undefined);
+  }
+}
+
 export default {
   fetch: handle,
+  async scheduled(_event: unknown, env: Env, context: Context) {
+    context.waitUntil(syncVideos(env));
+  },
 };

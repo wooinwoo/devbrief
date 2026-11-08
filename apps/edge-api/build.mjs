@@ -51,15 +51,16 @@ const aliases = {
   '@nestjs/bullmq': shim('nest-extras.ts'),
   '@nestjs/schedule': shim('nest-extras.ts'),
   '@devbrief/db': shim('db.ts'),
+  axios: shim('axios.ts'),
 };
-// 공개 읽기 route에서는 호출되지 않는 서버 전용 라이브러리.
-const unusedModules =
-  /^(bullmq|ioredis|youtubei\.js|cheerio|rss-parser|@google\/genai|express)(\/.*)?$/;
+// 공개 읽기 route와 영상 RSS 동기화에서는 호출되지 않는 서버 전용 라이브러리.
+// cheerio는 영상 RSS(XML) 해석에 쓰므로 실제 패키지를 번들한다.
+const unusedModules = /^(bullmq|ioredis|youtubei\.js|rss-parser|@google\/genai|express)(\/.*)?$/;
 
 const plugin = {
   name: 'devbrief-edge',
   setup(pluginBuild) {
-    pluginBuild.onResolve({ filter: /^@nestjs\/|^@devbrief\/db$/ }, (args) =>
+    pluginBuild.onResolve({ filter: /^@nestjs\/|^@devbrief\/db$|^axios$/ }, (args) =>
       aliases[args.path] ? { path: aliases[args.path] } : undefined,
     );
     pluginBuild.onResolve({ filter: unusedModules }, () => ({ path: shim('unused-module.ts') }));
