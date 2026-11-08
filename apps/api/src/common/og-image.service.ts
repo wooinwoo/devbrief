@@ -14,7 +14,7 @@ export class OgImageService {
         maxContentLength: 2_000_000,
         responseType: 'text',
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.pages.dev)',
+          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.wooki.cc)',
         },
       });
       return this.parse(res.data, res.config.url ?? pageUrl);
