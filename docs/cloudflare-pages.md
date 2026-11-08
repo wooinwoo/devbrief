@@ -5,7 +5,7 @@
 ## 현재 구성
 
 - 웹: https://devbrief.pages.dev
-- API: https://devbrief-api-8lyo.onrender.com/api/v1
+- API: https://devbrief-api.wooin1001.workers.dev/api/v1
 - 정적 파일: Pages CDN (`/_next/static/*`는 함수 실행에서 제외)
 - 서버 렌더링/관리자 접근 검사: Pages `_worker.js`
 - 브라우저 API 요청: 같은 출처의 `/api/public/*` → 기존 API (GET 전용, 경로 제한)

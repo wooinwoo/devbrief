@@ -1,0 +1,19 @@
+# devbrief 공개 읽기 API Worker. `pnpm --filter @devbrief/edge-api deploy`로 배포한다.
+# DATABASE_URL은 `wrangler secret put DATABASE_URL`로 넣는다(저장소에 두지 않음).
+name = "devbrief-api"
+main = "dist/index.js"
+compatibility_date = "2026-09-09"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+no_bundle = true
+find_additional_modules = true
+base_dir = "dist"
+
+[[rules]]
+type = "CompiledWasm"
+globs = ["**/*.wasm"]
+fallthrough = false
+
+# 매일 09:40 KST에 영상 RSS를 동기화한다 (수집 워크플로 09:00 KST 이후).
+[triggers]
+crons = ["40 0 * * *"]
