@@ -2,7 +2,9 @@
 // 공개 읽기 API는 큐·예약 작업을 쓰지 않으므로 데코레이터와 클래스 모양만 맞춘다.
 export class ConfigService {
   get<T = string>(key: string, fallback?: T): T | undefined {
-    const value = (globalThis as { process?: { env?: Record<string, string> } }).process?.env?.[key];
+    const value = (globalThis as { process?: { env?: Record<string, string> } }).process?.env?.[
+      key
+    ];
     return (value as T | undefined) ?? fallback;
   }
 }
@@ -13,7 +15,11 @@ export const InjectQueue = (): ParameterDecorator => () => undefined;
 export const Processor = (): ClassDecorator => () => undefined;
 export class WorkerHost {}
 export const getQueueToken = (name: string) => `queue:${name}`;
-export const BullModule = { forRoot: () => ({}), forRootAsync: () => ({}), registerQueue: () => ({}) };
+export const BullModule = {
+  forRoot: () => ({}),
+  forRootAsync: () => ({}),
+  registerQueue: () => ({}),
+};
 
 export const Cron = (): MethodDecorator => () => undefined;
 export const ScheduleModule = { forRoot: () => ({}) };
@@ -28,4 +34,4 @@ export class Reflector {
     return undefined;
   }
 }
-export const APP_GUARD = "APP_GUARD";
+export const APP_GUARD = 'APP_GUARD';
