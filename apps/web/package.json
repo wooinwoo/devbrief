@@ -18,31 +18,31 @@
   },
   "dependencies": {
     "@devbrief/shared": "workspace:*",
-    "@vinext/cloudflare": "1.0.0-beta.7",
-    "motion": "^12.40.0",
-    "next": "16.2.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
-    "react-server-dom-webpack": "19.2.6",
-    "vinext": "1.0.0-beta.9"
+    "@vinext/cloudflare": "1.3.3",
+    "motion": "^12.43.0",
+    "next": "16.4.5",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-server-dom-webpack": "19.3.1",
+    "vinext": "1.4.3"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.54.4",
+    "@cloudflare/vite-plugin": "1.67.0",
     "@tailwindcss/postcss": "^4",
-    "@testing-library/react": "^16.3.2",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^6.1.1",
-    "@vitejs/plugin-rsc": "0.5.34",
-    "@vitest/coverage-v8": "^4.1.7",
-    "esbuild": "0.28.1",
+    "@vitejs/plugin-react": "^6.2.1",
+    "@vitejs/plugin-rsc": "0.5.39",
+    "@vitest/coverage-v8": "^4.1.12",
+    "esbuild": "0.28.2",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vite": "^8.0.14",
-    "vitest": "^4.1.7",
-    "wrangler": "4.129.0"
+    "vite": "^8.3.6",
+    "vitest": "^4.1.12",
+    "wrangler": "4.158.0"
   },
   "type": "module"
 }
