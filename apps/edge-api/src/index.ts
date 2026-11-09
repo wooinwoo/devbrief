@@ -1,7 +1,7 @@
 // devbrief 공개 읽기 API를 Cloudflare Worker에서 실행한다.
 // apps/api의 controller·service를 Nest 없이 그대로 연결하고 GET route만 연다.
 // 수집·요약·관리자 기능은 GitHub Actions CLI가 맡고, 영상 RSS 동기화만 이 Worker의 예약 작업이 맡는다.
-import { PrismaNeon } from '@prisma/adapter-neon';
+import { PrismaNeon, PrismaNeonHttp } from '@prisma/adapter-neon';
 import { AppController } from '../../api/src/app.controller';
 import { AppService } from '../../api/src/app.service';
 import { ArticlesController } from '../../api/src/articles/articles.controller';
@@ -191,8 +191,10 @@ async function handle(request: Request, env: Env, context: Context): Promise<Res
   };
 
   // Neon 연결은 요청 범위를 벗어나 재사용하면 안 되므로 요청마다 client를 만든다.
+  // 공개 API는 GET만 받고 대화형 트랜잭션을 쓰지 않으므로, WebSocket 연결 없이 쿼리마다
+  // HTTP 한 번으로 끝나는 드라이버를 쓴다(요청마다 연결을 맺던 시간이 빠진다).
   const prisma = new EdgePrisma({
-    adapter: new PrismaNeon({ connectionString: env.DATABASE_URL }),
+    adapter: new PrismaNeonHttp(env.DATABASE_URL, {}),
   });
   try {
     const { route, params } = matched;
@@ -215,6 +217,10 @@ async function handle(request: Request, env: Env, context: Context): Promise<Res
     }
     const result = await (controller as Record<string, Handler>)[route.handlerName]!(...args);
     const status = getMeta<number>(route.handler, 'httpCode') ?? 200;
+    // 데이터는 하루 한 번 갱신된다. 성공한 응답은 브라우저가 1분 동안 다시 묻지 않게 한다.
+    if (status === 200 && !headers.has('cache-control')) {
+      headers.set('cache-control', 'public, max-age=60, stale-while-revalidate=300');
+    }
     return json(status, result, headers);
   } catch (error) {
     if (error instanceof HttpException) {
