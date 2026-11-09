@@ -168,11 +168,7 @@ export function ReadingBrief({
                         <RelativeTimeText iso={article.publishedAt} />
                       </div>
                       <h3>
-                        <Link
-                          href={`/articles/${article.id}`}
-                          prefetch={false}
-                          onClick={() => onOpen(article.id)}
-                        >
+                        <Link href={`/articles/${article.id}`} onClick={() => onOpen(article.id)}>
                           {title}
                         </Link>
                       </h3>
@@ -188,7 +184,6 @@ export function ReadingBrief({
                     {article.imageUrl && (
                       <Link
                         href={`/articles/${article.id}`}
-                        prefetch={false}
                         onClick={() => onOpen(article.id)}
                         className="reading-story-cover"
                         tabIndex={-1}
