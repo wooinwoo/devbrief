@@ -8,7 +8,7 @@
 
 ![Devbrief의 관심 분야 브리핑과 개발 소식 화면](docs/media/devbrief-overview-1440.png)
 
-> 2026-09-08 배포 후보 화면입니다. 실제 운영 API를 연결한 로컬 Cloudflare Pages 빌드에서 촬영했습니다. 웹 공개 배포본과 화면이 다를 수 있습니다.
+> 2026-11-09 운영 사이트(devbrief.wooki.cc)의 "오늘" 화면입니다.
 
 ## 어떤 문제를 풀었나요?
 
@@ -31,7 +31,7 @@
 
 <img src="docs/media/devbrief-events-390.png" alt="국내 해커톤 17개를 보여주는 모바일 행사 화면" width="390" />
 
-위와 같은 배포 후보와 운영 API를 사용한 화면입니다.
+2026-09-08 운영 API에서 국내 해커톤만 거른 화면입니다.
 
 </details>
 
@@ -52,7 +52,7 @@
 
 ### 2. 수집 작업과 사용자 요청을 분리했습니다
 
-현재 운영은 GitHub Actions의 `collect` 명령이 매일 09:00 KST에 실행되도록 구성했습니다. CLI가 DB에 직접 저장하므로 수집을 위해 HTTP 서버나 Redis 워커를 계속 실행할 필요가 없습니다. Render API는 저장된 데이터를 웹에 제공합니다.
+현재 운영은 GitHub Actions의 `collect` 명령이 매일 09:00 KST에 실행되도록 구성했습니다. CLI가 DB에 직접 저장하므로 수집을 위해 HTTP 서버나 Redis 워커를 계속 실행할 필요가 없습니다. 저장된 데이터는 Cloudflare Worker의 공개 API가 웹에 제공합니다.
 
 수집처 하나가 실패해도 다른 수집 단계는 계속 진행합니다. 실패는 로그와 종료 코드로 전달하며, Actions의 `tee` 뒤에서도 실패가 성공으로 표시되지 않도록 검증했습니다. Gemini 키가 없는 현재 운영에서는 공개 메타데이터, 추출식 요약과 규칙 기반 브리핑을 사용합니다.
 
@@ -82,7 +82,7 @@ Gemini 요약·768차원 임베딩, pgvector 검색과 SSE 답변을 사용하�
 flowchart LR
   Sources["RSS · 행사 공지<br/>GitHub · YouTube"] --> Batch["GitHub Actions<br/>수집 CLI · 매일 09:00 KST"]
   Batch --> DB[("Neon<br/>PostgreSQL + pgvector")]
-  DB --> API["Render<br/>NestJS API"]
+  DB --> API["Cloudflare Worker<br/>공개 읽기 API"]
   API --> Web["Cloudflare Pages<br/>웹 · GET 프록시"]
   Web --> User["사용자<br/>탐색 · 읽기 · 저장"]
 ```
@@ -90,12 +90,12 @@ flowchart LR
 | 영역 | 기술과 선택 |
 | --- | --- |
 | 웹 | Next.js 16, React 19, Tailwind CSS 4. Cloudflare Pages 빌드는 vinext 어댑터를 사용합니다. |
-| API·데이터 | NestJS 11, TypeScript, Prisma, PostgreSQL, pgvector |
+| API·데이터 | NestJS 11 컨트롤러를 Cloudflare Worker에서 실행(`apps/edge-api`), Prisma, Neon PostgreSQL, pgvector |
 | 수집 | `rss-parser`, `cheerio`, 공개 JSON·HTML·iCalendar 피드, YouTube 공개 RSS |
 | 운영·검증 | pnpm workspace, GitHub Actions, Biome, Jest, Vitest·Testing Library |
 | 선택 구성 | Gemini, Redis·BullMQ 워커와 서버 Cron. 현재 운영 배치와는 별도의 실행 경로입니다. |
 
-웹은 수동 Pages 배포이고 API는 GitHub의 `master`와 연결돼 있습니다. Redis를 활성화한 서버 Cron과 Actions를 함께 실행하면 수집이 중복 실행되므로 운영에서는 한 경로를 선택합니다. [배포 가이드](docs/cloudflare-pages.md)
+`master`에 push하면 CI 통과 뒤 Worker와 Pages가 자동 배포됩니다. Redis를 활성화한 서버 Cron과 Actions를 함께 실행하면 수집이 중복 실행되므로 운영에서는 Actions만 사용합니다. [배포 구성](DEPLOY.md)
 
 ## 검증 결과
 
@@ -144,7 +144,7 @@ corepack pnpm --filter @devbrief/api exec node dist/cli.js conferences
 
 새 행사는 검토 대기로 저장됩니다. 관리자 사용 시 API의 `ADMIN_API_TOKEN`과 웹의 동일 토큰, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`을 설정합니다. 웹 환경변수는 `apps/web/.env.local`에 두며 토큰에 `NEXT_PUBLIC_` 접두사를 붙이지 않습니다. 설정 전 관리자 쓰기 요청은 거부됩니다.
 
-Redis 워커를 확인하려면 Compose의 `redis` 서비스와 `REDIS_URL`을 활성화합니다. AI 요약·임베딩·RAG는 유효한 Gemini 키와 별도 처리가 필요합니다. [환경·배포 설정](DEPLOY.md)
+Redis 워커를 확인하려면 Compose의 `redis` 서비스와 `REDIS_URL`을 활성화합니다. AI 요약·임베딩·RAG는 유효한 Gemini 키와 별도 처리가 필요합니다. 운영 배포는 [DEPLOY.md](DEPLOY.md)를 봅니다.
 
 ```sh
 corepack pnpm typecheck
@@ -160,14 +160,15 @@ corepack pnpm --filter @devbrief/web build:pages
 - 공식 공지 확인 목록은 사람이 갱신합니다. 국내 행사를 전부 자동 발견하는 시스템은 아니며 참가 자격·접수 가능 여부는 주최자 안내를 확인해야 합니다.
 - 외부 피드·비공식 번역·HTML 구조가 바뀌면 수집이 실패할 수 있습니다. 소스별 실패를 추적하고 기존 데이터를 보존합니다.
 - 관심 분야·북마크·읽음은 브라우저 저장소를 사용하므로 기기 간 동기화되지 않습니다. 추천 범위도 화면에서 불러온 기사에 한정됩니다.
-- 행사 API는 최대 1,000개를 반환합니다. 더 커지면 서버 페이지네이션이 필요합니다. Render의 콜드 스타트도 남아 있습니다.
+- 행사 API는 최대 1,000개를 반환합니다. 더 커지면 서버 페이지네이션이 필요합니다.
 - 실제 사용자 재방문율, 읽기 시간 절약, RAG 검색 정확도와 실기기 Safari 호환성은 별도 검증이 필요합니다.
 
 ## 코드와 문서 탐색
 
 ```text
 apps/web           사용자 화면 · 관리자 화면 · 서버 프록시
-apps/api           API · 수집 CLI · 선택형 AI/큐/스케줄러
+apps/api           API 컨트롤러 · 수집 CLI · 선택형 AI/큐/스케줄러
+apps/edge-api      공개 읽기 API를 Cloudflare Worker로 실행
 packages/db        Prisma 스키마 · 마이그레이션
 packages/shared    공유 TypeScript 타입
 docs               설계 사례 · 수집 근거 · 배포/검증 기록
@@ -177,6 +178,7 @@ docs               설계 사례 · 수집 근거 · 배포/검증 기록
 - [RAG 근거 연결](docs/case-rag-evidence.md): SSE 출처 순서, 벡터 검증, 장애 처리
 - [행사 수집](docs/event-collection.md): 수집처, 일정 검증, 중복 방지, 운영 반영
 - [운영 DB 복구](docs/deployment-audit-2026-09-07.md): 백업, 누락 마이그레이션, 데이터 보존
-- [Cloudflare Pages](docs/cloudflare-pages.md): 빌드·배포·환경변수·복구 방법
+- [배포 구성](DEPLOY.md): Pages·Worker·Actions 배포, 비밀값, 수동 복구
+- [Cloudflare Pages](docs/cloudflare-pages.md): 웹 빌드·환경변수 세부 사항
 
-개인 포트폴리오의 비상업적 사용을 전제로 합니다. 행사 데이터의 출처·라이선스와 변경 내용은 [수집 문서](docs/event-collection.md)에 명시하며, 각 화면에서 원문 링크를 제공합니다.
+코드는 [MIT 라이선스](LICENSE)입니다. 수집한 글과 행사 정보의 권리는 각 출처에 있으며, 출처·라이선스와 변경 내용은 [수집 문서](docs/event-collection.md)에 명시하고 각 화면에서 원문 링크를 제공합니다.

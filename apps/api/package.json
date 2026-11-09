@@ -4,7 +4,7 @@
   "description": "Devbrief backend: 수집 파이프라인 + 챗봇 RAG",
   "author": "",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

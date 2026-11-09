@@ -1,4 +1,6 @@
-# Pulse — PRD v0.1
+# Devbrief — PRD v0.1 (초기 이름 Pulse)
+
+> 초기 기획 문서다. 배포는 이후 Cloudflare Pages·Worker와 Neon, GitHub Actions 수집으로 바뀌었다. 현재 구성은 [DEPLOY.md](../DEPLOY.md)를 본다.
 
 > 가칭 / 한국어 서브 미정 (예: "기술의 맥", "오늘의 흐름")
 
@@ -24,7 +26,7 @@
 ## 3. 핵심 사용자 여정 (Top 3)
 
 **① 매일 아침 다이제스트 (Daily)**
-1. 매일 9시 알림 *"오늘의 Pulse"* 도착
+1. 매일 9시 알림 *"오늘의 Devbrief"* 도착
 2. 클릭하면 시각 대시보드 진입 (주제별 카드 / 카테고리 분포 / 핫토픽)
 3. 카드 클릭 → 한 줄 요약 → 3줄 요약 → 원문 링크
 4. *"오늘 다 봤어요"* 마크 → 본 글 메모리 저장
@@ -105,7 +107,7 @@ AI        Claude API (Haiku 요약 / Sonnet 챗봇) + Voyage/OpenAI Embedding
 
 ## 8. 차별점 정리
 
-| 영역 | 기존 | Pulse |
+| 영역 | 기존 | Devbrief |
 |---|---|---|
 | RSS 리더 (Feedly) | 텍스트 그대로 / 정리 X | AI 한국어 요약 + 카테고리 분류 |
 | 텍스트 다이제스트 메일 | 검색 X / 인터랙션 X | 챗봇 + 시각 대시보드 |

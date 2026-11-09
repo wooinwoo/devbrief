@@ -30,7 +30,7 @@ export class GithubTrendingService {
     try {
       const { data: html } = await axios.get<string>(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.app)',
+          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.wooki.cc)',
           Accept: 'text/html,application/xhtml+xml',
         },
         timeout: 15_000,

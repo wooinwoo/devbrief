@@ -79,7 +79,7 @@ export class ArticleExtractService {
         redirect: 'follow',
         signal: AbortSignal.timeout(15_000),
         headers: {
-          'User-Agent': 'DevbriefBot/1.0 (+https://devbrief)',
+          'User-Agent': 'DevbriefBot/1.0 (+https://devbrief.wooki.cc)',
           Accept: 'text/html,application/xhtml+xml',
         },
       });

@@ -95,7 +95,7 @@ export class ArticleFetchService {
           responseType: 'text',
           maxRedirects: 0, // 자동 추종 금지 — 위에서 홉마다 재검증
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief)',
+            'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.wooki.cc)',
             Accept: 'text/html,application/xhtml+xml',
           },
           // 3xx 는 아래에서 수동 홉 처리, 4xx/5xx 는 throw 하지 않고 빈 본문 취급

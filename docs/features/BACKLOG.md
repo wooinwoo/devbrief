@@ -1,4 +1,4 @@
-# Devbrief(Pulse) 전체 기능 백로그 + 페이지 감사 (단일 문서)
+# Devbrief 전체 기능 백로그 + 페이지 감사 (단일 문서)
 
 > README + EPIC-1~6 + PAGE-AUDIT를 한 문서로 합친 것입니다. 태스크 표만 보려면 TASKS.md, 개별 파일도 같은 폴더에 있습니다.
 
@@ -56,7 +56,7 @@
 - **무료 우선 / AI 의존 최소화** — Gemini는 1순위 품질 경로일 뿐, 죽어도 서비스가 돌도록 모든 AI 단계에 무료 폴백을 둔다. (요약·번역·다이제스트)
 - **개인 프로젝트 스케일** — 데이터 누적을 피한다. GitHub 레포는 매번 전체 교체(deleteMany→createMany)로 ~50행만 유지.
 - **graceful degradation** — 외부 fetch(원문·og:image·번역)는 실패해도 throw하지 않고 null/skip 후 로깅.
-- **운영 취약점(알려진 것)** — API/웹은 nohup, Postgres/Redis는 Docker Desktop 수동. 재부팅 시 수동 복구 필요(`ops/systemd/` 미설치).
+- **운영** — 웹은 Cloudflare Pages, 공개 API는 Cloudflare Worker, 수집은 GitHub Actions(매일 09:00 KST)로 이전했다. 로컬 프로세스·Docker에 의존하지 않는다.
 
 
 ---
@@ -71,82 +71,82 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
 
 ## 수집 (Ingestion)
 
-### PULSE-101 · RSS 피드 파싱
+### DEVBRIEF-101 · RSS 피드 파싱
 **타입** Task · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: URL의 RSS/Atom 피드를 파싱해 아이템 메타데이터 추출
 - **어떻게**: `rss-parser` 라이브러리, 타임아웃 10초, User-Agent 위장(NAVER D2 등 406 차단 우회), `customFields`로 `content:encoded`·`media:content`·`media:thumbnail` 매핑 — `ingestion/rss-parser.service.ts:16-32`
 - **비고**: `content:encoded` 처리로 전문 HTML 지원
 
-### PULSE-102 · RSS 이미지 추출 + 절대경로 변환
+### DEVBRIEF-102 · RSS 이미지 추출 + 절대경로 변환
 **타입** Task · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 아이템 내 이미지 URL을 우선순위로 추출, 상대→절대경로 변환
 - **어떻게**: 우선순위 (1)enclosure (2)media:thumbnail (3)media:content (4)`<img src>` 정규식, `OgImageService.absolutize()` 활용 — `rss-parser.service.ts:46-79`
 - **비고**: RSS에 이미지 없으면 원문 og:image fallback
 
-### PULSE-103 · 소스당 최신 아이템 상한
+### DEVBRIEF-103 · 소스당 최신 아이템 상한
 **타입** Story · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 피드당 수집 수 제한 — 전체 아카이브 피드(OpenAI 등) 폭주 방지
 - **어떻게**: `maxPerSource`(env, 기본 30), publishedAt 내림차순 정렬 후 slice — `ingestion.service.ts:35-47`
 - **비고**: Gemini 일일 한도 안에서 번역/요약이 돌게 하는 1차 밸브
 
-### PULSE-104 · URL 기준 중복 스킵
+### DEVBRIEF-104 · URL 기준 중복 스킵
 **타입** Task · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 이미 저장된 URL이면 스킵
 - **어떻게**: `article.findUnique({ where: { url } })` — `ingestion.service.ts:54-55`
 - **비고**: url 유니크 제약 기반
 
-### PULSE-105 · 본문 발췌 정제·저장 (contentSnippet)
+### DEVBRIEF-105 · 본문 발췌 정제·저장 (contentSnippet)
 **타입** Story · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: content:encoded/contentSnippet/description을 평문화(HTML·엔티티 제거)해 800자 저장
 - **어떻게**: 정규식 `<[^>]+>`·`&[a-z]+;` 제거 + 공백 정규화 — `ingestion.service.ts:59-69`
-- **비고**: 요약 재생성용. 백필 시 원문 재취득 불필요 (→ PULSE-205와 연동)
+- **비고**: 요약 재생성용. 백필 시 원문 재취득 불필요 (→ DEVBRIEF-205와 연동)
 
-### PULSE-106 · 아티클 메타데이터 저장
+### DEVBRIEF-106 · 아티클 메타데이터 저장
 **타입** Task · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 제목/URL/저자/발행일/태그/이미지/본문발췌를 Article로 생성
 - **어떻게**: `article.create()`, 제목 500자·태그 10개 제한 — `ingestion.service.ts:71-82`
 - **비고**: publishedAt 없으면 현재시각 기본값
 
-### PULSE-107 · 요약 큐 적재 + 지수 백오프 재시도
+### DEVBRIEF-107 · 요약 큐 적재 + 지수 백오프 재시도
 **타입** Story · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 새 글을 summarization 큐에 추가, 최대 6회 재시도
 - **어떻게**: BullMQ `queue.add`, attempts:6, exponential backoff 60초, removeOnComplete:500/Fail:1000, 본문 4000자 — `ingestion.service.ts:85-99`
 - **비고**: 한도/일시 장애 시 자동 재시도
 
-### PULSE-108 · 임베딩 큐 적재
+### DEVBRIEF-108 · 임베딩 큐 적재
 **타입** Task · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 새 글을 embedding 큐에 추가(제목+본문 2000자)
 - **어떻게**: `queue.add('embed', …)` — `ingestion.service.ts:100-104`
 - **비고**: 요약 큐와 달리 재시도 정책 기본값
 
-### PULSE-109 · 전체 활성 소스 수집 오케스트레이션
+### DEVBRIEF-109 · 전체 활성 소스 수집 오케스트레이션
 **타입** Story · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 활성 소스 전부 순회, 실패 격리 후 계속 진행
 - **어떻게**: `findMany({where:{active:true}})` 순회 + try-catch — `ingestion.service.ts:18-31`
 
-### PULSE-110 · 일일 수집 스케줄 (cron)
+### DEVBRIEF-110 · 일일 수집 스케줄 (cron)
 **타입** Story · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 매일 09:00 KST 전체 수집 자동 실행
 - **어떻게**: `@Cron('0 9 * * *', {timeZone:'Asia/Seoul'})`, 큐 'ingest-all' 적재 — `ingestion.cron.ts:13-16`
 
-### PULSE-111 · 온디맨드 수집 API (비동기/동기)
+### DEVBRIEF-111 · 온디맨드 수집 API (비동기/동기)
 **타입** Task · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 수동 트리거 — 큐 적재(즉시 반환) / 직접 실행(블로킹)
 - **어떻게**: `POST /ingestion/run` (queued), `POST /ingestion/run-sync` (ingestAll 직접) — `ingestion.controller.ts:17-26`
 - **비고**: run-sync는 타임아웃 위험
 
-### PULSE-112 · 요약/임베딩 일괄 재처리 (reanalyze)
+### DEVBRIEF-112 · 요약/임베딩 일괄 재처리 (reanalyze)
 **타입** Story · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 기존 글을 요약/임베딩 큐에 재적재 (모델 교체·백필용)
 - **어떻게**: `POST /ingestion/reanalyze` — 기본은 `summaryOneLine OR summaryThreeLine == null`인 글, `onlyMissing=0`이면 전체, limit 최대 2000 — `ingestion.controller.ts:33-72`
 - **비고**: 저장된 contentSnippet로 재생성, 동일 재시도 정책
 
-### PULSE-113 · 수집 큐 워커
+### DEVBRIEF-113 · 수집 큐 워커
 **타입** Task · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 'ingest-all'/'ingest-source' 작업 처리
 - **어떻게**: `@Processor('ingestion')`, job.name 분기 — `ingestion.processor.ts:14-24`
 
-### PULSE-114 · 기본 RSS 소스 시드 (13개)
+### DEVBRIEF-114 · 기본 RSS 소스 시드 (13개)
 **타입** Task · **상태** ✅ · **컴포넌트** ingestion
 - **무엇**: 부팅 시 기본 소스 13개 upsert (한국 5 + 해외 2 + AI 6)
 - **어떻게**: `OnApplicationBootstrap`, feedUrl 기준 upsert — `source-seeder.service.ts:116-138`
@@ -156,41 +156,41 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
 
 ## 소스 발견·관리 (Sources)
 
-### PULSE-115 · RSS 자동 발견 (URL→피드 후보)
+### DEVBRIEF-115 · RSS 자동 발견 (URL→피드 후보)
 **타입** Story · **상태** ✅ · **컴포넌트** sources
 - **무엇**: 입력 URL에서 피드 자동 발견 (직접 피드 → HTML link alternate → 경로 추측)
 - **어떻게**: 3단계 `tryParseFeed` → `extractAlternateLinks` → `guessFeedPaths(/rss,/feed,/rss.xml,/atom.xml)` — `rss-discovery.service.ts:31-51,112-155`
 - **비고**: 최대 5개 후보, DB 저장 안 함(미리보기)
 
-### PULSE-116 · 피드 발견 + 자동 등록
+### DEVBRIEF-116 · 피드 발견 + 자동 등록
 **타입** Story · **상태** ✅ · **컴포넌트** sources
 - **무엇**: discover 후 Source upsert, 중복 feedUrl 스킵
 - **어떻게**: findUnique 체크 후 create, 한글 정규식으로 language 자동 감지 — `rss-discovery.service.ts:54-83`
 - **비고**: provider='rss_generic' 고정
 
-### PULSE-117 · HTML link[rel=alternate] 파싱
+### DEVBRIEF-117 · HTML link[rel=alternate] 파싱
 **타입** Task · **상태** ✅ · **컴포넌트** sources
 - **무엇**: `<link rel="alternate" type="application/rss+xml">` 추출
 - **어떻게**: 정규식으로 link 태그 추출 후 속성별 파싱 — `rss-discovery.service.ts:112-140`
 
-### PULSE-118 · 일반 경로 피드 추측 + 검증
+### DEVBRIEF-118 · 일반 경로 피드 추측 + 검증
 **타입** Task · **상태** ✅ · **컴포넌트** sources
 - **무엇**: 흔한 경로 생성 후 실제 파싱 가능 여부 검증
 - **어떻게**: origin + 경로 매핑 → 각 후보 `tryParseFeed` 검증 — `rss-discovery.service.ts:142-169`
 
-### PULSE-119 · HTML 페이지 안전 fetch
+### DEVBRIEF-119 · HTML 페이지 안전 fetch
 **타입** Task · **상태** ✅ · **컴포넌트** sources
 - **무엇**: 발견용 HTML 다운로드 (타임아웃·크기 제한)
-- **어떻게**: axios GET, timeout 5초, maxContentLength 2MB, UA 'PulseBot/1.0' — `rss-discovery.service.ts:95-110`
+- **어떻게**: axios GET, timeout 5초, maxContentLength 2MB, UA 'DevbriefBot/1.0' — `rss-discovery.service.ts:95-110`
 - **비고**: 실패 시 null
 
-### PULSE-120 · 소스 CRUD API
+### DEVBRIEF-120 · 소스 CRUD API
 **타입** Story · **상태** ✅ · **컴포넌트** sources
 - **무엇**: 소스 목록/토글/삭제
 - **어떻게**: `GET /sources`(생성순), `PATCH /sources/:id/toggle`(active 반전), `DELETE /sources/:id` — `sources.controller.ts:21-56`
 - **비고**: 삭제 시 연관 아티클은 유지(FK cascade 없음)
 
-### PULSE-121 · 피드 발견 API (미리보기/등록)
+### DEVBRIEF-121 · 피드 발견 API (미리보기/등록)
 **타입** Task · **상태** ✅ · **컴포넌트** sources
 - **무엇**: `POST /sources/discover`(후보만), `POST /sources/discover-and-register`(일괄 등록)
 - **어떻게**: discover() / discoverAndRegister() 위임 — `sources.controller.ts:28-40`
@@ -213,64 +213,64 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
 
 ---
 
-### PULSE-201 · Gemini 고품질 요약 (JSON)
+### DEVBRIEF-201 · Gemini 고품질 요약 (JSON)
 **타입** Story · **상태** ✅ · **컴포넌트** summarization
 - **무엇**: 제목+본문 → `{language, titleKo, summaryOneLine(40자), summaryThreeLine(3줄)}` JSON 생성
 - **어떻게**: `@google/genai`, 모델 `gemini-2.5-flash-lite`(env override), 한국어 에디터 시스템프롬프트, `generateJson()` responseMimeType=application/json + 파싱 fallback — `summarization.service.ts:7-83`, `ai/gemini.service.ts:56-75`
 - **트리거**: BullMQ `summarization` 큐 (concurrency 2, 분당 10개 rate limit — Gemini 무료 5/분 회피) — `summarization.processor.ts:13-27`
 - **비고**: `isAvailable()`은 키 존재만 검사 → 실제 호출 실패 시 catch 후 무료 폴백 — `summarization.service.ts:73-78`
 
-### PULSE-202 · 무료 경로 한국어화 + 추출식 요약
+### DEVBRIEF-202 · 무료 경로 한국어화 + 추출식 요약
 **타입** Story · **상태** ✅ · **컴포넌트** summarization
 - **무엇**: LLM 없이 무료 번역 + 본문 문장 추출로 한/세 줄 요약 생성 (Gemini 만료 시)
 - **어떻게**: 제목은 `TranslationService.toKorean()`, 본문 1~3문장 추출(`(?<=[.!?。])\s+` 분할) 후 영문이면 통째 번역→재분할, oneLine≤140자·threeLine 각≤90자 clamp — `summarization.service.ts:85-182`
 - **트리거**: Gemini 실패 시 summarize()가 자동 호출
-- **비고**: 본문 확보 우선순위 ① 전달 snippet ② DB contentSnippet ③ 원문 fetch(PULSE-203). 진짜 압축이 아닌 추출이지만 빈 요약보다 우월
+- **비고**: 본문 확보 우선순위 ① 전달 snippet ② DB contentSnippet ③ 원문 fetch(DEVBRIEF-203). 진짜 압축이 아닌 추출이지만 빈 요약보다 우월
 
-### PULSE-203 · 원문 본문 fetch (cheerio 휴리스틱)
+### DEVBRIEF-203 · 원문 본문 fetch (cheerio 휴리스틱)
 **타입** Story · **상태** ✅ · **컴포넌트** summarization
 - **무엇**: RSS에 본문 없는 글의 원문 URL에서 평문 본문 추출 (유료 readability API 없이)
 - **어떻게**: axios(12초·5MB) + cheerio. 보일러플레이트(script/nav/aside/footer…) 제거 → `<article>`→`<main>`→`<p>`밀도 최대 컨테이너 선택 → p/li 30자+ 필터 → 최대 1200자 — `summarization/article-fetch.service.ts:17-82`
 - **트리거**: summarizeFree에서 본문 60자 미만일 때
 - **비고**: fetch 성공 시 contentSnippet 800자 캐시(다음 재처리 fetch 스킵). 실패는 전부 silent null
 
-### PULSE-204 · 무료 번역 (Google 비공식 → MyMemory)
+### DEVBRIEF-204 · 무료 번역 (Google 비공식 → MyMemory)
 **타입** Story · **상태** ✅ · **컴포넌트** translation
 - **무엇**: 키 불필요 무료 영→한 번역, 2단 폴백
 - **어떻게**: ① `translate.googleapis.com/translate_a/single`(client=gtx) ② `api.mymemory.translated.net` 폴백, 각 타임아웃 10초 — `translation.service.ts:61-99`
 - **비고**: 비공식 엔드포인트 → IP 차단 위험. rate limit은 summarization 큐(분당 10)에서 적용
 
-### PULSE-205 · 매체명 보호 placeholder 마스킹
+### DEVBRIEF-205 · 매체명 보호 placeholder 마스킹
 **타입** Task · **상태** ✅ · **컴포넌트** translation
 - **무엇**: 번역하면 안 되는 고유명사(Import AI, Hacker News 등)를 보존
 - **어떻게**: 번역 전 14개 매체명을 `⟦0⟧`로 마스킹 → 번역 → 복원, 깨진 placeholder 제거 정규식 — `translation.service.ts:16-27,39-58`
 - **비고**: 리스트 하드코딩 (CMS/DB 동적화는 TODO)
 
-### PULSE-206 · 한글 감지
+### DEVBRIEF-206 · 한글 감지
 **타입** Task · **상태** ✅ · **컴포넌트** translation
 - **무엇**: 한글 음절 있으면 이미 한국어로 간주 → 번역 스킵
 - **어떻게**: `/[가-힣]/` 테스트 — `translation.service.ts:30-32`
 - **비고**: 영+한 혼합도 한국어 취급 (단순화)
 
-### PULSE-207 · 임베딩 생성 (pgvector 768d)
+### DEVBRIEF-207 · 임베딩 생성 (pgvector 768d)
 **타입** Story · **상태** ✅ · **컴포넌트** embedding
 - **무엇**: 제목+본문(8000자)을 768차원 벡터로 변환해 pgvector 저장
 - **어떻게**: Gemini `text-embedding-004`, taskType RETRIEVAL_DOCUMENT, raw SQL `UPDATE … SET embedding=$1::vector` — `embedding.service.ts:40-54`, `ai/gemini.service.ts:98-108`
 - **트리거**: BullMQ `embedding` 큐
 - **비고**: 무료 대안 없음 → 키 없거나 한도 시 silent skip (재시도 폭증 방지), reanalyze로 복구
 
-### PULSE-208 · Gemini 통합 클라이언트
+### DEVBRIEF-208 · Gemini 통합 클라이언트
 **타입** Task · **상태** ✅ · **컴포넌트** ai
 - **무엇**: 모든 AI 호출(텍스트/JSON/스트림/임베딩) 중앙화
 - **어떻게**: `generateText` / `generateJson<T>` / `streamText`(async generator) / `embed` 4개 메서드, 모델·토큰 파라미터화 — `ai/gemini.service.ts:36-108`
 - **비고**: 키 없으면 경고 로그 + isAvailable()로 상위 분기
 
-### PULSE-209 · RAG 문서 검색 (pgvector kNN)
+### DEVBRIEF-209 · RAG 문서 검색 (pgvector kNN)
 **타입** Story · **상태** ✅ · **컴포넌트** chat
 - **무엇**: 쿼리 임베딩 → 최근접 글 topK(기본 8) 조회
 - **어떻게**: `embedQuery`(RETRIEVAL_QUERY) → raw SQL `ORDER BY embedding <=> $1::vector LIMIT $2`, embedding NOT NULL 필터 — `chat.service.ts:34-47`
 
-### PULSE-210 · RAG 스트리밍 챗 (SSE)
+### DEVBRIEF-210 · RAG 스트리밍 챗 (SSE)
 **타입** Story · **상태** ✅ · **컴포넌트** chat
 - **무엇**: 쿼리 → 검색된 글을 컨텍스트로 Gemini 스트리밍 답변(출처 [1][2] 표기)
 - **어떻게**: 검색 결과를 `[i] 제목(출처,날짜)+요약+URL`로 조립 → `streamText`(maxTokens 1000) → SSE `data:{delta}` / `[DONE]` — `chat.service.ts:50-68`, `chat.controller.ts:16-31`
@@ -302,52 +302,52 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
 
 ## GitHub 트렌딩 레포
 
-### PULSE-301 · GitHub Trending HTML 스크래핑
+### DEVBRIEF-301 · GitHub Trending HTML 스크래핑
 **타입** Story · **상태** ✅ · **컴포넌트** repos
 - **무엇**: github.com/trending 공개 페이지를 긁어 리포 정보 추출 (API 토큰 불필요)
 - **어떻게**: axios + cheerio, 타임아웃 15초, UA 헤더, `article.Box-row` 선택자로 각 리포 파싱 — `repos/github-trending.service.ts:31-38`
 - **트리거**: ReposCron 일일 08:30 / `POST /repos/sync`
 - **비고**: 페이지 DOM 변경 시 0건 위험 (방어: 0건이면 warn, 기존 데이터 유지)
 
-### PULSE-302 · 리포 메타데이터 파싱
+### DEVBRIEF-302 · 리포 메타데이터 파싱
 **타입** Task · **상태** ✅ · **컴포넌트** repos
 - **무엇**: HTML에서 owner/name, 설명, 언어, 언어색, star/fork 추출
 - **어떻게**: href→owner/name, `[itemprop=programmingLanguage]`, `.repo-language-color` style 정규식, star/fork는 href 패턴 우선 + a.Link--muted 인덱스 fallback — `github-trending.service.ts:52-99`
 - **비고**: 선택자 이중화로 DOM 변형 대응
 
-### PULSE-303 · 숫자 정규화 (1.2k → 1200)
+### DEVBRIEF-303 · 숫자 정규화 (1.2k → 1200)
 **타입** Task · **상태** ✅ · **컴포넌트** repos
 - **어떻게**: 정규식 `([\d.]+)\s*(k)?`, comma 제거 후 k면 ×1000 — `github-trending.service.ts:102-108`
 
-### PULSE-304 · velocity(periodStars) 추출
+### DEVBRIEF-304 · velocity(periodStars) 추출
 **타입** Story · **상태** ✅ · **컴포넌트** repos
 - **무엇**: "X stars today/this week" — 기간 내 증가 star를 별도 기록 (절대 star가 아닌 **성장 속도**가 핵심 지표)
 - **어떻게**: `.float-sm-right` 텍스트 → num() — `github-trending.service.ts:81`
 - **비고**: 이 필드가 EPIC-5 레포 카드의 "▲ +N" 정렬 기준
 
-### PULSE-305 · 설명 이모지·장식문자 정제
+### DEVBRIEF-305 · 설명 이모지·장식문자 정제
 **타입** Task · **상태** ✅ · **컴포넌트** repos
 - **어떻게**: `stripEmoji()` — `\p{Extended_Pictographic}` 등 제거 + 공백 정제, 빈 문자면 null — `repos.service.ts:37-42`
 
-### PULSE-306 · 카테고리 자동 분류 (규칙 기반)
+### DEVBRIEF-306 · 카테고리 자동 분류 (규칙 기반)
 **타입** Story · **상태** ✅ · **컴포넌트** repos
 - **무엇**: name+description 정규식 매칭으로 ai/web/infra/cli/data 분류, 미매칭은 etc
 - **어떻게**: `CATEGORY_RULES` 위에서부터 첫 매칭(ai 최우선) — `repos.service.ts:5-34,77`
 - **비고**: ⚠️ 규칙 협소 → 상당수 etc로 빠짐 (개선 후보: 룰 확장 또는 LLM 분류)
 
-### PULSE-307 · 일/주간 트렌딩 전체 교체
+### DEVBRIEF-307 · 일/주간 트렌딩 전체 교체
 **타입** Story · **상태** ✅ · **컴포넌트** repos
 - **무엇**: 누적 없이 통째 교체 — 개인 프로젝트 데이터 누적 회피
 - **어떻게**: `refresh(period)` → fetch → 트랜잭션 내 deleteMany(period) → createMany(category·stripEmoji 적용) — `repos.service.ts:54-84`
 - **트리거**: 08:30 cron / `POST /repos/sync`
 - **비고**: syncing 플래그로 중복 호출 방어, ~50행 상시 유지
 
-### PULSE-308 · 트렌딩 조회 API (필터)
+### DEVBRIEF-308 · 트렌딩 조회 API (필터)
 **타입** Story · **상태** ✅ · **컴포넌트** repos
 - **무엇**: 기간/언어/카테고리 필터 조회, rank 정렬
 - **어떻게**: `GET /repos?period=weekly&language=Python&category=ai`, period는 'weekly'만 특별처리 나머지 daily — `repos.service.ts:104-114`, `repos.controller.ts:9-15`
 
-### PULSE-309 · 수동 동기화 엔드포인트
+### DEVBRIEF-309 · 수동 동기화 엔드포인트
 **타입** Task · **상태** ✅ · **컴포넌트** repos
 - **어떻게**: `POST /repos/sync` → refreshAll(), `{daily:N, weekly:M}` 반환, 동시호출 시 `skipped:true` — `repos.controller.ts:18-22`
 
@@ -355,11 +355,11 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
 
 ## 글 API (Articles)
 
-### PULSE-310 · 글 목록 조회
+### DEVBRIEF-310 · 글 목록 조회
 **타입** Story · **상태** ✅ · **컴포넌트** articles
 - **어떻게**: `GET /articles?source=&limit=`(기본 30·최대 100), provider 필터, publishedAt 최신순, source include — `articles.controller.ts:9-16`
 
-### PULSE-311 · 글 단건 조회
+### DEVBRIEF-311 · 글 단건 조회
 **타입** Task · **상태** ✅ · **컴포넌트** articles
 - **어떻게**: `GET /articles/:id`, findUnique + source 전체 — `articles.controller.ts:19-25`
 
@@ -367,37 +367,37 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
 
 ## 데일리 다이제스트
 
-### PULSE-312 · 오늘 다이제스트 조회
+### DEVBRIEF-312 · 오늘 다이제스트 조회
 **타입** Story · **상태** ✅ · **컴포넌트** digest
 - **어떻게**: `GET /digest/today` → getForDate(today, 00:00 정규화), 없으면 null — `digest.controller.ts:9-12`, `daily-digest.service.ts:251-253`
 
-### PULSE-313 · 다이제스트 수동 생성/강제 갱신
+### DEVBRIEF-313 · 다이제스트 수동 생성/강제 갱신
 **타입** Task · **상태** ✅ · **컴포넌트** digest
 - **어떻게**: `POST /digest/generate?force=1` — force면 덮어쓰기, 아니면 이미 있으면 스킵 — `digest.controller.ts:15-18`
 
-### PULSE-314 · 당일 글 수집 (다이제스트 입력)
+### DEVBRIEF-314 · 당일 글 수집 (다이제스트 입력)
 **타입** Task · **상태** ✅ · **컴포넌트** digest
 - **무엇**: 그날 fetchedAt 또는 publishedAt 글 최대 30개
 - **어떻게**: dayStart 계산 → OR 조건 findMany, take 30, source include — `daily-digest.service.ts:61-90`
 - **비고**: 0개면 null 반환하고 생성 중단
 
-### PULSE-315 · 중복 생성 방지
+### DEVBRIEF-315 · 중복 생성 방지
 **타입** Task · **상태** ✅ · **컴포넌트** digest
 - **어떻게**: 같은 date findUnique, `existing && !force`면 기존값 반환 — `daily-digest.service.ts:66-72`
 
-### PULSE-316 · Gemini 다이제스트 생성
+### DEVBRIEF-316 · Gemini 다이제스트 생성
 **타입** Story · **상태** ✅ · **컴포넌트** digest
 - **무엇**: 오늘 글 중 5개 선별 + headline/takeaway/intro 작성
 - **어떻게**: 글을 `id|제목|소스|태그`로 압축(요약 제외해 토큰 절약), 에디터 시스템프롬프트, `generateJson<DigestPayload>`(maxTokens 8000), validIds 체크 후 max 5개 → upsert — `daily-digest.service.ts:92-158`
 - **트리거**: 09:30 cron / API
-- **비고**: 실패 시 휴리스틱 폴백(PULSE-317)
+- **비고**: 실패 시 휴리스틱 폴백(DEVBRIEF-317)
 
-### PULSE-317 · 휴리스틱 다이제스트 폴백 (무료)
+### DEVBRIEF-317 · 휴리스틱 다이제스트 폴백 (무료)
 **타입** Story · **상태** ✅ · **컴포넌트** digest
 - **무엇**: Gemini 없거나 실패 시 규칙 기반 선별
 - **어떻게**: `isAvailable()` false거나 catch 시 `generateHeuristic()` — `daily-digest.service.ts:93-94,122-126,160-244`
 
-### PULSE-318 · 휴리스틱 점수식 + 쏠림 방지
+### DEVBRIEF-318 · 휴리스틱 점수식 + 쏠림 방지
 **타입** Story · **상태** ✅ · **컴포넌트** digest
 - **무엇**: 소스 신뢰도·최신성·한국어화로 5개 선별, 소스당 최대 2개
 - **어떻게**: **점수 = SOURCE_WEIGHT + recency + koBonus + tagBonus**
@@ -408,7 +408,7 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
   - headline=(titleKo??title) 60자, takeaway=summaryOneLine 80자(URL/메타면 빈문자), intro=고정문구 — `:215-228`
 - **비고**: takeaway는 비어 있을 수 있음 (소스명 fallback 안 함)
 
-### PULSE-319 · 일일 다이제스트 cron
+### DEVBRIEF-319 · 일일 다이제스트 cron
 **타입** Story · **상태** ✅ · **컴포넌트** digest
 - **어떻게**: `@Cron('30 9 * * *', Asia/Seoul)` → generateForToday (09:00 수집 30분 후) — `daily-digest.cron.ts:12-15`
 
@@ -428,46 +428,46 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
 
 ## 영상 (Videos)
 
-### PULSE-401 · YouTube 채널 영상 동기화
+### DEVBRIEF-401 · YouTube 채널 영상 동기화
 **타입** Story · **상태** ✅ · **컴포넌트** videos
 - **무엇**: 컨퍼런스 YouTube 채널 최신 N개 영상 메타를 upsert
 - **어떻게**: YouTube Data API `search.list`(channelId, order=date)→videoId, `videos.list`(contentDetails/statistics/snippet)로 보강, ISO8601 duration→초, 썸네일 maxres→high→…fallback — `youtube-sync.service.ts:71-155`
 - **트리거**: `POST /videos/sync` / cron 월요일 04:00 KST
 - **비고**: YOUTUBE_API_KEY 없으면 skip. 컨퍼런스 imageUrl 비었으면 첫 영상 썸네일로 자동 채움
 
-### PULSE-402 · 공식 챕터 추출 (Tier 1, 무료)
+### DEVBRIEF-402 · 공식 챕터 추출 (Tier 1, 무료)
 **타입** Story · **상태** ✅ · **컴포넌트** videos
 - **무엇**: youtuber가 직접 박은 공식 타임스탬프 추출
 - **어떻게**: youtubei.js `Innertube.getInfo` → info.chapters / decorated_player_bar.chapters, ms→초 정렬 — `video-analyzer.service.ts:283-307`
 - **비고**: 버전별 위치 상이 → 다중 후보 검색
 
-### PULSE-403 · 설명 타임스탬프 파싱 (Tier 2, 무료)
+### DEVBRIEF-403 · 설명 타임스탬프 파싱 (Tier 2, 무료)
 **타입** Story · **상태** ✅ · **컴포넌트** videos
 - **무엇**: description "[m:ss] 챕터" 패턴 추출
 - **어떻게**: 정규식 줄별 매칭 → parseTimestamp, durationSec 범위·중복 제거·정렬 — `video-analyzer.service.ts:379-415`
 - **비고**: 웹 `parse-chapters.ts`와 동일 로직. Tier 1 실패 시만
 
-### PULSE-404 · Gemini AI 챕터+요약 (Tier 3)
+### DEVBRIEF-404 · Gemini AI 챕터+요약 (Tier 3)
 **타입** Story · **상태** ✅ · **컴포넌트** videos
 - **무엇**: 자막을 Gemini에 넣어 주제전환 기반 목차 + 요약 생성
 - **어떻게**: Innertube caption_tracks→자막 XML→"[m:ss] text" 파싱(영어>한국어>첫트랙), 처음 9000자 + duration 제약 프롬프트, 5-10개 챕터, 요약은 description 180자 — `video-analyzer.service.ts:224-281,310-363`
 - **비고**: 자막 없으면 실패. 키 없으면 Tier 3 skip
 
-### PULSE-405 · 영상 수동 추가 + 자동 분석
+### DEVBRIEF-405 · 영상 수동 추가 + 자동 분석
 **타입** Story · **상태** ✅ · **컴포넌트** videos
 - **무엇**: YouTube URL 붙여넣기 → 메타 저장 → 분석 큐 적재
 - **어떻게**: parseVideoId(watch/youtu.be/embed/shorts/live) → `Innertube.getInfo` basic_info → upsert → analyzeQueue.add — `videos.controller.ts:50-56`
 - **비고**: innertube 무료 (Data API quota 미소비)
 
-### PULSE-406 · 영상 분석 큐 (3-tier 실행)
+### DEVBRIEF-406 · 영상 분석 큐 (3-tier 실행)
 **타입** Story · **상태** ✅ · **컴포넌트** videos
 - **어떻게**: BullMQ `video-analyze` concurrency 2, analyzedAt 있으면 skip(force 무시), chapters/chapterSource/summary 저장 — `video-analysis.processor.ts:11-35`
 
-### PULSE-407 · 미분석 일괄 분석
+### DEVBRIEF-407 · 미분석 일괄 분석
 **타입** Task · **상태** ✅ · **컴포넌트** videos
 - **어떻게**: `POST /videos/analyze-all?force=1` — analyzedAt null만(force면 전체), take 500 — `videos.controller.ts:89-104`
 
-### PULSE-408 · 영상 목록/상세/삭제
+### DEVBRIEF-408 · 영상 목록/상세/삭제
 **타입** Story · **상태** ✅ · **컴포넌트** videos
 - **어떻게**: `GET /videos`(limit 20·max 100, publishedAt desc, conference 포함), `GET /videos/:id`, `DELETE /videos/:id`(hard) — `videos.controller.ts:29-46`
 
@@ -475,35 +475,35 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
 
 ## 컨퍼런스 (Conferences)
 
-### PULSE-409 · 컨퍼런스 시드 + 부팅 시 이미지 동기화
+### DEVBRIEF-409 · 컨퍼런스 시드 + 부팅 시 이미지 동기화
 **타입** Story · **상태** ✅ · **컴포넌트** conferences
 - **무엇**: 부팅 시 5개 한국 컨퍼런스(FECONF·if(kakao)·SLASH·DEVIEW·PyCon) upsert + 백그라운드 이미지 sync
 - **어떻게**: `onApplicationBootstrap`, SEEDS(name/url/날짜/topics/brandColor/youtubeChannelId), url 기준 upsert(imageUrl 제외해 자동값 보존), fire-and-forget syncAll — `conference-seeder.service.ts:74-123`
 
-### PULSE-410 · og:image 자동 동기화 + 브랜드색 추출
+### DEVBRIEF-410 · og:image 자동 동기화 + 브랜드색 추출
 **타입** Story · **상태** ✅ · **컴포넌트** conferences
 - **무엇**: imageUrl 빈 컨퍼런스의 공식 사이트 og:image 추출 → 그 이미지에서 대표색(OKLCH) 자동 추출
 - **어떻게**: `OgImageService.fetch` → `BrandColorService.extractFromUrl`, 기존값 있으면 보존(force 시만 갱신) — `conference-image-sync.service.ts`
 - **트리거**: 부팅 자동 / `POST /conferences/sync-images?force=1` / 승인 직후
 - **비고**: og:image 없으면 graceful (failed 카운트만)
 
-### PULSE-411 · 컨퍼런스 자동 발견 (Gemini NER)
+### DEVBRIEF-411 · 컨퍼런스 자동 발견 (Gemini NER)
 **타입** Story · **상태** ✅ · **컴포넌트** conferences
 - **무엇**: 컨퍼런스 키워드 포함 글에서 Gemini로 이벤트 메타(name/url/날짜/위치/topics) 추출
 - **어떻게**: 키워드 14종 1차 필터(LLM 호출 절감) → `extractFromArticle` NER 프롬프트(미래 일정만, 밋업 제외, 4000자, maxTokens 700) — `conference-discovery.service.ts:40-63`
 - **트리거**: cron 매일 00:00 KST / `POST /conferences/discover?days=&limit=`
 - **비고**: 키 없으면 `[]`, 실패는 경고만
 
-### PULSE-412 · 발견 후보 PROPOSED 저장
+### DEVBRIEF-412 · 발견 후보 PROPOSED 저장
 **타입** Story · **상태** ✅ · **컴포넌트** conferences
 - **어떻게**: startDate 없으면 skip, URL 있으면 unique 매칭(없으면 `proposed://` placeholder), status=PROPOSED + discoveredFrom 기록 — `conference-discovery.service.ts:71-142`
 
-### PULSE-413 · 승인 / 거부
+### DEVBRIEF-413 · 승인 / 거부
 **타입** Story · **상태** ✅ · **컴포넌트** conferences
 - **어떻게**: `POST /conferences/:id/approve`(→ACTIVE, 이미지 sync 백그라운드), `/reject`(→REJECTED) — `conferences.controller.ts:54-70`
 - **비고**: approve는 idempotent(이미 ACTIVE면 skip), REJECTED는 재제안 필터
 
-### PULSE-414 · 컨퍼런스 목록 조회 (필터)
+### DEVBRIEF-414 · 컨퍼런스 목록 조회 (필터)
 **타입** Story · **상태** ✅ · **컴포넌트** conferences
 - **어떻게**: `GET /conferences?upcoming=1&status=ACTIVE` — 기본 ACTIVE, upcoming이면 startDate≥now, asc, take 50 — `conferences.controller.ts:22-37`
 
@@ -511,12 +511,12 @@ RSS/Atom 피드를 긁어 글로 저장하고, 요약·임베딩 큐에 흘려�
 
 ## 공통 유틸 (Common)
 
-### PULSE-415 · og:image 추출 (메타 파싱)
+### DEVBRIEF-415 · og:image 추출 (메타 파싱)
 **타입** Task · **상태** ✅ · **컴포넌트** common
 - **무엇**: HTML에서 og:image / twitter:image / link rel=image_src 추출 + 절대화
 - **어떻게**: axios(5초·2MB), 정규식 우선순위 파싱(대소문자 무시), absolutize(//, /, 절대) — `og-image.service.ts:12-64`
 
-### PULSE-416 · 대표색 추출 + OKLCH 변환
+### DEVBRIEF-416 · 대표색 추출 + OKLCH 변환
 **타입** Story · **상태** ✅ · **컴포넌트** common
 - **무엇**: 이미지에서 Vibrant 팔레트 → 가장 선명한 색을 OKLCH CSS 문자열로
 - **어떻게**: axios arraybuffer(8초·5MB) → node-vibrant getPalette(Vibrant>Muted>DarkVibrant>LightVibrant) → sRGB→linear→LMS→OKLab→OKLCH(Björn Ottosson 공식) → `oklch(L% C h)` — `brand-color.service.ts:17-88`
@@ -547,7 +547,7 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## 탭 셸
 
-### PULSE-501 · 탭 네비게이션 (6+1탭)
+### DEVBRIEF-501 · 탭 네비게이션 (6+1탭)
 **타입** Story · **상태** ✅
 - **무엇**: 오늘/AI/개발뉴스/컨퍼런스/발표영상/오픈소스 + 저장 탭. `?tab=` URL 상태.
 - **어떻게**: 클라이언트 컴포넌트, useSearchParams/useRouter, 탭별 통계·제목 변동, 활성탭 accent 언더라인 — `articles-view.tsx:42-170,193-247`
@@ -557,19 +557,19 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## 오늘의 흐름 (Overview)
 
-### PULSE-502 · 일일 다이제스트 섹션
+### DEVBRIEF-502 · 일일 다이제스트 섹션
 **타입** Story · **상태** ✅
 - **어떻게**: 서버 `getDigest()`(`/digest/today`, no-store), 없으면 미렌더. 2열 그리드, Framer Motion, "오늘의 핵심" — `app/page.tsx:81-98`, `daily-digest.tsx:26-109`
 
-### PULSE-503 · 주요 글 (featured + 목록)
+### DEVBRIEF-503 · 주요 글 (featured + 목록)
 **타입** Story · **상태** ✅
 - **어떻게**: featured=articles[0], 나머지 2열(1:7), 카테고리 색 바, 북마크 — `overview-tab.tsx:43-88`, `featured-article.tsx`, `article-row.tsx:26-178`
 
-### PULSE-504 · 곧 열리는 컨퍼런스 (3개)
+### DEVBRIEF-504 · 곧 열리는 컨퍼런스 (3개)
 **타입** Story · **상태** ✅
 - **어떻게**: daysUntil≥0 필터·정렬, 브랜드색 카드, "더 보기"→컨퍼런스 탭 — `overview-tab.tsx:46-104`, `conference-card.tsx`
 
-### PULSE-505 · 최신 발표 영상 (3개)
+### DEVBRIEF-505 · 최신 발표 영상 (3개)
 **타입** Story · **상태** ✅
 - **어떻게**: videos.slice(0,3), 썸네일 로드 실패 시 브랜드 그라데이션 폴백, formatDuration — `overview-tab.tsx:107-120`, `video-card.tsx:28-173`
 
@@ -577,19 +577,19 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## AI 탭 (Trend Radar)
 
-### PULSE-506 · 벤치마크 대시보드 (정적)
+### DEVBRIEF-506 · 벤치마크 대시보드 (정적)
 **타입** Story · **상태** ✅
 - **무엇**: 4지표(종합지능/코딩/속도/가성비) 토글, 막대·산점도 차트
 - **어떻게**: useState view 토글, max 정규화 너비, SVG 산점도, 벤더별 색 범례 — `benchmark-dashboard.tsx:23-212`
 - **비고**: ⚠️ **데이터는 `lib/benchmark-data.ts` 정적 하드코딩** (Artificial Analysis 수동 스냅샷, 자동 갱신 없음 — `/api/benchmarks` 라우트는 TODO 주석만)
 
-### PULSE-507 · AI 글 3축 필터
+### DEVBRIEF-507 · AI 글 3축 필터
 **타입** Story · **상태** ✅
 - **무엇**: 모델(Claude/GPT/Gemini/Llama…) · 하네스(Claude Code/Cursor…) · 주제(릴리스/에이전트/벤치마크/연구) + 검색 + 페이지네이션
 - **어떻게**: useMemo 옵션 계산, isAiArticle() 선필터, modelsOf/harnessesOf/themesOf 정규식 매칭 — `ai-tab.tsx:71-160`, `lib/ai-topics.ts:13-72`
 - **비고**: 필터 없으면 주제별 섹션, 있으면 평탄 리스트
 
-### PULSE-508 · AI 글 배지
+### DEVBRIEF-508 · AI 글 배지
 **타입** Task · **상태** ✅
 - **어떻게**: badgesOf = models+harnesses 최대 2개, ArticleRow badges prop — `ai-tab.tsx:133-136`
 
@@ -597,15 +597,15 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## 개발뉴스 탭 (Articles)
 
-### PULSE-509 · 필터 사이드바 (소스·카테고리·본 글 숨기기)
+### DEVBRIEF-509 · 필터 사이드바 (소스·카테고리·본 글 숨기기)
 **타입** Story · **상태** ✅
 - **어떻게**: 범용 FilterSidebar, 소스/카테고리 dot 색, `#AI`/`#ai` 대소문자 정규화 병합, lg sticky·모바일 토글 — `filter-sidebar.tsx:34-204`, `articles-tab.tsx:53-89`
 
-### PULSE-510 · 머리기사 + 시간대 그룹화
+### DEVBRIEF-510 · 머리기사 + 시간대 그룹화
 **타입** Story · **상태** ✅
 - **어떻게**: 필터 없고 1페이지면 featured + 시간대 섹션(방금/오늘/어제/이번주/그외), 필터 시 검색결과 리스트, 조건 변하면 1페이지 리셋 — `articles-tab.tsx:127-132`, `lib/group-articles.ts`
 
-### PULSE-511 · 사이드바 하단 위젯
+### DEVBRIEF-511 · 사이드바 하단 위젯
 **타입** Task · **상태** ✅
 - **어떻게**: 컨퍼런스·영상 미니 미리보기, onNavigate 탭 전환 — `sidebar-widgets.tsx`
 
@@ -613,23 +613,23 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## 컨퍼런스 / 영상 / 오픈소스 탭
 
-### PULSE-512 · 컨퍼런스 탭 (기간·주제 필터)
+### DEVBRIEF-512 · 컨퍼런스 탭 (기간·주제 필터)
 **타입** Story · **상태** ✅
 - **어떻게**: periodOf()로 daysUntil 분류, 가까운순/나중순 정렬, 미래만 — `tabs/conferences-tab.tsx:9-70`
 
-### PULSE-513 · 영상 탭 (채널·주제 필터)
+### DEVBRIEF-513 · 영상 탭 (채널·주제 필터)
 **타입** Story · **상태** ✅
 - **어떻게**: channelOptions/topicOptions 집계, 최신순/조회수순 — `tabs/videos-tab.tsx:8-95`
 
-### PULSE-514 · 오픈소스 탭 (기간 토글 + 필터)
+### DEVBRIEF-514 · 오픈소스 탭 (기간 토글 + 필터)
 **타입** Story · **상태** ✅
 - **어떻게**: 주간/일간 세그먼트 토글(전환 시 필터 초기화), 언어·분야 필터, "star 증가 속도 기준" 안내 — `tabs/repos-tab.tsx:23-83`
 
-### PULSE-515 · 레포 카드
+### DEVBRIEF-515 · 레포 카드
 **타입** Story · **상태** ✅
 - **어떻게**: owner/repo + 설명 2줄 + 메타(▲star증가·기간/총star/fork), 언어색 dot, fmtK() — `repo-card.tsx:20-128`
 
-### PULSE-516 · 저장한 글 탭
+### DEVBRIEF-516 · 저장한 글 탭
 **타입** Story · **상태** ✅
 - **어떻게**: ArticlesTab 재사용 + bookmarkSet 필터, 빈 상태 라벨 — `articles-view.tsx:321-330`
 
@@ -637,23 +637,23 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## 상세 페이지
 
-### PULSE-517 · 글 상세 (백엔드 fetch + mock 폴백)
+### DEVBRIEF-517 · 글 상세 (백엔드 fetch + mock 폴백)
 **타입** Story · **상태** ✅
 - **어떻게**: `GET /articles/{id}` + getAll 병렬(no-store), 404면 notFound(), mapDbToDto null 안전 — `app/articles/[id]/page.tsx:43-67`
 
-### PULSE-518 · 글 상세 콘텐츠 + 읽기추적
+### DEVBRIEF-518 · 글 상세 콘텐츠 + 읽기추적
 **타입** Story · **상태** ✅
 - **어떻게**: 제목(한/영) + 메타 + 3줄/한줄 요약 + 원본링크, readingMinutes 계산, useEffect로 readTracking.add — `article-detail.tsx:14-100`
 
-### PULSE-519 · 관련 글 (4개)
+### DEVBRIEF-519 · 관련 글 (4개)
 **타입** Task · **상태** ✅
 - **어떻게**: 같은 소스 or 태그 겹침 필터 — `app/articles/[id]/page.tsx:87-94`
 
-### PULSE-520 · 영상 상세 (플레이어 + 챕터)
+### DEVBRIEF-520 · 영상 상세 (플레이어 + 챕터)
 **타입** Story · **상태** ✅
 - **어떻게**: `GET /videos/{id}`, YouTube iframe embed, 챕터(출처별)·요약·관련영상 5개 — `app/videos/[id]/page.tsx:30-92`, `video-detail.tsx`
 
-### PULSE-521 · 컨퍼런스 전용 페이지
+### DEVBRIEF-521 · 컨퍼런스 전용 페이지
 **타입** Story · **상태** ✅
 - **어떻게**: 히어로 2개(좌우 대칭, D-day 큰 숫자, brand glow) + 분기별 섹션(이번분기/그이후/지난) — `conferences-view.tsx:30-36,142-330`
 
@@ -661,15 +661,15 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## RAG 챗 UI
 
-### PULSE-522 · inline-chat (폼 + 빠른 질문)
+### DEVBRIEF-522 · inline-chat (폼 + 빠른 질문)
 **타입** Story · **상태** ✅
 - **어떻게**: forwardRef + useImperativeHandle ask(), QUICK_PROMPTS 4개 — `inline-chat.tsx:81-370`
 
-### PULSE-523 · 스트리밍 대화 + mock 폴백
+### DEVBRIEF-523 · 스트리밍 대화 + mock 폴백
 **타입** Story · **상태** ✅
 - **어떻게**: `POST /chat/stream` SSE 수신, 실패 시 mock 응답, AnswerText로 텍스트+인용번호 — `inline-chat.tsx` send()
 
-### PULSE-524 · 인용 카드 (스크롤 연동)
+### DEVBRIEF-524 · 인용 카드 (스크롤 연동)
 **타입** Task · **상태** ✅
 - **어떻게**: CitationGrid 최대 4개, 클릭 시 scrollIntoView + 2.2초 하이라이트 — `inline-chat.tsx:347-352`
 
@@ -677,20 +677,20 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## 공유 lib · 로컬 상태
 
-### PULSE-525 · API 클라이언트
+### DEVBRIEF-525 · API 클라이언트
 **타입** Task · **상태** ✅
 - **어떻게**: `API_BASE = NEXT_PUBLIC_API_BASE || localhost:4000/api/v1`, 모든 getter mock 폴백 — `lib/api.ts`
 
-### PULSE-526 · localStorage 상태 (북마크·읽음·언어)
+### DEVBRIEF-526 · localStorage 상태 (북마크·읽음·언어)
 **타입** Story · **상태** ✅
 - **어떻게**: bookmark.ts(`devbrief.bookmarks.v1`), read-tracking.ts(`pulse.read.v1`), lang-context.tsx(`devbrief.lang`) — Set 직렬화, typeof window 가드, quota 에러 무시
 - **비고**: 읽음 추적은 서버 ReadingEvent와 미동기(클라이언트 로컬만)
 
-### PULSE-527 · 분류·포맷 유틸
+### DEVBRIEF-527 · 분류·포맷 유틸
 **타입** Task · **상태** ✅
 - **어떻게**: category.ts(7카테고리 OKLCH), group-articles.ts(시간대·상위태그), relative-time/format-duration/format-views, parse-chapters(웹↔API 공유 로직), source-colors(20소스 색) — `lib/*`
 
-### PULSE-528 · 접근성·국제화
+### DEVBRIEF-528 · 접근성·국제화
 **타입** Task · **상태** ✅
 - **어떻게**: aria-label/aria-pressed/sr-only 스킵링크, pickTitle(lang)로 한/영 제목 선택, 로케일 포맷터 — 전역
 
@@ -707,39 +707,39 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## Admin
 
-### PULSE-601 · Admin 인증 (미들웨어 쿠키)
+### DEVBRIEF-601 · Admin 인증 (미들웨어 쿠키)
 **타입** Story · **상태** ✅
 - **무엇**: 단순 비밀번호로 /admin/* 보호 (1인 운영)
 - **어떻게**: `middleware.ts:5-23` 쿠키 `pulse_admin` 검증→리다이렉트, `admin-auth.ts:12-25` SHA-256(password)===토큰, `login/actions.ts:16-23` httpOnly·sameSite lax·30일
 - **비고**: ⚠️ 타이밍 안전 미구현, `ADMIN_PASSWORD` 없으면 기본값 'pulse' (운영 시 교체 필수)
 
-### PULSE-602 · 로그인 페이지
+### DEVBRIEF-602 · 로그인 페이지
 **타입** Task · **상태** ✅
 - **어떻게**: form action={login}, ?from 리다이렉트 보존, 에러 시 ?error=1 border 변색 — `login/page.tsx:54-101`, `login/actions.ts:7-26`
 
-### PULSE-603 · Admin 사이드바
+### DEVBRIEF-603 · Admin 사이드바
 **타입** Task · **상태** ✅
 - **어떻게**: NAV_MAIN/CONTENT/TOOL, 활성 경로 dot, 하단 메인사이트 링크 + 로그아웃 — `sidebar.tsx:13-23`
 
-### PULSE-604 · Admin 대시보드 (통계·진행률)
+### DEVBRIEF-604 · Admin 대시보드 (통계·진행률)
 **타입** Story · **상태** ✅
 - **어떻게**: Promise.all 7개 API 병렬 fetch, summarized/total 진행률 바, StatCard 6개 — `admin/(dashboard)/page.tsx:20-33`
 - **비고**: no-store, 실패 시 빈 배열 graceful
 
-### PULSE-605 · Admin RSS 소스 관리
+### DEVBRIEF-605 · Admin RSS 소스 관리
 **타입** Story · **상태** ✅
 - **어떻게**: URL→discover→DiscoveredFeed[], discover-and-register 일괄 등록, 활성 배지·토글·삭제 — `sources-panel.tsx:39-90`
 
-### PULSE-606 · Admin 컨퍼런스 후보 검토
+### DEVBRIEF-606 · Admin 컨퍼런스 후보 검토
 **타입** Story · **상태** ✅
 - **어떻게**: PROPOSED/ACTIVE 두 리스트, approve/reject 액션, `proposed://`는 "URL 미상" 표시, 발견 출처 표기 — `conferences/page.tsx:43-73`, `proposed-list.tsx:27-35`
 
-### PULSE-607 · Admin 영상 관리
+### DEVBRIEF-607 · Admin 영상 관리
 **타입** Story · **상태** ✅
 - **어떻게**: URL→/videos/add, 목록(썸네일·duration·조회수), 분석 상태("분석됨·{chapterSource}") — `videos-panel.tsx:36-68`
 - **비고**: 백그라운드 분석 → 새로고침 필요
 
-### PULSE-608 · Admin RAG 챗 (내부용)
+### DEVBRIEF-608 · Admin RAG 챗 (내부용)
 **타입** Task · **상태** ✅
 - **어떻게**: InlineChat 재사용, ?q로 초기 질문 프리셋 — `admin-chat-client.tsx:10-11`
 - **비고**: 공개는 digest/trend만, 챗은 어드민 전용(단가 고려)
@@ -748,34 +748,34 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## DB 스키마 (Prisma + pgvector)
 
-### PULSE-609 · Article 모델
+### DEVBRIEF-609 · Article 모델
 **타입** Task · **상태** ✅
 - **필드**: title, titleKo?, url(@unique), summaryOneLine?, summaryThreeLine?, contentSnippet(Text), tags[], language, imageUrl?, embedding(vector 768), publishedAt, fetchedAt
 - **인덱스**: publishedAt, (sourceId, publishedAt)
 
-### PULSE-610 · Source 모델
+### DEVBRIEF-610 · Source 모델
 - **필드**: provider, name, feedUrl(@unique), homepage, language(기본 en), active(기본 true)
 - **시드**: 13개 (한국 5·영어 2·AI 6)
 
-### PULSE-611 · Repo 모델
+### DEVBRIEF-611 · Repo 모델
 - **필드**: fullName, owner, name, url, description?, language?, languageColor?, stars, forks, **periodStars**, period(daily/weekly), category(기본 etc), rank, fetchedAt
 - **인덱스**: (fullName, period)@unique, (period, rank), fetchedAt
 - **특징**: 매 수집 전체 교체, ~50행 유지
 
-### PULSE-612 · Video 모델
+### DEVBRIEF-612 · Video 모델
 - **필드**: videoId(@unique), title, url, channel, thumbnailUrl, durationSec, views, topics[], description, chapters(Json), chapterSource(official/description/ai/null), summary?, analyzedAt?, conferenceId?
 - **인덱스**: publishedAt, conferenceId
 
-### PULSE-613 · Conference 모델
+### DEVBRIEF-613 · Conference 모델
 - **필드**: name, url(@unique), startDate, endDate?, location?, topics[], imageUrl?, brandColor?(oklch), youtubeChannelId?, status(ACTIVE/PROPOSED/REJECTED), discoveredFromArticleId?, discoveredAt?
 - **인덱스**: startDate, status
 - **시드**: 5개 (FECONF·if(kakao)·SLASH·DEVIEW·PyCon)
 
-### PULSE-614 · DailyDigest 모델
+### DEVBRIEF-614 · DailyDigest 모델
 - **필드**: date(@unique, 자정), items(Json [{articleId, headline, takeaway}]), intro?, generatedAt
 - **인덱스**: date
 
-### PULSE-615 · User / ReadingEvent / ChatSession·ChatMessage 모델
+### DEVBRIEF-615 · User / ReadingEvent / ChatSession·ChatMessage 모델
 - **User**: email(@unique), name?, imageUrl?
 - **ReadingEvent**: userId, articleId, event(viewed/opened/saved/dismissed) — 인덱스 (userId,createdAt)·(userId,articleId)
 - **ChatSession/Message**: role, content(Text), citations(Json), cascade 삭제 — 인덱스 (sessionId,createdAt)
@@ -785,21 +785,21 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 ## 인프라 · 부트스트랩
 
-### PULSE-616 · Docker Compose (Postgres pgvector + Redis)
+### DEVBRIEF-616 · Docker Compose (Postgres pgvector + Redis)
 **타입** Task · **상태** ✅
 - **어떻게**: `pgvector/pgvector:pg16`(5432, pulse/pulse/pulse, 볼륨·healthcheck), `redis:7-alpine`(6379, 볼륨·healthcheck) — `docker-compose.yml`
 - **비고**: pgvector=임베딩, Redis=BullMQ 큐. restart: unless-stopped
 
-### PULSE-617 · NestJS 부트스트랩
+### DEVBRIEF-617 · NestJS 부트스트랩
 **타입** Task · **상태** ✅
 - **어떻게**: dotenv 선로드, ValidationPipe(whitelist+transform), CORS(FRONTEND_URL||3000, credentials), 글로벌 prefix `/api/v1`, 포트 4000 — `main.ts:1-22`
 - **모듈**: Prisma·Gemini·Ingestion·Summarization·Articles·Conferences·Videos·Repos·Sources·Embedding·Chat·Digest + Schedule·Bull
 
-### PULSE-618 · Prisma 서비스 라이프사이클
+### DEVBRIEF-618 · Prisma 서비스 라이프사이클
 **타입** Task · **상태** ✅
 - **어떻게**: OnModuleInit `$connect`, OnModuleDestroy `$disconnect` — `prisma/prisma.service.ts`
 
-### PULSE-619 · 부트스트랩 시더 (소스 13·컨퍼런스 5)
+### DEVBRIEF-619 · 부트스트랩 시더 (소스 13·컨퍼런스 5)
 **타입** Task · **상태** ✅
 - **어떻게**: onApplicationBootstrap upsert(소스 feedUrl·컨퍼런스 url 기준), 컨퍼런스는 imageUrl 제외 보존 + fire-and-forget 이미지 sync
 - **비고**: Anthropic RSS 404 자동 비활성
@@ -810,8 +810,8 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 
 | 항목 | 현재 | 개선안 |
 |---|---|---|
-| API/웹 프로세스 | nohup (재부팅 시 사망) | `ops/systemd/` 유저 서비스 설치 (작성됨, 미설치) |
-| Postgres/Redis | Docker Desktop 수동 | Windows 자동시작 설정 |
+| API/웹 프로세스 | Cloudflare Pages(웹)·Worker(공개 API) | 해결: 상시 서버 없음 |
+| Postgres/Redis | Neon(PostgreSQL). Redis는 운영에서 사용하지 않음 | 해결 |
 | 웹 포트 | 3001 임시 (3000은 타 프로젝트 점유) | 포트 고정 결정 필요 |
 | Admin 비밀번호 | 기본값 'pulse' 가능 | ADMIN_PASSWORD 필수화 |
 | 레포 카테고리 | 규칙 협소 → etc 다수 | 룰 확장 / LLM 분류 |
@@ -973,7 +973,7 @@ Next.js App Router. 서버 컴포넌트로 API fetch(no-store) → 클라이언�
 - ✅ **UX-120**: "저장한 글 0 / 북마크 아이콘을 눌러 모아 보세요" 빈 상태 안내 명확.
 - ⚠️ 빈 상태에서도 검색창·"본 글 숨기기" 필터가 노출됨(빈 목록엔 불필요) — 사소.
 
-**실용성**: ✅ localStorage 기반이라 로그인 없이 즉시 동작. 단 기기 간 동기 안 됨(서버 미연결, PULSE-615와 연결).
+**실용성**: ✅ localStorage 기반이라 로그인 없이 즉시 동작. 단 기기 간 동기 안 됨(서버 미연결, DEVBRIEF-615와 연결).
 
 ---
 

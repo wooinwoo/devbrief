@@ -1,4 +1,4 @@
-# Devbrief(Pulse) 기능 백로그
+# Devbrief 기능 백로그
 
 이 서비스에 **실제로 구현된 기능**을 JIRA 백로그처럼 잘게 쪼개 정리한 문서입니다.
 코드를 직접 읽고 작성했으며, 각 태스크에 구현 파일·라인을 인용했습니다. (작성 시점 기준)
@@ -40,4 +40,4 @@
 - **무료 우선 / AI 의존 최소화** — Gemini는 1순위 품질 경로일 뿐, 죽어도 서비스가 돌도록 모든 AI 단계에 무료 폴백을 둔다. (요약·번역·다이제스트)
 - **개인 프로젝트 스케일** — 데이터 누적을 피한다. GitHub 레포는 매번 전체 교체(deleteMany→createMany)로 ~50행만 유지.
 - **graceful degradation** — 외부 fetch(원문·og:image·번역)는 실패해도 throw하지 않고 null/skip 후 로깅.
-- **운영 취약점(알려진 것)** — API/웹은 nohup, Postgres/Redis는 Docker Desktop 수동. 재부팅 시 수동 복구 필요(`ops/systemd/` 미설치).
+- **운영** — 웹은 Cloudflare Pages, 공개 API는 Cloudflare Worker, 수집은 GitHub Actions(매일 09:00 KST)로 이전했다. 로컬 프로세스·Docker에 의존하지 않는다.

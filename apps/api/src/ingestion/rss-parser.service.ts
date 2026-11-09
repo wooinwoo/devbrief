@@ -17,7 +17,7 @@ export class RssParserService {
     timeout: 10_000,
     // 일부 피드(NAVER D2 등)는 UA 없으면 406 차단 → 브라우저 UA 위장
     headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.app)',
+      'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.wooki.cc)',
       Accept:
         'application/rss+xml, application/atom+xml, application/xml, text/xml; q=0.9, */*; q=0.8',
     },

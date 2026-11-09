@@ -267,7 +267,7 @@ code { font-family: ui-monospace, 'Cascadia Code', monospace; font-size: 12px; b
       <ul>
         <li><b>컨퍼런스 이미지</b> — 홈 카드에 엉뚱한 og:image(Lovable 등)</li>
         <li><b>dev.to 편중</b> — 저품질 글이 주요 글 다수 차지</li>
-        <li><b>운영</b> — nohup·Docker 수동(재부팅 사망), systemd 미설치</li>
+        <li><b>운영</b> — 웹 Cloudflare Pages, 공개 API Cloudflare Worker, 수집 GitHub Actions(매일 09:00 KST)</li>
         <li>상세: <code>docs/features/PAGE-AUDIT.md</code> (개선 21건)</li>
       </ul>
     </div>
@@ -275,13 +275,13 @@ code { font-family: ui-monospace, 'Cascadia Code', monospace; font-size: 12px; b
 
   <h2 class="sec">인프라</h2>
   <div class="infra">
-    <span class="chip">web <b>:3001</b> next dev <span class="note" style="margin:0">(3000은 여백)</span></span>
+    <span class="chip">web <b>:3001</b> next dev</span>
     <span class="chip">api <b>:4000</b> node dist/main</span>
     <span class="chip">postgres <b>:5432</b> docker</span>
     <span class="chip">redis <b>:6379</b> docker</span>
     <span class="chip">cron <b>09:00</b> RSS · <b>08:30</b> repos · <b>월 04:00</b> videos · <b>09:30</b> digest · <b>00:00</b> 컨퍼런스</span>
   </div>
-  <p class="note">monorepo: <code>~/projects/side/devbrief</code> · API/웹은 현재 nohup — WSL 재부팅 시 사망 → ops/systemd 유닛 설치로 해결 예정. 정책: docs/policy/ · 기능 백로그: docs/features/ · 본 문서: docs/architecture.html</p>
+  <p class="note">위 포트는 로컬 개발 기준이다. 운영은 Cloudflare Pages(웹)·Worker(API)·Neon(DB)·GitHub Actions(수집)이다. 정책: docs/policy/ · 기능 백로그: docs/features/ · 본 문서: docs/architecture.html</p>
 </div>
 </body>
 </html>
