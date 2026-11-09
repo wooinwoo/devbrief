@@ -92,7 +92,7 @@ export function parseLeaderboard(html, checkedAt = new Date().toISOString()) {
 export async function refreshBenchmarks(output, { fetcher = fetch, now = new Date() } = {}) {
   const response = await fetcher(BENCHMARK_SOURCE_URL, {
     signal: AbortSignal.timeout(30_000),
-    headers: { 'User-Agent': 'Devbrief-Benchmark/1.0 (+https://devbrief.pages.dev)' },
+    headers: { 'User-Agent': 'Devbrief-Benchmark/1.0 (+https://devbrief.wooki.cc)' },
   });
   if (!response.ok) throw new Error(`Leaderboard HTTP ${response.status}`);
   // Bound the body even when Content-Length is absent.

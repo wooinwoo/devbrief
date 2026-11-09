@@ -1,3 +1,4 @@
+import { edgeCached } from '@/lib/edge-cache';
 import type { NextRequest } from 'next/server';
 
 // Only existing read endpoints are exposed. Credentials and arbitrary targets never pass through.
@@ -15,12 +16,15 @@ export async function GET(
   }
   const base = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:4000/api/v1';
   try {
-    const upstream = await fetch(`${base}/${joined}${req.nextUrl.search}`, {
-      headers: { accept: 'application/json' },
-      cache: 'no-store',
-      redirect: 'manual',
-      signal: AbortSignal.timeout(30_000),
-    });
+    const target = `${base}/${joined}${req.nextUrl.search}`;
+    const upstream = await edgeCached(target, () =>
+      fetch(target, {
+        headers: { accept: 'application/json' },
+        cache: 'no-store',
+        redirect: 'manual',
+        signal: AbortSignal.timeout(30_000),
+      }),
+    );
     if (upstream.status >= 300 && upstream.status < 400) {
       return Response.json({ error: 'unexpected upstream redirect' }, { status: 502 });
     }

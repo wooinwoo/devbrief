@@ -115,7 +115,7 @@ export class RssDiscoveryService {
           }
         },
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.dev)',
+          'User-Agent': 'Mozilla/5.0 (compatible; DevbriefBot/1.0; +https://devbrief.wooki.cc)',
         },
       });
       return res.data;
