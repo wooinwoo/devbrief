@@ -75,15 +75,15 @@ jobs:
           [ -n "$YOUTUBE_API_KEY" ] || echo "::warning title=Preflight::YOUTUBE_API_KEY 미설정 — 공개 영상 RSS를 사용합니다"
 
       - name: Checkout
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       - name: Setup Node
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # @devbrief/db의 main이 src/index.ts(TS 원본)라 런타임 require 시
           # Node의 strip-types가 필요. 24는 이를 안정 지원(Dockerfile과 동일 버전).
