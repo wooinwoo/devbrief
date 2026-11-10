@@ -71,7 +71,7 @@ model Conference {
 
   // 자동 발견 / 승인 흐름
   // ACTIVE — 시드 또는 운영자 승인. 프론트 노출
-  // PROPOSED — Discovery가 LLM NER로 추출한 후보. 운영자 검토 대기
+  // PROPOSED — 공식 URL이 없어 링크를 걸 수 없는 후보. 비공개
   // REJECTED — 잘못된 후보 (스팸/중복). 다음 discovery에서 재제안 안 함
   status               String  @default("ACTIVE")
   discoveredFromArticleId String?

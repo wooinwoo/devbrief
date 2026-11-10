@@ -246,7 +246,7 @@ describe('ConferenceSeederService', () => {
         location: '경기도 용인시 카카오 AI 캠퍼스',
       }),
     );
-    expect(rows[5].status).toBe('PROPOSED');
+    expect(rows[5].status).toBe('REJECTED');
   });
 
   it('서빙 서버의 반복 부팅은 이미지 다운로드나 디코딩을 시작하지 않는다', async () => {

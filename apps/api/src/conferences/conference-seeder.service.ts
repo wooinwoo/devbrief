@@ -107,13 +107,13 @@ export class ConferenceSeederService implements OnApplicationBootstrap {
         },
       },
       {
-        // DEVIEW 공식 사이트는 DAN 2025로 이동한다. 미확인 2026 일정은 재검토한다.
+        // DEVIEW 공식 사이트에 2026 행사가 없다(2026-11-10 확인). 미확인 일정은 공개하지 않는다.
         name: 'DEVIEW 2026',
         url: 'https://deview.kr',
         startDate: new Date('2026-11-26'),
         endDate: new Date('2026-11-27'),
         location: '서울 / 코엑스',
-        data: { status: 'PROPOSED' as const },
+        data: { status: 'REJECTED' as const },
       },
     ];
     for (const { data, ...legacy } of corrections) {

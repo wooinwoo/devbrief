@@ -62,7 +62,8 @@ export class ConferenceDiscoveryService {
   }
 
   /**
-   * 추출된 후보들을 conference 테이블에 PROPOSED 상태로 upsert.
+   * 추출된 후보들을 conference 테이블에 upsert. 공식 URL이 있으면 바로 공개(ACTIVE)하고,
+   * URL이 없는 후보(placeholder)만 링크를 걸 수 없어 PROPOSED로 남긴다.
    * - url 기준 unique 매칭 (url in 일괄 조회 후 메모리 판정)
    * - URL 유무와 무관하게 name+startDate 조합으로도 dedupe (name in 일괄 조회 후 메모리 판정, N+1 제거)
    * - placeholder URL 로 저장된 기존 행과 같은 name+startDate 후보가 실제 URL 을 들고 오면
@@ -133,6 +134,7 @@ export class ConferenceDiscoveryService {
         if (c.url && known.url.startsWith('proposed://')) {
           if (known.pending !== undefined) {
             toCreate[known.pending].url = c.url;
+            toCreate[known.pending].status = 'ACTIVE';
             known.url = c.url;
             existingUrls.add(c.url);
             skipped++;
@@ -141,6 +143,11 @@ export class ConferenceDiscoveryService {
               await this.prisma.conference.update({
                 where: { id: known.id },
                 data: { url: c.url },
+              });
+              // 링크가 없어 비공개였던 후보만 공개한다. 거절한 행사는 그대로 둔다.
+              await this.prisma.conference.updateMany({
+                where: { id: known.id, status: 'PROPOSED' },
+                data: { status: 'ACTIVE' },
               });
               known.url = c.url;
               existingUrls.add(c.url);
@@ -169,7 +176,7 @@ export class ConferenceDiscoveryService {
         location: c.location ?? '미정',
         topics: c.topics,
         description: c.description,
-        status: 'PROPOSED',
+        status: c.url ? 'ACTIVE' : 'PROPOSED',
         discoveredFromArticleId: sourceArticleId,
         discoveredAt: new Date(),
       });

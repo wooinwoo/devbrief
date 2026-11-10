@@ -16,6 +16,7 @@ describe('ConferenceDiscoveryService', () => {
       create: jest.Mock;
       createMany: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
     };
   };
   let feeds: { collect: jest.Mock };
@@ -45,6 +46,7 @@ describe('ConferenceDiscoveryService', () => {
         create: jest.fn(),
         createMany: jest.fn().mockResolvedValue({ count: 0 }),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
     };
     gemini = {
@@ -98,16 +100,16 @@ describe('ConferenceDiscoveryService', () => {
       }),
     );
     expect(prisma.conference.createMany.mock.calls[0][0].data[0]).toEqual(
-      expect.objectContaining({ status: 'PROPOSED', discoveredFromArticleId: null }),
+      expect.objectContaining({ status: 'ACTIVE', discoveredFromArticleId: null }),
     );
     expect(prisma.article.findMany).not.toHaveBeenCalled();
   });
 
-  it('공식 확인 일정도 검토 대기로 저장하고 해커톤과 학술대회 URL을 구분한다', async () => {
+  it('공식 확인 일정은 바로 공개하고 해커톤과 학술대회 URL을 구분한다', async () => {
     await service.collectPublicEvents();
     const rows = prisma.conference.createMany.mock.calls[0][0].data;
     expect(rows).toHaveLength(VERIFIED_KOREAN_EVENTS.length);
-    expect(rows.every((row: { status: string }) => row.status === 'PROPOSED')).toBe(true);
+    expect(rows.every((row: { status: string }) => row.status === 'ACTIVE')).toBe(true);
     expect(new Set(rows.map((row: { url: string }) => row.url)).size).toBe(rows.length);
     expect(rows.find((row: { name: string }) => row.name.includes('NAIS'))).toEqual(
       expect.objectContaining({
@@ -245,7 +247,7 @@ describe('ConferenceDiscoveryService', () => {
   });
 
   describe('saveProposals', () => {
-    it('URL 있고 신규면 PROPOSED 로 createMany', async () => {
+    it('URL 있고 신규면 ACTIVE 로 createMany', async () => {
       prisma.conference.findMany.mockResolvedValue([]);
       prisma.conference.createMany.mockResolvedValue({ count: 1 });
 
@@ -269,7 +271,7 @@ describe('ConferenceDiscoveryService', () => {
           expect.objectContaining({
             name: 'KubeCon 2026',
             url: 'https://kubecon.io/2026',
-            status: 'PROPOSED',
+            status: 'ACTIVE',
             discoveredFromArticleId: 'art-1',
           }),
         ]),
@@ -449,6 +451,11 @@ describe('ConferenceDiscoveryService', () => {
       expect(prisma.conference.update).toHaveBeenCalledWith({
         where: { id: 'c1' },
         data: { url: 'https://fooconf.io' },
+      });
+      // 링크가 생긴 비공개 후보는 공개한다. 거절한 행은 status 조건으로 건드리지 않는다.
+      expect(prisma.conference.updateMany).toHaveBeenCalledWith({
+        where: { id: 'c1', status: 'PROPOSED' },
+        data: { status: 'ACTIVE' },
       });
       expect(prisma.conference.createMany).not.toHaveBeenCalled();
     });
