@@ -173,7 +173,7 @@ describe('공개 행사 피드', () => {
         candidates: [expect.objectContaining({ kind: 'meetup', startDate: '2026-09-21' })],
       }),
       expect.objectContaining({
-        source: 'GDG Incheon',
+        source: 'GDG Korea',
         candidates: [expect.objectContaining({ kind: 'hackathon', startDate: '2026-09-12' })],
       }),
     ]);
@@ -183,7 +183,15 @@ describe('공개 행사 피드', () => {
       'https://www.mlh.com/events',
       'https://www.meetup.com/awskrug/events/ical/',
       'https://dev-korea.com/events',
+      // 국내 GDG 챕터는 같은 사이트라 한 곳씩 차례로 요청한다.
       'https://gdg.community.dev/gdg-incheon/',
+      'https://gdg.community.dev/gdg-seoul/',
+      'https://gdg.community.dev/gdg-korea-android/',
+      'https://gdg.community.dev/gdg-pangyo/',
+      'https://gdg.community.dev/gdg-busan/',
+      'https://gdg.community.dev/gdg-daejeon/',
+      'https://gdg.community.dev/gdg-cloud-korea/',
+      'https://gdg.community.dev/gdg-campus-korea/',
     ]);
   });
   it('현실에 없는 날짜·불명확한 종료일이 파서를 거쳐도 저장되지 않는다', async () => {

@@ -147,18 +147,26 @@ export function parseDevKorea(html: string): unknown[] {
   });
 }
 
-/** 인천 챕터의 공개 예정 목록만 읽는다. 소개글의 해커톤 언급은 행사 유형으로 쓰지 않는다. */
+/** 인천 챕터의 공개 예정 목록. */
 export function parseGdgIncheon(html: string): unknown[] {
+  return parseGdgChapter(html, 'gdg-incheon');
+}
+
+/** 국내 GDG 챕터의 공개 예정 목록만 읽는다. 소개글의 해커톤 언급은 행사 유형으로 쓰지 않는다. */
+export function parseGdgChapter(html: string, slug: string): unknown[] {
   const $ = cheerio.load(html);
   const data = JSON.parse($('#__NEXT_DATA__').text() || 'null');
   const page = data?.props?.pageProps;
   const rows: unknown = page?.prerenderData?.upcomingEvents?.results;
-  if (
-    page?.chapterSlug !== 'gdg-incheon' ||
-    page?.chapterData?.country !== 'KR' ||
-    !Array.isArray(rows)
-  )
-    throw new Error('GDG Incheon upcoming events missing');
+  const chapterData = page?.chapterData ?? {};
+  const chapter =
+    typeof chapterData.title === 'string'
+      ? chapterData.title
+      : typeof chapterData.city === 'string'
+        ? `GDG ${chapterData.city}`
+        : slug;
+  if (page?.chapterSlug !== slug || page?.chapterData?.country !== 'KR' || !Array.isArray(rows))
+    throw new Error(`${slug === 'gdg-incheon' ? 'GDG Incheon' : slug} upcoming events missing`);
   return rows.flatMap((value) => {
     if (!value || typeof value !== 'object') return [];
     const row = value as Record<string, unknown>;
@@ -184,8 +192,7 @@ export function parseGdgIncheon(html: string): unknown[] {
             : kind === 'meetup'
               ? ['Meetup', 'GDG']
               : ['GDG'],
-        description:
-          '일정 출처: GDG Incheon 공식 예정 행사 목록. https://gdg.community.dev/gdg-incheon/ · 참가 신청과 개최 방식·장소는 공식 행사 페이지에서 확인하세요.',
+        description: `일정 출처: ${chapter} 공식 예정 행사 목록. https://gdg.community.dev/${slug}/ · 참가 신청과 개최 방식·장소는 공식 행사 페이지에서 확인하세요.`,
       },
     ];
   });

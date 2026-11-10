@@ -3,7 +3,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { isBlockedHostname } from '../common/url-guard';
 import { type DiscoveredConference, normalizeEventCandidate } from './event-candidate';
-import { parseAwskrug, parseDevKorea, parseGdgIncheon } from './korean-event-feeds';
+import { parseAwskrug, parseDevKorea, parseGdgChapter } from './korean-event-feeds';
 
 const SOURCES = [
   {
@@ -18,8 +18,24 @@ const SOURCES = [
     parse: parseAwskrug,
   },
   { name: 'Dev Korea', url: 'https://dev-korea.com/events', parse: parseDevKorea },
-  { name: 'GDG Incheon', url: 'https://gdg.community.dev/gdg-incheon/', parse: parseGdgIncheon },
 ];
+
+/**
+ * 공개 예정 목록이 있는 국내 GDG 챕터(2026-11-10 확인). 같은 사이트라 robots.txt의 Crawl-delay(2초)를
+ * 지켜 순서대로 요청한다. 행사 플랫폼(이벤터스·온오프믹스·Festa)과 Dev-Event 목록은 robots.txt나
+ * 이용 정책이 자동 수집을 금지해 넣지 않는다.
+ */
+const GDG_KOREA_CHAPTERS = [
+  'gdg-incheon',
+  'gdg-seoul',
+  'gdg-korea-android',
+  'gdg-pangyo',
+  'gdg-busan',
+  'gdg-daejeon',
+  'gdg-cloud-korea',
+  'gdg-campus-korea',
+];
+const GDG_CRAWL_DELAY_MS = process.env.JEST_WORKER_ID ? 0 : 2_000;
 
 function datePart(value: unknown): string | null {
   if (typeof value !== 'string' && typeof value !== 'number') return null;
@@ -108,37 +124,62 @@ export interface EventFeedResult {
 export class ConferenceFeedService {
   async collect(): Promise<EventFeedResult[]> {
     const now = new Date();
-    return Promise.all(
-      SOURCES.map(async (source): Promise<EventFeedResult> => {
+    const toResult = (source: string, rows: unknown[], error?: string): EventFeedResult => {
+      const candidates = rows
+        .map((row) => normalizeEventCandidate(row, now))
+        .filter((row): row is DiscoveredConference => row !== null && row.url !== null);
+      return {
+        source,
+        candidates,
+        skipped: rows.length - candidates.length,
+        ...(error ? { error } : {}),
+      };
+    };
+    const feeds = SOURCES.map(async (source): Promise<EventFeedResult> => {
+      try {
+        return toResult(source.name, source.parse(await getFeed(source.url)));
+      } catch (error) {
+        return { source: source.name, candidates: [], skipped: 0, error: errorMessage(error) };
+      }
+    });
+    // 챕터 하나가 실패해도 나머지는 싣는다. 전부 실패할 때만 출처 오류로 남긴다.
+    const gdg = (async (): Promise<EventFeedResult> => {
+      const rows: unknown[] = [];
+      const errors: string[] = [];
+      for (const [index, slug] of GDG_KOREA_CHAPTERS.entries()) {
+        if (index > 0 && GDG_CRAWL_DELAY_MS > 0)
+          await new Promise((resolve) => setTimeout(resolve, GDG_CRAWL_DELAY_MS));
         try {
-          const response = await axios.get<string>(source.url, {
-            responseType: 'text',
-            timeout: 15_000,
-            maxContentLength: 8_000_000,
-            maxRedirects: 5,
-            headers: { 'User-Agent': 'Devbrief/1.0 (+https://github.com/wooinwoo/devbrief)' },
-            beforeRedirect: (options) => {
-              if (
-                !['http:', 'https:'].includes(options.protocol) ||
-                isBlockedHostname(options.hostname)
-              )
-                throw new Error('Unsafe feed redirect');
-            },
-          });
-          const rows = source.parse(response.data);
-          const candidates = rows
-            .map((row) => normalizeEventCandidate(row, now))
-            .filter((row): row is DiscoveredConference => row !== null && row.url !== null);
-          return { source: source.name, candidates, skipped: rows.length - candidates.length };
+          rows.push(...parseGdgChapter(await getFeed(`https://gdg.community.dev/${slug}/`), slug));
         } catch (error) {
-          return {
-            source: source.name,
-            candidates: [],
-            skipped: 0,
-            error: error instanceof Error ? error.message : 'Feed failed',
-          };
+          errors.push(errorMessage(error));
         }
-      }),
-    );
+      }
+      return toResult(
+        'GDG Korea',
+        rows,
+        errors.length === GDG_KOREA_CHAPTERS.length ? errors[0] : undefined,
+      );
+    })();
+    return Promise.all([...feeds, gdg]);
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Feed failed';
+}
+
+async function getFeed(url: string): Promise<string> {
+  const response = await axios.get<string>(url, {
+    responseType: 'text',
+    timeout: 15_000,
+    maxContentLength: 8_000_000,
+    maxRedirects: 5,
+    headers: { 'User-Agent': 'Devbrief/1.0 (+https://github.com/wooinwoo/devbrief)' },
+    beforeRedirect: (options) => {
+      if (!['http:', 'https:'].includes(options.protocol) || isBlockedHostname(options.hostname))
+        throw new Error('Unsafe feed redirect');
+    },
+  });
+  return response.data;
 }
