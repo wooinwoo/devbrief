@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as cheerio from 'cheerio';
+import { refusesAutomatedPages } from '../common/url-guard';
 
 /**
  * 원문 URL에서 본문을 가져와 "정제된 HTML"로 추출한다.
@@ -73,6 +74,11 @@ export class ArticleExtractService {
    * url 의 원문을 받아 정제된 본문 HTML 을 돌려준다. 실패/너무 짧으면 null.
    */
   async extract(url: string): Promise<string | null> {
+    try {
+      if (refusesAutomatedPages(new URL(url).hostname)) return null;
+    } catch {
+      return null;
+    }
     let html: string;
     try {
       const res = await fetch(url, {

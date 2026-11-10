@@ -17,6 +17,13 @@ describe('ArticleExtractService', () => {
     service = new ArticleExtractService();
   });
 
+  it('자동 접속을 거부한 사이트에는 요청하지 않는다', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch');
+    await expect(service.extract('https://news.hada.io/topic?id=1')).resolves.toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
   it('script/style 및 on* 핸들러를 완전히 제거한다', () => {
     const html = `
       <html><body>

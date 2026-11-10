@@ -211,7 +211,8 @@ async function extractArticles(
   extractor: ArticleExtractService,
   opts: { onlyMissing: boolean; limit: number; concurrency?: number },
 ): Promise<{ scanned: number; extracted: number; failed: number }> {
-  const where = opts.onlyMissing ? `WHERE "contentHtml" IS NULL` : '';
+  // 자동 접속을 거부한 사이트(GeekNews)의 글은 고르지 않는다. 고르면 요청은 막혀도 매일 앞자리를 차지한다.
+  const where = `WHERE url NOT LIKE 'https://news.hada.io/%'${opts.onlyMissing ? ` AND "contentHtml" IS NULL` : ''}`;
   const rows = await prisma.$queryRawUnsafe<ExtractRow[]>(
     `SELECT id, url
        FROM "Article"
