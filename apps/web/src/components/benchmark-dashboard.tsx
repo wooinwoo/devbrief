@@ -54,7 +54,12 @@ export function BenchmarkDashboard() {
     return () => clearInterval(interval);
   }, [snapshot.checkedAt]);
 
-  const data = selectBenchmarkModels(snapshot.models, view, query);
+  // 원본이 초당 토큰을 싣지 않는 기간에는 빈 "출력 속도" 탭을 보이지 않는다.
+  const tabs = snapshot.models.some((model) => model.speed !== null)
+    ? TABS
+    : TABS.filter((tab) => tab.key !== 'speed');
+  const shown = tabs.some((tab) => tab.key === view) ? view : 'intelligence';
+  const data = selectBenchmarkModels(snapshot.models, shown, query);
   const visible = data.slice(0, limit);
   return (
     <section
@@ -99,18 +104,18 @@ export function BenchmarkDashboard() {
         aria-label="벤치마크 지표 선택"
         className="flex flex-wrap gap-1 mb-4 border-b border-(--color-line)"
       >
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
-            aria-pressed={view === tab.key}
+            aria-pressed={shown === tab.key}
             onClick={() => {
               setView(tab.key);
               setLimit(10);
             }}
             className="min-h-11 px-3 py-2 border-b-2 text-sm transition-colors"
             style={
-              view === tab.key
+              shown === tab.key
                 ? {
                     borderColor: 'var(--color-accent)',
                     color: 'var(--color-accent-strong)',
@@ -138,9 +143,9 @@ export function BenchmarkDashboard() {
           />
         </label>
         <p className="text-[13px] text-(--color-fg-muted)">
-          {view === 'costPerTask'
+          {shown === 'costPerTask'
             ? '비용 낮은 순'
-            : view === 'speed'
+            : shown === 'speed'
               ? '출력 빠른 순'
               : '지능 높은 순'}
           {' · '}
@@ -151,10 +156,10 @@ export function BenchmarkDashboard() {
         <p role="status" className="py-8 text-center text-sm text-(--color-fg-muted)">
           해당 지표에서 검색 결과가 없어요.
         </p>
-      ) : view === 'costPerTask' ? (
+      ) : shown === 'costPerTask' ? (
         <CostTable models={visible} />
       ) : (
-        <BarMetric models={visible} metric={view} />
+        <BarMetric models={visible} metric={shown} />
       )}
       {visible.length < data.length && (
         <button
@@ -167,11 +172,11 @@ export function BenchmarkDashboard() {
       )}
       <div className="mt-5 space-y-1 border-t border-(--color-line) pt-4 text-[13px] leading-relaxed text-(--color-fg-muted)">
         <p>
-          {view === 'intelligence' &&
+          {shown === 'intelligence' &&
             '종합 지능은 높을수록 우수합니다. 평가 버전이 다른 점수와 직접 비교할 수 없어요.'}
-          {view === 'speed' &&
+          {shown === 'speed' &&
             '출력 속도는 초당 생성 토큰의 중앙값입니다. 답변 시작 전 대기 시간은 포함하지 않아요.'}
-          {view === 'costPerTask' &&
+          {shown === 'costPerTask' &&
             '비용은 종합 지능 평가 작업 1개당 가중 평균 달러(USD)입니다. 100만 토큰당 API 요금과는 달라요.'}
         </p>
         <p>

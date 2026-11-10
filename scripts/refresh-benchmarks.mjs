@@ -31,6 +31,19 @@ function metric(text, currency = false) {
   return Number(match[1].replaceAll(',', ''));
 }
 
+/**
+ * 페이지에 실린 모델 목록 데이터에서 표시 이름(shortName) → slug를 읽는다.
+ * 스크립트를 실행하지 않고 직렬화된 문자열만 정규식으로 읽는다.
+ */
+function modelSlugs(html) {
+  const slugs = new Map();
+  const pattern =
+    /\\?"slug\\?":\\?"([a-z0-9][a-z0-9-]*)\\?",\\?"name\\?":\\?"[^"\\]*\\?",\\?"shortName\\?":\\?"([^"\\]+)\\?"/g;
+  for (const match of html.matchAll(pattern))
+    if (!slugs.has(match[2])) slugs.set(match[2], match[1]);
+  return slugs;
+}
+
 // Parse only the public, rendered leaderboard table. Never execute page scripts.
 export function parseLeaderboard(html, checkedAt = new Date().toISOString()) {
   const versions = [
@@ -46,15 +59,16 @@ export function parseLeaderboard(html, checkedAt = new Date().toISOString()) {
     [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((cell) => cell[1]),
   );
   const headerIndex = rows.findIndex((cells) => textOf(cells[0] ?? '') === 'Model');
+  // 2026-11 표 개편: 초당 토큰(Median Tokens/s)과 지연 시간 열이 빠지고 작업당 시간이 들어왔다.
+  // 표에서 모델 링크도 빠져, 모델 slug는 같은 페이지에 실린 모델 목록 데이터에서 찾는다.
   const expected = [
     'Model',
     'Context Window',
     'Creator',
     'Artificial Analysis Intelligence Index',
     'Cost per Task USD',
-    'Median Tokens/s',
-    'Latency First Chunk (s)',
-    'Total Response (s)',
+    'Time per Task Minutes',
+    'First Answer Token (s)',
     'Further Analysis',
   ];
   if (
@@ -63,20 +77,23 @@ export function parseLeaderboard(html, checkedAt = new Date().toISOString()) {
   ) {
     throw new Error('Leaderboard columns changed; review before publishing');
   }
+  const slugs = modelSlugs(html);
   const models = [];
   for (const cells of rows.slice(headerIndex + 1)) {
     if (cells.length !== expected.length) throw new Error('Incomplete leaderboard row');
     const values = cells.map(textOf);
     // AA marks incomplete index results with *. Do not present them as full index scores.
     if (values[3].includes('*') || values[3] === '--') continue;
-    const slug = cells[8].match(/href="\/models\/([a-z0-9-]+)"/)?.[1];
-    if (!slug) throw new Error('Missing model source link');
+    // 링크할 모델 페이지를 확인할 수 없는 행은 싣지 않는다. 대량 누락은 갱신 단계에서 거부된다.
+    const slug = slugs.get(values[0]);
+    if (!slug) continue;
     models.push({
       name: values[0],
       creator: values[2],
       slug,
       intelligence: metric(values[3]),
-      speed: metric(values[5]),
+      // 원본이 초당 토큰을 더 이상 싣지 않는다. 없는 값을 다른 지표로 대신하지 않는다.
+      speed: null,
       costPerTask: metric(values[4], true),
     });
   }

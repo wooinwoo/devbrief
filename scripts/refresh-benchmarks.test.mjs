@@ -11,44 +11,53 @@ const headings = [
   'Creator',
   'Artificial Analysis Intelligence Index',
   'Cost per Task USD',
-  'Median Tokens/s',
-  'Latency First Chunk (s)',
-  'Total Response (s)',
+  'Time per Task Minutes',
+  'First Answer Token (s)',
   'Further Analysis',
 ];
-const row = (i, score = '53', price = '$7.63', speed = '1,200') =>
+const row = (i, score = '53', price = '$7.63') =>
   `<tr>${[
     `Model &amp; ${i}`,
     '1M',
     'Lab',
     score,
     price,
-    speed,
-    '1',
-    '2',
-    `<a href="/models/test-${i}">Model</a>`,
+    '12.5',
+    '1.2',
+    '<button>Model Providers</button>',
   ]
     .map((value) => `<td>${value}</td>`)
     .join('')}</tr>`;
+// 페이지에 직렬화되어 실린 모델 목록(이스케이프된 JSON). 표 이름 → slug 매핑에 쓴다.
+const modelData = Array.from(
+  { length: 40 },
+  (_, i) =>
+    `{\\"slug\\":\\"test-${i}\\",\\"name\\":\\"Model & ${i} (full)\\",\\"shortName\\":\\"Model & ${i}\\"}`,
+).join(',');
 const fixture = (extra = '') =>
-  `<p>Intelligence Index v4.3</p><table><thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join('')}</tr></thead><tbody>${Array.from({ length: 12 }, (_, i) => row(i)).join('')}${extra}</tbody></table>`;
+  `<script>self.__next_f.push([1,"[${modelData}]"])</script><p>Intelligence Index v4.3</p><table><thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join('')}</tr></thead><tbody>${Array.from({ length: 12 }, (_, i) => row(i)).join('')}${extra}</tbody></table>`;
 
 test('reads table, preserves units and does not invent missing metrics', () => {
-  const snapshot = parseLeaderboard(
-    fixture(row(12, '42*') + row(13, '--') + row(14, '0', '--', '--')),
-  );
+  const snapshot = parseLeaderboard(fixture(row(12, '42*') + row(13, '--') + row(14, '0', '--')));
   assert.equal(snapshot.indexVersion, '4.3');
   assert.equal(snapshot.models.length, 13);
   assert.equal(snapshot.models[0].name, 'Model & 0');
+  assert.equal(snapshot.models[0].slug, 'test-0');
   assert.equal(snapshot.models[0].costPerTask, 7.63);
-  assert.equal(snapshot.models[0].speed, 1200);
+  // 원본이 초당 토큰을 싣지 않으므로 지어내지 않는다.
+  assert.equal(snapshot.models[0].speed, null);
   assert.equal(snapshot.models.at(-1).intelligence, 0);
-  assert.equal(snapshot.models.at(-1).speed, null);
+  assert.equal(snapshot.models.at(-1).costPerTask, null);
+});
+test('skips rows whose model page cannot be identified', () => {
+  const snapshot = parseLeaderboard(fixture(row(99)));
+  assert.equal(snapshot.models.length, 12);
+  assert.ok(!snapshot.models.some((model) => model.name === 'Model & 99'));
 });
 test('rejects changed units, columns, missing version and malformed rows', () => {
   for (const html of [
     fixture().replace('Cost per Task USD', 'Price per Million Tokens'),
-    fixture().replace('Median Tokens/s', 'Median Milliseconds'),
+    fixture().replace('Time per Task Minutes', 'Median Tokens/s'),
     fixture().replace('Intelligence Index v4.3', 'Intelligence'),
     fixture().replace('$7.63', 'estimate'),
     fixture().replace('<td>Lab</td>', ''),
