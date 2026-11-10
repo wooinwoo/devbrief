@@ -18,10 +18,14 @@ describe('ArticleExtractService', () => {
   });
 
   it('자동 접속을 거부한 사이트에는 요청하지 않는다', async () => {
-    const fetchSpy = jest.spyOn(globalThis, 'fetch');
-    await expect(service.extract('https://news.hada.io/topic?id=1')).resolves.toBeNull();
+    // 아래 describe 가 global.fetch 를 이미 감싸 두므로 같은 spy 를 쓰고 원래대로 돌려놓지 않는다.
+    const fetchSpy = jest.spyOn(global, 'fetch');
+    fetchSpy.mockClear();
+    await expect(service.extract('https://news.hada.io/topic?id=1')).resolves.toEqual({
+      html: null,
+      unavailable: true,
+    });
     expect(fetchSpy).not.toHaveBeenCalled();
-    fetchSpy.mockRestore();
   });
 
   it('script/style 및 on* 핸들러를 완전히 제거한다', () => {
@@ -117,5 +121,38 @@ describe('ArticleExtractService', () => {
     expect(out!).toMatch(/<pre>/);
     expect(out!).toMatch(/<code>/);
     expect(out!).toMatch(/<blockquote>/);
+  });
+
+  describe('extract 실패 분류', () => {
+    const fetchMock = jest.spyOn(global, 'fetch');
+    afterEach(() => fetchMock.mockReset());
+    afterAll(() => fetchMock.mockRestore());
+
+    it('접근 거부·없음 응답은 재시도해도 같으므로 unavailable 이다', async () => {
+      for (const status of [403, 404, 410]) {
+        fetchMock.mockResolvedValueOnce(new Response('blocked', { status }));
+        await expect(service.extract(base)).resolves.toEqual({ html: null, unavailable: true });
+      }
+    });
+
+    it('5xx 와 네트워크 오류는 일시 실패라 다시 시도한다', async () => {
+      fetchMock.mockResolvedValueOnce(new Response('busy', { status: 503 }));
+      await expect(service.extract(base)).resolves.toEqual({ html: null, unavailable: false });
+      fetchMock.mockRejectedValueOnce(new Error('timeout'));
+      await expect(service.extract(base)).resolves.toEqual({ html: null, unavailable: false });
+    });
+
+    it('본문이 짧으면 unavailable, 충분하면 html 을 돌려준다', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response('<article><p>짧음</p></article>', { status: 200 }),
+      );
+      await expect(service.extract(base)).resolves.toEqual({ html: null, unavailable: true });
+      fetchMock.mockResolvedValueOnce(
+        new Response(`<article><p>${longText}</p></article>`, { status: 200 }),
+      );
+      const ok = await service.extract(base);
+      expect(ok.unavailable).toBe(false);
+      expect(ok.html).toContain('<p>');
+    });
   });
 });
