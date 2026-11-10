@@ -4,7 +4,12 @@ import { BadRequestException } from '@nestjs/common';
 jest.mock('node:dns/promises', () => ({ lookup: jest.fn() }));
 
 import { lookup } from 'node:dns/promises';
-import { assertPublicHttpUrl, isBlockedHostname, isBlockedIp } from './url-guard';
+import {
+  assertPublicHttpUrl,
+  isBlockedHostname,
+  isBlockedIp,
+  refusesAutomatedPages,
+} from './url-guard';
 
 const lookupMock = lookup as unknown as jest.Mock;
 
@@ -117,5 +122,13 @@ describe('assertPublicHttpUrl', () => {
     const url = await assertPublicHttpUrl('http://203.0.113.10/feed');
     expect(url.hostname).toBe('203.0.113.10');
     expect(lookupMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('refusesAutomatedPages', () => {
+  it('GeekNews 글 페이지는 자동으로 요청하지 않는다', () => {
+    expect(refusesAutomatedPages('news.hada.io')).toBe(true);
+    expect(refusesAutomatedPages('NEWS.HADA.IO')).toBe(true);
+    expect(refusesAutomatedPages('github.com')).toBe(false);
   });
 });

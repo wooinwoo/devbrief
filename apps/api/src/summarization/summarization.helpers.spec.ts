@@ -87,3 +87,30 @@ describe('clamp', () => {
     expect(clamp('  짧은 글  ', 100)).toBe('짧은 글');
   });
 });
+
+describe('topSentences: 내용 있는 문장 우선', () => {
+  it('짧은 도입 문장보다 내용이 있는 문장을 먼저 고른다', () => {
+    const text =
+      'We have big news. Today we are releasing a new version of the scheduler that cuts build times in half.';
+    expect(topSentences(text, 1)).toEqual([
+      'Today we are releasing a new version of the scheduler that cuts build times in half.',
+    ]);
+  });
+
+  it('글머리 인사는 버린다', () => {
+    const text =
+      'Hi HN, I built a small tool that turns any RSS feed into a daily email digest for your team.';
+    expect(topSentences(text, 1)).toEqual([
+      'I built a small tool that turns any RSS feed into a daily email digest for your team.',
+    ]);
+  });
+});
+
+describe('splitSentences: 이름 머리글자', () => {
+  it('머리글자 뒤 마침표에서는 자르지 않는다', () => {
+    expect(splitSentences('Guest post by Karthik C. Raman. It covers queues.')).toEqual([
+      'Guest post by Karthik C. Raman.',
+      'It covers queues.',
+    ]);
+  });
+});

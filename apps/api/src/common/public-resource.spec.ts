@@ -2,7 +2,10 @@ import axios from 'axios';
 import { fetchPublicResource } from './public-resource';
 import { assertPublicHttpUrl } from './url-guard';
 jest.mock('axios');
-jest.mock('./url-guard', () => ({ assertPublicHttpUrl: jest.fn() }));
+jest.mock('./url-guard', () => ({
+  assertPublicHttpUrl: jest.fn(),
+  refusesAutomatedPages: jest.requireActual('./url-guard').refusesAutomatedPages,
+}));
 const get = axios.get as jest.Mock;
 const check = assertPublicHttpUrl as jest.Mock;
 beforeEach(() => {
@@ -40,5 +43,11 @@ it('rejects credential-bearing resources before a request', async () => {
   await expect(
     fetchPublicResource('https://user:pass@event.test', { timeout: 5000 }),
   ).rejects.toThrow('credentials');
+  expect(get).not.toHaveBeenCalled();
+});
+it('never requests pages from sites that refuse automated access', async () => {
+  await expect(fetchPublicResource('https://news.hada.io/topic?id=1', {})).rejects.toThrow(
+    'Site refuses automated requests',
+  );
   expect(get).not.toHaveBeenCalled();
 });

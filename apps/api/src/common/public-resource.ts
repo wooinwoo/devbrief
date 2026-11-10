@@ -1,5 +1,5 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
-import { assertPublicHttpUrl } from './url-guard';
+import { assertPublicHttpUrl, refusesAutomatedPages } from './url-guard';
 
 /** Validate every redirect before requesting public page/image metadata. */
 export async function fetchPublicResource<T>(
@@ -11,6 +11,7 @@ export async function fetchPublicResource<T>(
   for (let hop = 0; hop <= 5; hop++) {
     const checked = await assertPublicHttpUrl(url);
     if (checked.username || checked.password) throw new Error('URL credentials are not allowed');
+    if (refusesAutomatedPages(checked.hostname)) throw new Error('Site refuses automated requests');
     const remaining = deadline - Date.now();
     if (remaining <= 0) throw new Error('Public resource timed out');
     const response = await axios.get<T>(checked.href, {

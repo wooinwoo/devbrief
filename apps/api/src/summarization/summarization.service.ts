@@ -210,8 +210,8 @@ export function cleanBody(raw: string): string {
 /** 평문에서 의미 있는 앞쪽 문장 n개 추출. */
 export function topSentences(text: string, n: number, title = ''): string[] {
   if (!text || text.length < 12) return [];
-  return splitSentences(text)
-    .map((s) => s.trim())
+  const candidates = splitSentences(text)
+    .map((s) => s.replace(GREETING, '').trim())
     .filter(
       (s) =>
         s.length >= 12 &&
@@ -219,9 +219,16 @@ export function topSentences(text: string, n: number, title = ''): string[] {
         s.replace(/[\p{P}\s]/gu, '').toLowerCase() !==
           title.replace(/[\p{P}\s]/gu, '').toLowerCase(),
     )
-    .filter((s, index, rows) => rows.indexOf(s) === index)
-    .slice(0, n);
+    .filter((s, index, rows) => rows.indexOf(s) === index);
+  // "Big news." 같은 짧은 도입 문장은 요약 구실을 못 한다. 내용이 있는 문장(6단어 이상)을 먼저 쓰고,
+  // 그런 문장이 모자랄 때만 짧은 문장으로 채운다. 순서는 본문 순서를 지킨다.
+  const full = candidates.filter((s) => s.split(/\s+/).length >= 6);
+  return [...full, ...candidates.filter((s) => !full.includes(s))].slice(0, n);
 }
+
+/** 글머리 인사("Hi HN," "Hello everyone!" "Dear readers,")는 떼고 뒤 문장만 쓴다. */
+const GREETING =
+  /^(?:hi|hello|hey|greetings|dear)\s+(?:hn|everyone|all|folks|there|friends|readers|subscribers|team)\b[\s,!.:—-]*/i;
 
 /** 추출 요약으로 쓰면 안 되는 제공자 오류와 상투적인 안내 문장을 거른다. */
 export function usableSummary(text: string | null | undefined): boolean {
@@ -239,10 +246,13 @@ export function usableSummary(text: string | null | undefined): boolean {
 
 /** 마침표/물음표/느낌표/。 기준 문장 분리. */
 export function splitSentences(text: string): string[] {
-  return (text ?? '')
-    .split(/(?<=[.!?。])\s+|\r?\n+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return (
+    (text ?? '')
+      // "Karthik C. Smith"처럼 이름 머리글자 뒤의 마침표에서는 자르지 않는다.
+      .split(/(?<![\s([][A-Z]\.)(?<=[.!?。])\s+|\r?\n+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
 }
 
 /** 최대 길이 초과 시 말줄임. */

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { isBlockedHostname } from '../common/url-guard';
+import { isBlockedHostname, refusesAutomatedPages } from '../common/url-guard';
 
 /**
  * 원문 URL에서 본문 평문을 추출한다 (LLM/유료 readability API 없이 cheerio 휴리스틱).
@@ -87,6 +87,7 @@ export class ArticleFetchService {
         this.logger.debug(`내부망/사설 대역 URL 차단 ${current}`);
         return null;
       }
+      if (refusesAutomatedPages(target.hostname)) return null;
 
       try {
         const res = await axios.get<string>(current, {

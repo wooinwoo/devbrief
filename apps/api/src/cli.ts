@@ -396,6 +396,11 @@ export async function repairSummaries(
        ~* 'QUERY LENGTH LIMIT EXCEEDED|MYMEMORY WARNING|USED ALL AVAILABLE FREE TRANSLATIONS|(Article|Comments?|기사|댓글)[[:space:]]*URL[[:space:]]*:'
        OR "summaryOneLine" ~* '^(Note:[[:space:]]*)?This is my (very )?first (ever )?(blog )?post'
        OR "summaryOneLine" ~ '^(참고:[[:space:]]*)?(이것은[[:space:]]*)?(제|내|저의)[[:space:]]*첫[[:space:]]*(번째[[:space:]]*)?블로그'
+       OR ("titleKo" IS NULL AND language = 'en')
+       -- 내용 없는 짧은 추출 요약("큰 소식이 있습니다.")을 다시 고른다. 나아지지 않는 글이 매일 자리를
+       -- 차지하지 않도록 최근 30일 글만 본다.
+       OR ("summarySource" = 'free' AND language = 'en' AND char_length("summaryOneLine") < 20
+           AND "publishedAt" > now() - interval '30 days')
      ORDER BY ("summaryOneLine" IS NOT NULL) DESC, "publishedAt" DESC LIMIT $1`,
     limit,
   );

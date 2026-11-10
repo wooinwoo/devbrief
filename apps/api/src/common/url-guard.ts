@@ -74,6 +74,16 @@ export function isBlockedHostname(hostname: string): boolean {
 }
 
 /**
+ * 자동 접속을 거부한 사이트. 글 목록은 RSS로만 받고, 글 페이지(본문·og:image)는 요청하지 않는다.
+ * - news.hada.io (GeekNews): 2026-11 확인. 403과 함께 "차단 이후 자동접속을 반복하면 신고할 수 있다"고 안내한다.
+ */
+const NO_AUTOMATED_PAGE_HOSTS = new Set(['news.hada.io']);
+
+export function refusesAutomatedPages(hostname: string): boolean {
+  return NO_AUTOMATED_PAGE_HOSTS.has(hostname.toLowerCase());
+}
+
+/**
  * URL 을 파싱해 http/https + 공인 호스트만 통과시킨다.
  * 호스트명은 DNS resolve 후 모든 주소를 검사한다. 위반 시 BadRequestException.
  * 통과하면 파싱된 URL 을 반환한다.
