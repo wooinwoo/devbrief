@@ -54,4 +54,4 @@ corepack pnpm --filter @devbrief/web deploy:pages
 
 ## 재배포와 복구
 
-`master` push 후 CI가 통과하면 `deploy.yml`이 자동 배포한다. 위 CLI 배포는 수동 대체 경로다. 배포 기록은 Cloudflare의 Workers & Pages → devbrief → Deployments에서 확인하고, 문제가 있으면 이전 성공 배포로 Rollback한다.
+`main` push 후 CI가 통과하면 `deploy.yml`이 자동 배포한다. 위 CLI 배포는 수동 대체 경로다. 배포 기록은 Cloudflare의 Workers & Pages → devbrief → Deployments에서 확인하고, 문제가 있으면 이전 성공 배포로 Rollback한다.

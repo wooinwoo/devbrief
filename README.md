@@ -95,7 +95,7 @@ flowchart LR
 | 운영·검증 | pnpm workspace, GitHub Actions, Biome, Jest, Vitest·Testing Library |
 | 선택 구성 | Gemini, Redis·BullMQ 워커와 서버 Cron. 현재 운영 배치와는 별도의 실행 경로입니다. |
 
-`master`에 push하면 CI 통과 뒤 Worker와 Pages가 자동 배포됩니다. Redis를 활성화한 서버 Cron과 Actions를 함께 실행하면 수집이 중복 실행되므로 운영에서는 Actions만 사용합니다. [배포 구성](DEPLOY.md)
+`main`에 push하면 CI 통과 뒤 Worker와 Pages가 자동 배포됩니다. Redis를 활성화한 서버 Cron과 Actions를 함께 실행하면 수집이 중복 실행되므로 운영에서는 Actions만 사용합니다. [배포 구성](DEPLOY.md)
 
 ## 검증 결과
 

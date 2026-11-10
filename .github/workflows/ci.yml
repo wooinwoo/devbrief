@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [main]
   pull_request:
 
 # 동일 ref 의 이전 실행은 취소 (PR 푸시 연타 시 자원 절약)

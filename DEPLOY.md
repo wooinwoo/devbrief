@@ -17,7 +17,9 @@ edge-api는 `apps/api`의 공개 GET 컨트롤러를 Worker에서 그대로 실�
 
 ## 자동 배포
 
-`master`에 push하면 CI가 타입 검사·린트·테스트·빌드를 실행한다. CI가 통과하면 `deploy.yml`이 Worker와 Pages를 차례로 배포하고 API와 사이트에 스모크 테스트를 보낸다.
+`main`에 push하면 CI가 타입 검사·린트·테스트·빌드를 실행한다. CI가 통과하면 `deploy.yml`이 Worker와 Pages를 차례로 배포하고 API와 사이트에 스모크 테스트를 보낸다.
+
+Pages 프로젝트의 운영 배포 이름은 예전 그대로 `master`다. wrangler 명령의 `--branch master`는 git 브랜치가 아니라 이 이름을 가리키므로 바꾸지 않는다.
 
 ## 비밀값
 

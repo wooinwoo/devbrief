@@ -40,7 +40,7 @@ corepack pnpm --filter @devbrief/web test
 ~~~
 
 To bootstrap benchmark-data, create an orphan branch containing only the
-validated llm-benchmarks.json. Regular application changes remain on master.
+validated llm-benchmarks.json. Regular application changes remain on main.
 The browser accepts only schema version 1 and the expected source URL.
 The bundled snapshot is refreshed when preparing a new application release.
 
