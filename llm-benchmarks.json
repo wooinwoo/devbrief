@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceUrl": "https://artificialanalysis.ai/leaderboards/models",
-  "checkedAt": "2026-11-10T07:29:04.841Z",
+  "checkedAt": "2026-11-11T06:44:14.238Z",
   "indexVersion": "5.0.1",
   "models": [
     {
@@ -659,6 +659,14 @@
       "intelligence": 16,
       "speed": null,
       "costPerTask": 1.91
+    },
+    {
+      "name": "Apodex 1.1",
+      "creator": "Apodex",
+      "slug": "apodex-1-1",
+      "intelligence": 14,
+      "speed": null,
+      "costPerTask": 0.76
     },
     {
       "name": "Nemotron 3.5 Super VL",
