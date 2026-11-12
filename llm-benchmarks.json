@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceUrl": "https://artificialanalysis.ai/leaderboards/models",
-  "checkedAt": "2026-11-11T06:44:14.238Z",
+  "checkedAt": "2026-11-12T07:23:41.536Z",
   "indexVersion": "5.0.1",
   "models": [
     {
@@ -461,6 +461,14 @@
       "costPerTask": 0.46
     },
     {
+      "name": "Qwen3.8-Flash-Next",
+      "creator": "Alibaba",
+      "slug": "qwen3-8-flash-next",
+      "intelligence": 29,
+      "speed": null,
+      "costPerTask": 0.57
+    },
+    {
       "name": "Step 5 Preview",
       "creator": "StepFun",
       "slug": "step-5",
@@ -597,6 +605,14 @@
       "costPerTask": 3.53
     },
     {
+      "name": "JT-4.1 Flash 236B A21B",
+      "creator": "China Mobile",
+      "slug": "jt-4-1-flash-236b-a21b",
+      "intelligence": 19,
+      "speed": null,
+      "costPerTask": null
+    },
+    {
       "name": "MiniMax-M3",
       "creator": "MiniMax",
       "slug": "minimax-m3",
@@ -659,6 +675,14 @@
       "intelligence": 16,
       "speed": null,
       "costPerTask": 1.91
+    },
+    {
+      "name": "Solar Pro 4",
+      "creator": "Upstage",
+      "slug": "solar-pro4",
+      "intelligence": 14,
+      "speed": null,
+      "costPerTask": 0.96
     },
     {
       "name": "Apodex 1.1",
