@@ -33,8 +33,16 @@ export function NavigationProgress() {
     const onClick = (event: MouseEvent) => {
       if (isInternalNavigation(event, new URL(window.location.href))) setPending(true);
     };
+    // 뒤로 가기 캐시에서 되살아난 페이지는 떠날 때 켜 둔 막대를 그대로 가지고 온다.
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setPending(false);
+    };
     document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      window.removeEventListener('pageshow', onPageShow);
+    };
   }, []);
 
   return pending ? <div className="nav-progress" aria-hidden="true" /> : null;

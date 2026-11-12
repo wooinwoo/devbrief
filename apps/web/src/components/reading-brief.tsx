@@ -5,7 +5,7 @@ import { CATEGORIES, categoryOf } from '@/lib/category';
 import { pickTitle, useLang } from '@/lib/lang-context';
 import { selectReadingBrief } from '@/lib/reading-brief';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import type { ArticleDto } from './article-card';
 import { BriefIcon } from './brief-icon';
 import { CoverImage } from './cover-image';
@@ -36,7 +36,8 @@ export function ReadingBrief({
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
-  useEffect(() => {
+  // 그리기 전에 관심 분야를 읽어, 다시 들어올 때 안내 문구가 한 번 보였다 바뀌지 않게 한다.
+  useLayoutEffect(() => {
     try {
       const saved: unknown = JSON.parse(localStorage.getItem(INTERESTS_KEY) ?? '[]');
       if (Array.isArray(saved)) {
@@ -125,9 +126,15 @@ export function ReadingBrief({
       </div>
       <p className="reading-selection-note">최근 7일 · 요약이 있는 미열람 글 · 출처별로 골랐어요</p>
       {now === null ? (
-        <p className="reading-brief-empty" role="status">
-          읽을 글을 고르고 있어요.
-        </p>
+        // 첫 로드에서 스크립트가 뜨기 전까지 목록 자리를 지킨다. 문구는 화면 낭독기에만 읽힌다.
+        <div className="reading-brief-pending" role="status">
+          <p className="sr-only">읽을 글을 고르고 있어요.</p>
+          <div className="loading-reveal">
+            <div className="skeleton-line" />
+            <div className="skeleton-line" />
+            <div className="skeleton-line" />
+          </div>
+        </div>
       ) : items.length === 0 ? (
         <div className="reading-brief-empty">
           <h3>

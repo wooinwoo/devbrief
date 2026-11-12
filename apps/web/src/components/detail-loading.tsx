@@ -14,11 +14,11 @@ export function DetailLoading({ label }: { label: string }) {
   return (
     <main
       id="main-content"
-      aria-busy="true"
       className="min-h-screen w-full max-w-[1600px] mx-auto px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32"
     >
+      <div className="nav-progress" aria-hidden="true" />
       <SiteNav />
-      <div className="loading-reveal max-w-[48rem] mx-auto pt-2 sm:pt-5">
+      <div className="loading-reveal max-w-[48rem] mx-auto pt-2 sm:pt-5" aria-busy="true">
         <p className="sr-only" role="status">
           {label} 불러오는 중
         </p>

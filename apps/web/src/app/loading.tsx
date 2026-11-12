@@ -8,12 +8,12 @@ export default function Loading() {
   return (
     <main
       id="main-content"
-      aria-busy="true"
       className="min-h-screen w-full max-w-[1280px] mx-auto px-5 sm:px-8 lg:px-12"
     >
+      <div className="nav-progress" aria-hidden="true" />
       <SiteNav />
-      <div className="page-loading loading-reveal" role="status">
-        <p>브리핑을 불러오고 있어요.</p>
+      <div className="page-loading loading-reveal" role="status" aria-busy="true">
+        <p className="sr-only">브리핑을 불러오고 있어요.</p>
         <div className="skeleton-line page-loading-lead" />
         <div className="page-loading-columns">
           <div className="skeleton-line" />

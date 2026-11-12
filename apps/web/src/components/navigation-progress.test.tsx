@@ -1,4 +1,4 @@
-import { act, render } from '@testing-library/react';
+import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 let currentPath = '/';
@@ -25,6 +25,7 @@ function clickLink(href: string, init: MouseEventInit = {}, attrs: Record<string
 
 describe('NavigationProgress', () => {
   afterEach(() => {
+    cleanup();
     currentPath = '/';
   });
 
@@ -44,6 +45,18 @@ describe('NavigationProgress', () => {
     clickLink('/articles/a1', {}, { target: '_blank' });
     clickLink('/articles/a1', { metaKey: true });
     clickLink('/');
+    clickLink('/#top');
+    clickLink('/files/report.pdf', {}, { download: '' });
+    expect(document.querySelector('.nav-progress')).toBeNull();
+  });
+
+  it('뒤로 가기 캐시에서 돌아온 페이지에서는 막대를 끈다', () => {
+    render(<NavigationProgress />);
+    clickLink('/articles/a1');
+    expect(document.querySelector('.nav-progress')).not.toBeNull();
+    act(() => {
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    });
     expect(document.querySelector('.nav-progress')).toBeNull();
   });
 });

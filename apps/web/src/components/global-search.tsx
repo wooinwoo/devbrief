@@ -143,7 +143,7 @@ export function GlobalSearch() {
               <ul aria-label={`${items.length}개의 검색 결과`}>
                 {items.map((a) => (
                   <li key={a.id}>
-                    <Link href={`/articles/${a.id}`} prefetch onClick={close}>
+                    <Link href={`/articles/${a.id}`} onClick={close}>
                       <span>{a.source?.name}</span>
                       <strong>{pickTitle(a, lang).primary}</strong>
                       <BriefIcon name="arrow" size={18} />
