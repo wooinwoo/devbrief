@@ -72,6 +72,7 @@ export function VideoDetail({ video, related }: Props) {
     <article className="video-detail-surface">
       <Link
         href="/?tab=videos"
+        prefetch
         className="inline-flex items-center gap-1.5 min-h-11 text-[13px] mb-6 transition-colors hover:text-(--color-fg-default)"
         style={{ color: 'var(--color-fg-muted)' }}
       >
@@ -376,7 +377,11 @@ export function VideoDetail({ video, related }: Props) {
               <ul className="flex flex-col gap-3">
                 {related.map((v) => (
                   <li key={v.id}>
-                    <Link href={`/videos/${v.id}`} className="group flex gap-3 items-start">
+                    <Link
+                      href={`/videos/${v.id}`}
+                      prefetch
+                      className="group flex gap-3 items-start"
+                    >
                       <div
                         className="relative w-[104px] aspect-video shrink-0 overflow-hidden"
                         style={{

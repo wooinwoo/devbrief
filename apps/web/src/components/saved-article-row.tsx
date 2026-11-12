@@ -38,7 +38,7 @@ export function SavedArticleRow({
               {read ? '읽음' : '안 읽음'}
             </span>
           </div>
-          <Link href={`/articles/${article.id}`}>
+          <Link href={`/articles/${article.id}`} prefetch>
             <h2 className="text-[20px]">{primary}</h2>
           </Link>
           {(article.summaryOneLine || secondary) && (

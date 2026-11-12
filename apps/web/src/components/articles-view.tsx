@@ -14,7 +14,7 @@ import { readTracking } from '@/lib/read-tracking';
 import { useUrlFilters } from '@/lib/use-url-filter';
 import { useVisibleNavigation } from '@/lib/use-visible-navigation';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ArticleDto } from './article-card';
 import { BriefIcon } from './brief-icon';
 import { GlobalSearch } from './global-search';
@@ -90,21 +90,24 @@ export function ArticlesView({
   const [repos, setRepos] = useState(initialRepos);
   const [loadedFeeds, setLoadedFeeds] = useState({ videos: false, repos: false });
   const [feedErrors, setFeedErrors] = useState({ videos: false, repos: false });
-  const [feedLoading, setFeedLoading] = useState<Tab | null>(null);
   const [feedRetry, setFeedRetry] = useState(0);
-  const activeFeedLoaded = tab === 'videos' ? loadedFeeds.videos : loadedFeeds.repos;
+  // 탭에 손이 가면(가리키기·누르기 시작·포커스) 그 탭의 목록을 먼저 받기 시작한다.
+  const [intentTab, setIntentTab] = useState<Tab | null>(null);
+  const isFeedTab = (t: Tab | null): t is 'videos' | 'repos' => t === 'videos' || t === 'repos';
+  const feedTab = isFeedTab(tab) ? tab : isFeedTab(intentTab) ? intentTab : null;
+  const activeFeedLoaded = feedTab === 'videos' ? loadedFeeds.videos : loadedFeeds.repos;
   const remainingLoadErrors = initialLoadErrors.filter(
     (feed) => (feed !== '행사' || !catalogLoaded) && (feed !== '발표 영상' || !loadedFeeds.videos),
   );
   useEffect(() => {
-    if (!loadTabCatalogs || (tab !== 'videos' && tab !== 'repos') || activeFeedLoaded) return;
+    if (!loadTabCatalogs || !feedTab || activeFeedLoaded) return;
+    const feed = feedTab;
     const controller = new AbortController();
-    setFeedLoading(tab);
-    setFeedErrors((current) => ({ ...current, [tab]: false }));
+    setFeedErrors((current) => ({ ...current, [feed]: false }));
     const load = async () => {
       try {
         let failed = false;
-        if (tab === 'videos') {
+        if (feed === 'videos') {
           const rows = await fetchVideos(100, controller.signal);
           if (controller.signal.aborted) return;
           setVideos(rows);
@@ -118,19 +121,19 @@ export function ArticlesView({
           ]);
           failed = result.failed;
         }
-        setLoadedFeeds((current) => ({ ...current, [tab]: !failed }));
-        setFeedErrors((current) => ({ ...current, [tab]: failed }));
+        setLoadedFeeds((current) => ({ ...current, [feed]: !failed }));
+        setFeedErrors((current) => ({ ...current, [feed]: failed }));
       } catch {
-        if (!controller.signal.aborted) setFeedErrors((current) => ({ ...current, [tab]: true }));
-      } finally {
-        if (!controller.signal.aborted) setFeedLoading(null);
+        if (!controller.signal.aborted) setFeedErrors((current) => ({ ...current, [feed]: true }));
       }
     };
     void load();
     return () => controller.abort();
-  }, [tab, loadTabCatalogs, activeFeedLoaded, feedRetry]);
+  }, [feedTab, loadTabCatalogs, activeFeedLoaded, feedRetry]);
+  // 가리키다 눌러도 받던 요청을 끊지 않도록, 탭 값이 아니라 '필요한가'에만 반응한다.
+  const conferencesWanted = tab === 'conferences' || intentTab === 'conferences';
   useEffect(() => {
-    if (!loadConferenceCatalog || tab !== 'conferences' || catalogLoaded) return;
+    if (!loadConferenceCatalog || !conferencesWanted || catalogLoaded) return;
     const controller = new AbortController();
     setCatalogLoading(true);
     setCatalogError(false);
@@ -148,7 +151,7 @@ export function ArticlesView({
         if (!controller.signal.aborted) setCatalogLoading(false);
       });
     return () => controller.abort();
-  }, [tab, loadConferenceCatalog, catalogLoaded, catalogRetry]);
+  }, [conferencesWanted, loadConferenceCatalog, catalogLoaded, catalogRetry]);
   const [readSet, setReadSet] = useState<Set<string>>(new Set());
   const [bookmarkSet, setBookmarkSet] = useState<Set<string>>(new Set());
   const [today, setToday] = useState('');
@@ -211,7 +214,8 @@ export function ArticlesView({
     }
   }, []);
 
-  useEffect(() => {
+  // 그리기 전에 저장값을 읽어, 다시 들어올 때 읽음 표시·개수가 한 번 바뀌어 보이지 않게 한다.
+  useLayoutEffect(() => {
     setReadSet(readTracking.load());
     setBookmarkSet(bookmarks.load());
     setToday(
@@ -248,9 +252,14 @@ export function ArticlesView({
     () => aiArticles.filter((a) => !readSet.has(a.id)).length,
     [aiArticles, readSet],
   );
+  // 전체 목록이 오기 전에는 맛보기 개수(예: 영상 2개)를 보이지 않는다. 자리는 그대로 둔다.
+  const feedPending = (feed: 'videos' | 'repos') =>
+    loadTabCatalogs && !loadedFeeds[feed] && !feedErrors[feed];
+  const videosPending = feedPending('videos');
+  const reposPending = feedPending('repos');
   const statSegments = useMemo((): Array<{
     label: string;
-    value: number;
+    value: number | null;
     accent?: boolean;
   }> => {
     switch (tab) {
@@ -268,17 +277,17 @@ export function ArticlesView({
       case 'conferences':
         return [];
       case 'videos':
-        return [{ label: '영상', value: videos.length }];
+        return [{ label: '영상', value: videosPending ? null : videos.length }];
       case 'repos':
         return [
           {
             label: '주간 급상승',
-            value: repos.filter((r) => r.period === 'weekly').length,
+            value: reposPending ? null : repos.filter((r) => r.period === 'weekly').length,
             accent: true,
           },
           {
             label: '일간',
-            value: repos.filter((r) => r.period === 'daily').length,
+            value: reposPending ? null : repos.filter((r) => r.period === 'daily').length,
           },
         ];
       default:
@@ -287,7 +296,18 @@ export function ArticlesView({
           { label: '안 읽은 글', value: unreadCount, accent: true },
         ];
     }
-  }, [tab, aiCount, aiUnread, allArticles.length, total, unreadCount, videos.length, repos]);
+  }, [
+    tab,
+    aiCount,
+    aiUnread,
+    allArticles.length,
+    total,
+    unreadCount,
+    videos.length,
+    repos,
+    videosPending,
+    reposPending,
+  ]);
 
   return (
     <div className="w-full flex flex-col min-h-screen">
@@ -304,6 +324,12 @@ export function ArticlesView({
           <Link
             href="/"
             aria-label="Devbrief 홈"
+            onClick={(e) => {
+              // 이미 홈이라 서버를 다시 다녀오지 않고 '오늘' 탭으로 바꾼다. 새 탭으로 열기는 그대로 둔다.
+              if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              e.preventDefault();
+              setTab('all');
+            }}
             className="wordmark min-h-[60px] lg:min-h-[72px] shrink-0"
             style={{ color: 'var(--bar-fg)', fontWeight: 800 }}
           >
@@ -334,6 +360,9 @@ export function ArticlesView({
                     // roving tabindex — 활성 탭만 Tab 으로 진입, 나머지는 화살표로 이동.
                     tabIndex={isActive ? 0 : -1}
                     onClick={() => setTab(t.id)}
+                    onPointerEnter={() => setIntentTab(t.id)}
+                    onPointerDown={() => setIntentTab(t.id)}
+                    onFocus={() => setIntentTab(t.id)}
                     onKeyDown={(e) => {
                       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
                       e.preventDefault();
@@ -441,8 +470,8 @@ export function ArticlesView({
               <span>{today || 'DAILY EDITION'}</span>
             ) : (
               statSegments.map((s) => (
-                <span key={s.label}>
-                  {s.label} <strong>{s.value}</strong>
+                <span key={s.label} style={s.value === null ? { visibility: 'hidden' } : undefined}>
+                  {s.label} <strong>{s.value ?? 0}</strong>
                 </span>
               ))
             )}
@@ -501,12 +530,7 @@ export function ArticlesView({
               </div>
             )}
             {catalogLoading ? (
-              <div className="catalog-loading" role="status">
-                <p>전체 일정을 불러오는 중이에요…</p>
-                <div className="skeleton-line" />
-                <div className="skeleton-line" />
-                <div className="skeleton-line" />
-              </div>
+              <TabLoading label="전체 일정을 불러오는 중이에요…" />
             ) : (
               <ConferencesTab conferences={conferenceCatalog} />
             )}
@@ -523,15 +547,14 @@ export function ArticlesView({
                 </button>
               </div>
             )}
-            {feedLoading === tab && (
-              <p className="catalog-loading" role="status">
-                {tab === 'videos' ? '영상' : '오픈소스'} 목록을 불러오는 중이에요…
-              </p>
-            )}
-            {tab === 'videos' && (videos.length > 0 || loadedFeeds.videos || !loadTabCatalogs) && (
+            {/* 전체 목록이 오기 전에는 맛보기 목록 대신 같은 자리를 지켜, 개수와 목록이 바뀌며 밀리지 않게 한다. */}
+            {(tab === 'videos' ? videosPending : reposPending) ? (
+              <TabLoading
+                label={`${tab === 'videos' ? '영상' : '오픈소스'} 목록을 불러오는 중이에요…`}
+              />
+            ) : tab === 'videos' ? (
               <VideosTab videos={videos} />
-            )}
-            {tab === 'repos' && (repos.length > 0 || loadedFeeds.repos || !loadTabCatalogs) && (
+            ) : (
               <ReposTab repos={repos} />
             )}
           </>
@@ -540,6 +563,21 @@ export function ArticlesView({
 
       <PageFooter total={allArticles.length} />
       <ScrollTop />
+    </div>
+  );
+}
+
+/** 목록을 받는 동안 탭 아래 자리를 지킨다. 안내 문구는 화면 낭독기에만 읽히고, 뼈대는 늦어질 때만 보인다. */
+function TabLoading({ label }: { label: string }) {
+  return (
+    <div className="tab-loading" role="status" aria-busy="true">
+      <div className="nav-progress" aria-hidden="true" />
+      <p className="sr-only">{label}</p>
+      <div className="loading-reveal">
+        <div className="skeleton-line" />
+        <div className="skeleton-line" />
+        <div className="skeleton-line" />
+      </div>
     </div>
   );
 }

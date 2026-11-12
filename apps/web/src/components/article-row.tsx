@@ -53,7 +53,7 @@ export function ArticleRow({
         )}
         {/* 제목과 요약을 먼저 읽고 출처와 분류를 확인한다. */}
         <div>
-          <Link href={`/articles/${article.id}`} onClick={onOpen} className="min-w-0">
+          <Link href={`/articles/${article.id}`} prefetch onClick={onOpen} className="min-w-0">
             <h3 className="text-[20px] leading-[1.5] tracking-[-0.015em] break-keep text-(--color-fg-strong) transition-colors hover:text-(--color-accent-strong) line-clamp-3 font-semibold">
               {primary}
             </h3>
@@ -64,6 +64,7 @@ export function ArticleRow({
         {(summary || secondary) && (
           <Link
             href={`/articles/${article.id}`}
+            prefetch
             onClick={onOpen}
             className="article-row-summary block mt-2 text-[16px] leading-[1.75] line-clamp-2"
             style={{ color: 'var(--color-fg-muted)' }}

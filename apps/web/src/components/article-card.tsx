@@ -80,6 +80,7 @@ function ArticleCard({
 
       <Link
         href={`/articles/${article.id}`}
+        prefetch
         onClick={onOpen}
         className="block focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--color-line-strong) focus-visible:rounded"
       >

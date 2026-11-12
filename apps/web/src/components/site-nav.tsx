@@ -2,7 +2,8 @@
 
 import { useVisibleNavigation } from '@/lib/use-visible-navigation';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { BriefIcon } from './brief-icon';
 import { GlobalSearch } from './global-search';
 import { LangToggle } from './lang-toggle';
@@ -18,6 +19,20 @@ const TABS = [
 
 /** 글/영상 상세 상단 네비 — 메인 헤더와 동일한 비주얼 언어. */
 export function SiteNav() {
+  // 미리 만드는 페이지(404·저장)에서는 주소의 tab 을 읽을 수 없어 '오늘'로 먼저 그린다.
+  return (
+    <Suspense fallback={<SiteNavBar homeTab="all" />}>
+      <SiteNavFromUrl />
+    </Suspense>
+  );
+}
+
+/** 홈 로딩 화면에서도 누른 탭이 켜져 있도록 주소의 tab 을 따른다. */
+function SiteNavFromUrl() {
+  return <SiteNavBar homeTab={useSearchParams().get('tab') ?? 'all'} />;
+}
+
+function SiteNavBar({ homeTab }: { homeTab: string }) {
   const pathname = usePathname();
   const section = pathname.split('/')[1];
   const activeHref =
@@ -26,7 +41,7 @@ export function SiteNav() {
       : ['articles', 'videos', 'conferences'].includes(section)
         ? `/?tab=${section}`
         : pathname === '/'
-          ? '/?tab=all'
+          ? `/?tab=${homeTab}`
           : undefined;
   useVisibleNavigation(pathname);
   return (
