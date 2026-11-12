@@ -311,6 +311,7 @@ export function BookmarksView() {
           </p>
           <Link
             href="/?tab=articles"
+            prefetch
             className="library-button library-primary"
             style={{
               border: '1px solid var(--color-line-strong)',

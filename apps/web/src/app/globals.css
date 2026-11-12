@@ -1323,12 +1323,35 @@ button {
   border-radius: 7px;
   background: #eceef1;
 }
-/* 첫 로드 뼈대 (app/loading.tsx): 헤더 줄, 제목 자리, 머리기사와 두 단. */
-.page-loading-bar {
-  margin: 0 calc(50% - 50vw) 48px;
-  padding-inline: calc(50vw - 50%);
-  border-bottom: 1px solid var(--line);
+/* 로딩 뼈대는 금방 끝나는 로딩에서 깜빡이지 않도록 조금 늦게 나타난다. */
+.loading-reveal {
+  animation: loading-reveal 180ms ease-out 350ms both;
 }
+@keyframes loading-reveal {
+  from {
+    opacity: 0;
+  }
+}
+/* 다음 화면을 기다리는 동안 맨 위에 보이는 진행 막대. 금방 끝나는 이동에서는 나타나지 않는다. */
+.nav-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left;
+  pointer-events: none;
+  animation: nav-progress 8s cubic-bezier(0.1, 0.6, 0.2, 1) 150ms both;
+}
+@keyframes nav-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(0.92);
+  }
+}
+/* 첫 로드 뼈대 (app/loading.tsx): 제목 자리, 머리기사와 두 단. */
 .page-loading > p {
   margin-bottom: 28px;
   font-size: 30px;
@@ -1365,6 +1388,12 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .page-loading .skeleton-line {
     animation: none;
+  }
+  .loading-reveal {
+    animation-duration: 1ms;
+  }
+  .nav-progress {
+    animation: loading-reveal 1ms 150ms both;
   }
 }
 .catalog-error {

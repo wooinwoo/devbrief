@@ -33,7 +33,7 @@ export function DailyDigest({ digest }: { digest: DigestDto | null }) {
       <ol className="grid md:grid-cols-2 gap-x-10">
         {digest.items.map((item) => (
           <li key={item.articleId} className="border-b border-(--color-line)">
-            <Link href={`/articles/${item.articleId}`} className="group block py-5">
+            <Link href={`/articles/${item.articleId}`} prefetch className="group block py-5">
               <h3 className="text-base font-semibold leading-snug text-(--color-fg-strong) group-hover:underline underline-offset-4">
                 {item.headline}
               </h3>

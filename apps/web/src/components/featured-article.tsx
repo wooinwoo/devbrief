@@ -37,6 +37,7 @@ export function FeaturedArticle({
     >
       <Link
         href={`/articles/${article.id}`}
+        prefetch
         onClick={onOpen}
         className="group block focus-visible:outline-offset-4"
       >

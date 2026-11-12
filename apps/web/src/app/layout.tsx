@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { NavigationProgress } from '@/components/navigation-progress';
 import { LangProvider } from '@/lib/lang-context';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   icons: {
@@ -31,6 +33,9 @@ export default function RootLayout({
         >
           본문으로 건너뛰기
         </a>
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         <LangProvider>{children}</LangProvider>
       </body>
     </html>

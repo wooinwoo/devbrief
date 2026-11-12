@@ -73,7 +73,7 @@ export function SidebarWidgets({ conferences, videos, onNavigate }: Props) {
           <ul className="flex flex-col gap-3">
             {vids.map((v) => (
               <li key={v.id}>
-                <Link href={`/videos/${v.id}`} className="group flex gap-2.5 items-start">
+                <Link href={`/videos/${v.id}`} prefetch className="group flex gap-2.5 items-start">
                   <div
                     className="relative w-[68px] aspect-video shrink-0 overflow-hidden"
                     style={{ borderRadius: 5, background: 'oklch(90% 0.01 290)' }}
