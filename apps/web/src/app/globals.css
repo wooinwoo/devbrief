@@ -621,10 +621,11 @@ button {
 .reading-story-cover:not(:has(.brief-cover)) {
   display: none;
 }
+/* 머리기사 이미지는 OG 비율(1.91:1)로, 칸 높이에 늘려 위아래 흰 띠가 생기지 않게 가운데 둔다. */
 .reading-brief-list > li:first-child .reading-story-cover {
   grid-column: 2;
   grid-row: 1 / span 3;
-  align-self: stretch;
+  align-self: center;
   border-radius: 10px;
   background: var(--bg-base);
 }
@@ -635,8 +636,7 @@ button {
   object-fit: cover;
 }
 .reading-brief-list > li:first-child .reading-story-cover .brief-cover {
-  min-height: 100%;
-  aspect-ratio: 1.5;
+  aspect-ratio: 1.91;
   background: var(--bg-base);
 }
 .reading-brief-list > li:first-child .reading-story-cover img {
@@ -797,8 +797,7 @@ button {
     grid-row: 3;
   }
   .reading-brief-list > li:first-child .reading-story-cover .brief-cover {
-    min-height: 0;
-    aspect-ratio: 1.6;
+    aspect-ratio: 1.91;
   }
   .reading-story-actions {
     column-gap: 12px;
@@ -1323,6 +1322,50 @@ button {
   margin: 12px 0;
   border-radius: 7px;
   background: #eceef1;
+}
+/* 첫 로드 뼈대 (app/loading.tsx): 헤더 줄, 제목 자리, 머리기사와 두 단. */
+.page-loading-bar {
+  margin: 0 calc(50% - 50vw) 48px;
+  padding-inline: calc(50vw - 50%);
+  border-bottom: 1px solid var(--line);
+}
+.page-loading > p {
+  margin-bottom: 28px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--fg-muted);
+}
+.page-loading .skeleton-line {
+  margin: 0;
+  animation: pulse-glow 1.8s ease-in-out infinite;
+}
+.page-loading-lead.skeleton-line {
+  height: clamp(200px, 26vw, 340px);
+  margin-bottom: 28px;
+  border-radius: 14px;
+}
+.page-loading-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+}
+.page-loading-columns .skeleton-line {
+  height: 120px;
+}
+@media (max-width: 639px) {
+  .page-loading > p {
+    font-size: 24px;
+  }
+  .page-loading-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-loading .skeleton-line {
+    animation: none;
+  }
 }
 .catalog-error {
   display: flex;
