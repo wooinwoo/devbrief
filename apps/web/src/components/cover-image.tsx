@@ -37,6 +37,7 @@ export function CoverImage({
         width={960}
         height={600}
         loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : undefined}
         decoding="async"
         referrerPolicy="no-referrer"
         onError={() => setFailed(src)}
