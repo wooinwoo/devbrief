@@ -32,7 +32,9 @@ export function ReadingBrief({
 }: Props) {
   const { lang } = useLang();
   const [interests, setInterests] = useState<string[]>([]);
-  const [now, setNow] = useState<number | null>(null);
+  // 서버 렌더와 첫 하이드레이션이 같은 값을 쓰도록 가장 최근 글 시각으로 시작한다. 그래서 첫 HTML에 목록과
+  // 첫 표지가 들어가 바로 받아진다. 실제 시각과 저장한 관심 분야는 아래 layout effect가 그리기 전에 반영한다.
+  const [now, setNow] = useState<number | null>(() => latestPublishedAt(articles));
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
@@ -260,4 +262,9 @@ export function ReadingBrief({
       </button>
     </section>
   );
+}
+
+function latestPublishedAt(articles: ArticleDto[]): number | null {
+  const times = articles.map((article) => Date.parse(article.publishedAt)).filter(Number.isFinite);
+  return times.length > 0 ? Math.max(...times) : null;
 }
