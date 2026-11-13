@@ -1,9 +1,11 @@
+import { JsonLd } from '@/components/json-ld';
 import { LoadFailure } from '@/components/load-failure';
 import { SiteNav } from '@/components/site-nav';
 import { VideoDetail } from '@/components/video-detail';
 import { MOCK_VIDEOS, type VideoDto } from '@/lib/mock-videos';
 import { MOCKS_ENABLED } from '@/lib/mocks-enabled';
 import { publicRead } from '@/lib/public-read';
+import { SITE_URL } from '@/lib/site';
 import { notFound } from 'next/navigation';
 
 import { API_BASE } from '@/lib/api';
@@ -93,13 +95,17 @@ function mapDbToDto(d: DbVideo): VideoDto {
   };
 }
 
+function describe(video: VideoDto): string {
+  return (video.summary || video.description)?.replace(/\s+/g, ' ').slice(0, 150) || video.channel;
+}
+
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const fromApi = await getOne(id);
   const video = fromApi ?? findMockVideo(id);
   return {
     title: video ? `${video.title} · Devbrief` : 'Devbrief',
-    description: video?.channel,
+    description: video ? describe(video) : undefined,
   };
 }
 
@@ -123,6 +129,19 @@ export default async function VideoDetailPage({ params }: Props) {
       id="main-content"
       className="min-h-screen w-full max-w-[1600px] mx-auto px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32"
     >
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'VideoObject',
+          name: video.title,
+          description: describe(video),
+          thumbnailUrl: video.thumbnailUrl,
+          uploadDate: video.publishedAt,
+          duration: video.durationSec ? `PT${video.durationSec}S` : undefined,
+          embedUrl: `https://www.youtube.com/embed/${video.videoId}`,
+          url: `${SITE_URL}/videos/${video.id}`,
+        }}
+      />
       <SiteNav />
       <div className="max-w-6xl mx-auto pb-16 sm:pb-24">
         <VideoDetail video={video} related={related} />

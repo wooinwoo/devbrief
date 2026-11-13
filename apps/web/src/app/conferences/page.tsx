@@ -6,6 +6,12 @@ import { MOCKS_ENABLED } from '@/lib/mocks-enabled';
 import { publicRead } from '@/lib/public-read';
 
 import { API_BASE } from '@/lib/api';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '행사 · Devbrief',
+  description: '국내외 개발 컨퍼런스와 해커톤 일정을 한곳에서 모아 봅니다.',
+};
 
 interface DbConference {
   id: string;

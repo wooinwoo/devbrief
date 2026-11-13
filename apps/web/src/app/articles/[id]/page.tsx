@@ -1,5 +1,6 @@
 import type { ArticleDto } from '@/components/article-card';
 import { ArticleDetail } from '@/components/article-detail';
+import { JsonLd } from '@/components/json-ld';
 import { LoadFailure } from '@/components/load-failure';
 import { SiteNav } from '@/components/site-nav';
 import { parseArticleRows } from '@/lib/article-response';
@@ -7,6 +8,7 @@ import { MOCK_ARTICLES } from '@/lib/mock-articles';
 import { MOCKS_ENABLED } from '@/lib/mocks-enabled';
 import { publicRead } from '@/lib/public-read';
 import { pickRelated } from '@/lib/related-articles';
+import { SITE_URL } from '@/lib/site';
 import type { ArticleDetail as ArticleDetailDto, ArticleListItem } from '@devbrief/shared';
 import { notFound } from 'next/navigation';
 
@@ -121,6 +123,19 @@ export default async function ArticleDetailPage({ params }: Props) {
       id="main-content"
       className="min-h-screen w-full max-w-[1600px] mx-auto px-5 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32"
     >
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: article.titleKo ?? article.title,
+          description: article.summaryOneLine ?? undefined,
+          datePublished: article.publishedAt,
+          image: article.imageUrl ?? undefined,
+          url: `${SITE_URL}/articles/${article.id}`,
+          isBasedOn: article.url,
+          publisher: { '@type': 'Organization', name: article.source.name },
+        }}
+      />
       <SiteNav />
       <div className="max-w-[48rem] mx-auto pt-2 sm:pt-5">
         <ArticleDetail article={article} related={related} />
