@@ -9,8 +9,8 @@
     "deploy": "node build.mjs && wrangler deploy"
   },
   "dependencies": {
-    "@neondatabase/serverless": "1.2.0",
-    "@prisma/adapter-neon": "7.10.0",
+    "@neondatabase/serverless": "1.2.1",
+    "@prisma/adapter-neon": "7.10.1",
     "@prisma/client": "7.10.0"
   },
   "devDependencies": {
